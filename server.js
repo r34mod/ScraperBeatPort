@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const beatportScraper = require('./api/beatport-scraper-fixed');
+const traxsourceScraper = require('./api/traxsource-scraper');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,6 +20,7 @@ app.use((req, res, next) => {
 
 // Rutas API
 app.use('/api', beatportScraper);
+app.use('/api/traxsource', traxsourceScraper);
 
 // Ruta para servir el HTML principal
 app.get('/', (req, res) => {

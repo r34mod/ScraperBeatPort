@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1001Tracklists Scraper - En Desarrollo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .icon {
+            font-size: 5em;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.3em;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .features {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 40px 0;
+            text-align: left;
+        }
+
+        .features h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            margin-bottom: 12px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-icon {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .progress {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            width: 15%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 40px 20px;
+                margin: 10px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .subtitle {
+                font-size: 1.1em;
+            }
+
+            .icon {
+                font-size: 4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📊</div>
+        
+        <h1>1001Tracklists Scraper</h1>
+        <p class="subtitle">Extrae tracklists de DJ sets y eventos en vivo<br>Actualmente en desarrollo</p>
+        
+        <div class="progress">
+            <div class="progress-bar"></div>
+        </div>
+        <p style="color: #666; font-size: 0.9em;">Progreso: 15% completado</p>
+
+        <div class="features">
+            <h3>🎯 Características planificadas:</h3>
+            <ul class="feature-list">
+                <li><span class="feature-icon">✅</span> DJ sets de festivales y clubes</li>
+                <li><span class="feature-icon">✅</span> Tracklists de artistas populares</li>
+                <li><span class="feature-icon">✅</span> Búsqueda por evento o DJ</li>
+                <li><span class="feature-icon">✅</span> Historial de sets por artista</li>
+                <li><span class="feature-icon">✅</span> Identificación automática de tracks</li>
+                <li><span class="feature-icon">✅</span> Exportación de playlists</li>
+                <li><span class="feature-icon">✅</span> Integración con Spotify/Apple Music</li>
+            </ul>
+        </div>
+
+        <p style="color: #888; margin: 20px 0;">
+            <strong>Fecha estimada de lanzamiento:</strong> Enero 2026
+        </p>
+
+        <a href="index.html" class="back-btn">← Volver al inicio</a>
+    </div>
+</body>
+</html>

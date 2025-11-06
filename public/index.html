@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Scraper Hub - Wherever You Are</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 50%, #2c2c2c 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        .background-orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.3;
+        }
+
+        .orb-red {
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, #ff4444 0%, #ff0000 50%, transparent 70%);
+            top: -200px;
+            left: -300px;
+            animation: moveOrbRed 25s ease-in-out infinite;
+        }
+
+        .orb-blue {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, #44aaff 0%, #0066cc 50%, transparent 70%);
+            bottom: -150px;
+            right: -250px;
+            animation: moveOrbBlue 30s ease-in-out infinite;
+        }
+
+        .orb-cyan {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #00ffdd 0%, #008888 50%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: moveOrbCyan 35s ease-in-out infinite;
+        }
+
+        @keyframes moveOrbRed {
+            0%, 100% { 
+                transform: translate(0, 0) scale(1);
+            }
+            25% { 
+                transform: translate(200px, 100px) scale(1.1);
+            }
+            50% { 
+                transform: translate(100px, 300px) scale(0.9);
+            }
+            75% { 
+                transform: translate(-100px, 200px) scale(1.05);
+            }
+        }
+
+        @keyframes moveOrbBlue {
+            0%, 100% { 
+                transform: translate(0, 0) scale(1);
+            }
+            33% { 
+                transform: translate(-150px, -100px) scale(1.15);
+            }
+            66% { 
+                transform: translate(-300px, 50px) scale(0.85);
+            }
+        }
+
+        @keyframes moveOrbCyan {
+            0%, 100% { 
+                transform: translate(-50%, -50%) scale(1);
+            }
+            20% { 
+                transform: translate(-60%, -40%) scale(1.1);
+            }
+            40% { 
+                transform: translate(-40%, -60%) scale(0.9);
+            }
+            60% { 
+                transform: translate(-55%, -45%) scale(1.05);
+            }
+            80% { 
+                transform: translate(-45%, -55%) scale(0.95);
+            }
+        }
+
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0.02;
+            background-image: 
+                radial-gradient(circle at 25% 25%, #ffffff 1px, transparent 1px),
+                radial-gradient(circle at 75% 75%, #ffffff 1px, transparent 1px);
+            background-size: 4px 4px;
+            animation: noiseMove 8s linear infinite;
+        }
+
+        @keyframes noiseMove {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-2px, -2px); }
+            50% { transform: translate(2px, 2px); }
+            75% { transform: translate(-1px, 1px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            position: relative;
+            z-index: 3;
+        }
+
+        /* Navigation Header */
+        .nav-header {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: linear-gradient(90deg, #181818 80%, #3ad6ff 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: none;
+            padding: 0.7rem 0;
+            border-radius: 2.5rem;
+            margin-top: 1.2rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            transition: box-shadow 0.2s, background 0.2s;
+            max-width: 900px;
+            width: 90vw;
+        }
+
+        .nav-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-logo-icon {
+            width: 54px;
+            height: 54px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 2.2rem;
+            color: #111;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+            border: 2px solid #222;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 1.7rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 400;
+            text-transform: capitalize;
+            letter-spacing: 0.02em;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: #ff4444;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ff4444, #ff0000);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .nav-dropdown {
+            position: relative;
+        }
+
+        .nav-dropdown::after {
+            content: '▼';
+            margin-left: 5px;
+            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-dropdown:hover::after {
+            transform: rotate(180deg);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .nav-external-link {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-external-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .nav-listen-btn {
+            background: #ff1744;
+            color: #fff;
+            border: none;
+            border-radius: 2rem;
+            padding: 0.85rem 2.5rem;
+            font-size: 1.15rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(255,23,68,0.13);
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        .nav-listen-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 68, 68, 0.4);
+        }
+
+        .nav-listen-btn::after {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: url('https://cdn.prod.website-files.com/650d9b67d864656415c17b80/651e8871e761a2b4e19fa248_audio-active.svg') no-repeat center center;
+            background-size: contain;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* Mobile Navigation */
+        .nav-mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .nav-header {
+                padding: 0.4rem 0;
+                margin-top: 0.7rem;
+                border-radius: 1.2rem;
+                max-width: 98vw;
+            }
+            .nav-container {
+                max-width: 98vw;
+                padding: 0 10px;
+            }
+            .nav-logo-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 1.5rem;
+            }
+            .nav-menu {
+                display: none;
+            }
+            .nav-mobile-toggle {
+                display: block;
+            }
+            .nav-actions {
+                gap: 10px;
+            }
+            .nav-listen-btn {
+                padding: 0.5rem 1.2rem;
+                font-size: 1rem;
+            }
+            .nav-external-link {
+                display: none;
+            }
+        }
+
+        .header {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            padding-top: 80px; /* Espacio para el nav header */
+        }
+
+        .brand-section {
+            margin-bottom: 120px;
+        }
+
+        .brand-title {
+            font-size: clamp(2.5rem, 8vw, 6rem);
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: 20px;
+            background: linear-gradient(180deg, #ffffff 0%, #888888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .brand-subtitle {
+            font-size: clamp(1.2rem, 4vw, 2.5rem);
+            font-weight: 100;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #666666;
+            margin-bottom: 60px;
+        }
+
+        .main-title {
+            font-size: clamp(4rem, 12vw, 10rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            margin-bottom: 40px;
+            background: linear-gradient(45deg, #ff4444, #44ff44, #4444ff, #ffff44);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientFlow 6s ease-in-out infinite;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: clamp(1.5rem, 5vw, 3rem);
+            font-weight: 100;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #999999;
+            margin-bottom: 80px;
+        }
+
+        .description {
+            font-size: 1.1rem;
+            color: #cccccc;
+            max-width: 600px;
+            margin: 0 auto 100px;
+            font-weight: 300;
+            line-height: 1.8;
+        }
+
+        .platforms-section {
+            padding: 100px 0;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 6vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: #888888;
+            margin-bottom: 80px;
+            font-weight: 300;
+        }
+
+        .platforms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 60px;
+            margin-top: 80px;
+        }
+
+        .platform-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 0;
+            padding: 60px 40px;
+            text-align: center;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .platform-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #ffffff, transparent);
+            transition: left 0.8s ease;
+        }
+
+        .platform-card:hover::before {
+            left: 100%;
+        }
+
+        .platform-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .platform-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 40px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #ffffff;
+            transition: all 0.4s ease;
+        }
+
+        .platform-card:hover .platform-icon {
+            border-color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .platform-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .platform-description {
+            color: #aaaaaa;
+            margin-bottom: 40px;
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        .platform-button {
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .platform-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            transition: left 0.4s ease;
+            z-index: -1;
+        }
+
+        .platform-button:hover::before {
+            left: 0;
+        }
+
+        .platform-button:hover {
+            color: #000000;
+            border-color: #ffffff;
+        }
+
+        .now-playing {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 0;
+            backdrop-filter: blur(15px);
+            z-index: 200;
+            max-width: 300px;
+        }
+
+        .now-playing-title {
+            font-size: 0.8rem;
+            color: #888888;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 10px;
+        }
+
+        .now-playing-track {
+            font-size: 1rem;
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .now-playing-artist {
+            font-size: 0.9rem;
+            color: #aaaaaa;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 80px 0 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            margin-top: 120px;
+        }
+
+        .footer-text {
+            color: #666666;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 300;
+        }
+
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .floating-dot {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: float 10s linear infinite;
+        }
+
+        @keyframes gradientFlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) translateX(50px); opacity: 0; }
+        }
+
+        .upcoming-section {
+            padding: 100px 0;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            margin-top: 100px;
+        }
+
+        .countdown-timer {
+            font-size: clamp(2rem, 8vw, 4rem);
+            font-weight: 100;
+            color: #ffffff;
+            margin: 40px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 20px;
+            }
+
+            .platforms-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .platform-card {
+                padding: 40px 30px;
+            }
+
+            .now-playing {
+                bottom: 20px;
+                right: 20px;
+                left: 20px;
+                max-width: none;
+            }
+
+            .brand-section {
+                margin-bottom: 80px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 15px;
+            }
+
+            .platform-card {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Header -->
+    <nav class="nav-header">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="./images/icon.PNG" alt="Logo" class="nav-logo-icon" style="width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid #222;box-shadow:0 4px 16px rgba(0,0,0,0.13);">
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="beatport.html" class="nav-link">Beatport</a>
+                </li>
+                <li class="nav-item">
+                    <a href="traxsource.html" class="nav-link">Traxsource</a>
+                </li>
+                <li class="nav-item">
+                    <a href="1001tracklists.html" class="nav-link">1001Tracklists</a>
+                </li>
+                <li class="nav-item">
+                    <a href="radio.html" class="nav-link">Radio</a>
+                </li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="#" class="nav-external-link">🔗</a>
+                <a href="radio.html" class="nav-listen-btn"><span class="visually-hidden">Listen</span></a>
+            </div>
+            
+            <button class="nav-mobile-toggle">☰</button>
+        </div>
+    </nav>
+
+    <div class="background-orbs">
+        <div class="orb orb-red"></div>
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-cyan"></div>
+    </div>
+    <div class="noise-overlay"></div>
+    <div class="floating-elements" id="floatingElements"></div>
+    
+    <div class="container">
+        <header class="header">
+            <div class="brand-section">
+                <h1 class="brand-title">MUSIC SCRAPER</h1>
+                <p class="brand-subtitle">WORLDWIDE</p>
+            </div>
+            
+            <div class="hero-section">
+                <h2 class="main-title">WHEREVER</h2>
+                <h3 class="subtitle">YOU ARE</h3>
+                <p class="description">
+                    Conectamos el espíritu de la música electrónica con el mundo entero. 
+                    Extrae datos de las mejores plataformas musicales desde cualquier lugar.
+                </p>
+            </div>
+        </header>
+
+        <section class="platforms-section">
+            <h2 class="section-title">BEST OF MUSIC PLATFORMS</h2>
+            <p class="section-subtitle">Explora las mejores fuentes de música electrónica</p>
+            
+            <div class="platforms-grid">
+                <div class="platform-card beatport">
+                    <div class="platform-icon">BP</div>
+                    <h3 class="platform-name">Beatport</h3>
+                    <p class="platform-description">
+                        La plataforma #1 en música electrónica mundial. House, Techno, Trance 
+                        y todos los géneros que definen la escena underground y comercial.
+                    </p>
+                    <a href="beatport.html" class="platform-button">Explore</a>
+                </div>
+
+                <div class="platform-card traxsource">
+                    <div class="platform-icon">TS</div>
+                    <h3 class="platform-name">Traxsource</h3>
+                    <p class="platform-description">
+                        El hogar del House auténtico. Deep House, Soulful, Afro House 
+                        y los sonidos más puros de la cultura underground.
+                    </p>
+                    <a href="traxsource.html" class="platform-button">Explore</a>
+                </div>
+
+                <div class="platform-card tracklists">
+                    <div class="platform-icon">TL</div>
+                    <h3 class="platform-name">1001Tracklists</h3>
+                    <p class="platform-description">
+                        Descubre los setlists de los mejores DJs del planeta. 
+                        Tracks exclusivos de festivales, clubs y radio shows.
+                    </p>
+                    <a href="1001tracklists.html" class="platform-button">Explore</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="upcoming-section">
+            <h2 class="section-title">COUNTDOWN TO</h2>
+            <div class="countdown-timer" id="countdownTimer">00:00:00</div>
+            <p class="section-subtitle">Next scraping session</p>
+        </section>
+
+        <footer class="footer">
+            <p class="footer-text">
+                Music Scraper Hub · Extract · Music Scraper Hub · Extract · Music Scraper Hub · Extract
+            </p>
+        </footer>
+    </div>
+
+    <div class="now-playing">
+        <div class="now-playing-title">ON SCRAPE NOW</div>
+        <div class="now-playing-track">BEATPORT TOP 100</div>
+        <div class="now-playing-artist">House Music</div>
+    </div>
+
+    <div id="radioPlayerFooter" style="display:none;"></div>
+    <audio id="footerAudio" style="display:none;" preload="none"></audio>
+    <script>
+    // Footer player persistente
+    const footer = document.getElementById('radioPlayerFooter');
+    const audio = document.getElementById('footerAudio');
+    let currentRadioName = '';
+    function showFooterPlayer(url, name) {
+        currentRadioName = name;
+        audio.src = url;
+        audio.loop = true;
+        audio.autoplay = true;
+        audio.style.display = 'none';
+        audio.play();
+        localStorage.setItem('radio_stream_url', url);
+        localStorage.setItem('radio_stream_name', name);
+        renderFooterPlayer();
+    }
+    function renderFooterPlayer() {
+        footer.style.display = 'flex';
+        footer.style.position = 'fixed';
+        footer.style.left = '0';
+        footer.style.right = '0';
+        footer.style.bottom = '0';
+        footer.style.height = '90px';
+        footer.style.background = 'linear-gradient(90deg, #111 70%, #00353d 100%)';
+        footer.style.color = '#fff';
+        footer.style.zIndex = '9999';
+        footer.style.alignItems = 'center';
+        footer.style.justifyContent = 'space-between';
+        footer.style.padding = '0 40px';
+        footer.style.boxshadow = '0 -2px 16px rgba(0,0,0,0.25)';
+        footer.innerHTML = `
+            <div style="display:flex;align-items:center;gap:16px;">
+                <svg width="48" height="48" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:12px;object-fit:cover;">
+                    <path d="M199.641 113.351C198.353 117.933 193.96 120.61 189.337 119.393C183.956 117.976 179.319 118.749 175.67 123.245C173.924 125.393 173.18 127.87 173.194 130.633C173.208 147.715 173.237 164.811 173.151 181.893C173.151 183.726 172.808 185.745 172.021 187.363C170.174 191.1 165.953 192.803 162.06 191.773C158.396 190.799 155.649 187.191 155.62 183.11C155.591 178.557 155.591 173.989 155.591 169.436C155.591 164.883 155.591 160.315 155.591 155.762C155.591 147.343 155.563 138.924 155.591 130.504C155.663 114.081 168.829 100.908 185.044 101.166C188.035 101.209 191.083 101.853 193.974 102.655C198.597 103.944 200.944 108.64 199.613 113.337L199.641 113.351ZM132.922 189.009C130.418 191.787 127.312 192.689 123.806 191.558C120.171 190.384 118.11 187.735 117.624 183.912C117.552 183.353 117.567 182.781 117.567 182.208C117.567 145.997 117.567 109.786 117.567 73.5746C117.567 67.8902 121.273 63.8524 126.454 63.8524C130.833 63.8524 134.583 67.2315 135.055 71.6273C135.141 72.4434 135.141 73.2739 135.141 74.09C135.141 92.0739 135.141 110.043 135.141 128.027C135.141 146.068 135.141 164.109 135.141 182.165C135.141 184.714 134.668 187.062 132.908 189.023L132.922 189.009ZM96.6865 183.21C96.6865 187.62 93.6239 191.372 89.7027 191.901C85.0515 192.531 81.0587 190.069 79.8566 185.773C79.5846 184.814 79.556 183.769 79.556 182.766C79.5417 170.538 79.556 158.325 79.556 146.097C79.556 133.869 79.556 121.899 79.556 109.814C79.556 104.559 83.1768 100.751 88.1714 100.751C93.1373 100.751 96.7008 104.459 96.7008 109.685C96.7008 114.912 96.7008 183.21 96.7008 183.21H96.6865ZM128.071 0.00688847C60.2645 -0.709029 0.0859603 54.4596 9.31497e-05 127.827C-0.085774 200.378 59.2055 256.849 129.531 255.99C198.954 255.131 254.51 199.118 255.97 130.819C257.53 57.4521 197.809 -0.608801 128.071 0.00688847Z" fill="currentColor"></path>
+                </svg>
+                <div>
+                    <div style="font-size:1.1rem;font-weight:600;">${currentRadioName}</div>
+                    <div style="font-size:0.9rem;color:#ccc;">En reproducción</div>
+                </div>
+            </div>
+            <div style="flex:1;text-align:center;">
+                <button id="footerPlayPause" style="background:#222;border:none;border-radius:50%;width:48px;height:48px;color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.18);">
+                    <img id="footerPlayPauseIcon" src="https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f24591d_play.png" alt="Play/Pause" style="width:18px;height:18px;object-fit:contain;filter:brightness(1.2);">
+                </button>
+            </div>
+            <div style="width:120px;text-align:right;">
+                <button id="footerClose" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">✖</button>
+            </div>
+        `;
+    const playIcon = 'https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f24591d_play.png';
+    const pauseIcon = 'https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f245914_pause-button.png';
+        const playPauseImg = document.getElementById('footerPlayPauseIcon');
+        function updatePlayPauseIcon() {
+            playPauseImg.src = audio.paused ? playIcon : pauseIcon;
+        }
+        document.getElementById('footerPlayPause').onclick = function() {
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+            updatePlayPauseIcon();
+        };
+        audio.addEventListener('play', updatePlayPauseIcon);
+        audio.addEventListener('pause', updatePlayPauseIcon);
+        updatePlayPauseIcon();
+        document.getElementById('footerClose').onclick = function() {
+            audio.pause();
+            footer.style.display = 'none';
+            localStorage.removeItem('radio_stream_url');
+            localStorage.removeItem('radio_stream_name');
+        };
+    }
+    // Persistencia al navegar
+    window.addEventListener('DOMContentLoaded', () => {
+        const url = localStorage.getItem('radio_stream_url');
+        const name = localStorage.getItem('radio_stream_name');
+        if (url && name) {
+            showFooterPlayer(url, name);
+        }
+    });
+    </script>
+
+    <script>
+        // Crear elementos flotantes
+        function createFloatingElements() {
+            const container = document.getElementById('floatingElements');
+            const elementCount = 20;
+
+            for (let i = 0; i < elementCount; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'floating-dot';
+                
+                dot.style.left = Math.random() * 100 + '%';
+                dot.style.animationDelay = Math.random() * 10 + 's';
+                dot.style.animationDuration = (Math.random() * 5 + 8) + 's';
+                
+                container.appendChild(dot);
+            }
+        }
+
+        // Countdown timer
+        function startCountdown() {
+            const timer = document.getElementById('countdownTimer');
+            
+            function updateTimer() {
+                const now = new Date();
+                const nextHour = new Date(now);
+                nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+                
+                const diff = nextHour - now;
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                timer.textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            updateTimer();
+            setInterval(updateTimer, 1000);
+        }
+
+        // Efecto hover mejorado
+        document.querySelectorAll('.platform-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Manejar clicks en plataformas no desarrolladas
+        document.querySelectorAll('.platform-button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (this.href.includes('1001tracklists.html')) {
+                    e.preventDefault();
+                    
+                    // Efecto visual al hacer click
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                        alert('🎵 Coming soon!\n\nEsta plataforma está en desarrollo.\nPróximamente disponible.');
+                    }, 150);
+                }
+            });
+        });
+
+        // Scroll suave
+        let ticking = false;
+        
+        function updateScrollEffects() {
+            const scrolled = window.pageYOffset;
+            const rate = scrolled * -0.3;
+            
+            const floatingElements = document.querySelector('.floating-elements');
+            if (floatingElements) {
+                floatingElements.style.transform = `translate3d(0, ${rate}px, 0)`;
+            }
+            
+            ticking = false;
+        }
+        
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(updateScrollEffects);
+                ticking = true;
+            }
+        });
+
+        // Inicializar efectos
+        createFloatingElements();
+        startCountdown();
+        
+        // Efecto de typing en el título principal
+        function typeWriter() {
+            const titles = ['WHEREVER', 'WHENEVER', 'HOWEVER'];
+            const titleElement = document.querySelector('.main-title');
+            let currentTitle = 0;
+            
+            setInterval(() => {
+                titleElement.style.opacity = '0';
+                setTimeout(() => {
+                    currentTitle = (currentTitle + 1) % titles.length;
+                    titleElement.textContent = titles[currentTitle];
+                    titleElement.style.opacity = '1';
+                }, 500);
+            }, 4000);
+        }
+        
+        setTimeout(typeWriter, 3000);
+
+        // Navigation functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navHeader = document.querySelector('.nav-header');
+            const mobileToggle = document.querySelector('.nav-mobile-toggle');
+            const navMenu = document.querySelector('.nav-menu');
+
+            // Scroll effect for navigation
+            let lastScrollY = window.scrollY;
+            
+            window.addEventListener('scroll', () => {
+                const currentScrollY = window.scrollY;
+                
+                if (currentScrollY > 100) {
+                    navHeader.style.background = 'linear-gradient(135deg, rgba(44, 44, 44, 0.98) 0%, rgba(26, 26, 26, 0.98) 100%)';
+                } else {
+                    navHeader.style.background = 'linear-gradient(135deg, rgba(44, 44, 44, 0.95) 0%, rgba(26, 26, 26, 0.95) 100%)';
+                }
+                
+                lastScrollY = currentScrollY;
+            });
+
+            // Smooth scroll for navigation links
+            document.querySelectorAll('.nav-link[href^="#"]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    
+                    if (targetElement) {
+                        const offsetTop = targetElement.offsetTop - 80;
+                        window.scrollTo({
+                            top: offsetTop,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+
+            // Mobile menu toggle
+            if (mobileToggle && navMenu) {
+                mobileToggle.addEventListener('click', () => {
+                    navMenu.style.display = navMenu.style.display === 'flex' ? 'none' : 'flex';
+                });
+            }
+
+            // Logo animation on hover
+            const logoIcon = document.querySelector('.nav-logo-icon');
+            if (logoIcon) {
+                logoIcon.addEventListener('mouseenter', () => {
+                    logoIcon.style.transform = 'scale(1.1) rotate(10deg)';
+                });
+                
+                logoIcon.addEventListener('mouseleave', () => {
+                    logoIcon.style.transform = 'scale(1) rotate(0deg)';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

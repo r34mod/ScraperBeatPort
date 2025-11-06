@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emisoras de Radio - Music Scraper Hub</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 50%, #2c2c2c 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+            position: relative;
+        }
+        .background-orbs {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden;
+        }
+        .orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.3; }
+        .orb-red { width: 800px; height: 800px; background: radial-gradient(circle, #ff4444 0%, #ff0000 50%, transparent 70%); top: -200px; left: -300px; }
+        .orb-blue { width: 600px; height: 600px; background: radial-gradient(circle, #44aaff 0%, #0066cc 50%, transparent 70%); bottom: -150px; right: -250px; }
+        .orb-cyan { width: 500px; height: 500px; background: radial-gradient(circle, #00ffdd 0%, #008888 50%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .nav-header {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: linear-gradient(90deg, #181818 80%, #3ad6ff 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: none;
+            padding: 0.7rem 0;
+            border-radius: 2.5rem;
+            margin-top: 1.2rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            transition: box-shadow 0.2s, background 0.2s;
+            max-width: 900px;
+            width: 90vw;
+        }
+        .nav-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .nav-logo-icon {
+            width: 54px;
+            height: 54px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 2.2rem;
+            color: #111;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+            border: 2px solid #222;
+        }
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 1.7rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-item { position: relative; }
+        .nav-link {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 400;
+            text-transform: capitalize;
+            letter-spacing: 0.02em;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .nav-link:hover { color: #ff4444; }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ff4444, #ff0000);
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after { width: 100%; }
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+        .nav-listen-btn {
+            background: #ff1744;
+            color: #fff;
+            border: none;
+            border-radius: 2rem;
+            padding: 0.85rem 2.5rem;
+            font-size: 1.15rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(255,23,68,0.13);
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .nav-listen-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 68, 68, 0.4);
+        }
+        .nav-listen-btn::after {
+            content: '🎵';
+            margin-left: 8px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 120px auto 0 auto;
+            padding: 0 32px;
+            position: relative;
+            z-index: 3;
+        }
+        .section-title {
+            font-size: clamp(2rem, 6vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+        .radio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+        .radio-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1.5rem;
+            padding: 40px 30px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .radio-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+        }
+        .radio-logo {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #222;
+            font-weight: bold;
+        }
+        .radio-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        .radio-description {
+            color: #aaa;
+            margin-bottom: 20px;
+            line-height: 1.7;
+            font-weight: 300;
+        }
+        .radio-listen-btn {
+            background: #ff1744;
+            color: #fff;
+            border: none;
+            border-radius: 2rem;
+            padding: 0.7rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(255,23,68,0.13);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .radio-listen-btn:hover {
+            background: #ff4444;
+            box-shadow: 0 4px 16px rgba(255,23,68,0.18);
+        }
+        #radioPlayerFooter {
+            display: none;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 90px;
+            background: linear-gradient(90deg, #111 70%, #00353d 100%);
+            color: #fff;
+            z-index: 9999;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            box-shadow: 0 -2px 16px rgba(0,0,0,0.25);
+        }
+        #radioPlayerFooter div {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        #radioPlayerFooter img {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+        #radioPlayerFooter button {
+            background: #222;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-header">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="./images/icon.PNG" alt="Logo" class="nav-logo-icon" style="width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid #222;box-shadow:0 4px 16px rgba(0,0,0,0.13);">
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="index.html" class="nav-link">Inicio</a></li>
+                <li class="nav-item"><a href="beatport.html" class="nav-link">Beatport</a></li>
+                <li class="nav-item"><a href="traxsource.html" class="nav-link">Traxsource</a></li>
+                <li class="nav-item"><a href="radio.html" class="nav-link">Radio</a></li>
+            </ul>
+            <div class="nav-actions">
+                <a href="#" class="nav-listen-btn">Escuchar</a>
+            </div>
+        </div>
+    </nav>
+    <div class="background-orbs">
+        <div class="orb orb-red"></div>
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-cyan"></div>
+    </div>
+    <div class="container">
+        <h2 class="section-title">Emisoras de Radio</h2>
+        <div class="radio-grid" id="radioGrid"></div>
+    </div>
+    <div id="radioPlayerFooter" style="display:none;"></div>
+    <audio id="footerAudio" style="display:none;" preload="none"></audio>
+    <script>
+    // Lista de streams
+    const stream_data = [
+        "https://ic2.smcdn.pl/3990-1.mp3|VOX FM|Dance|PL|128|1",
+        "http://stm1.emiteonline.com:8008/spektrafm|Spektra FM|Dance|ESP|128|1",
+        "https://metromedia.live24.gr/republicthess|Republic FM|Electronic|GR|128|1",
+        "https://pr1cen101.emisionlocal.com/proxy/rememberfm?mp=/LIVE|Remember FM|Techno|ESP|128|1",
+        "http://zt04.cdn.eurozet.pl/ZETPAR.mp3|Radio Zet Party|Dance|PL|128|1",
+        "https://live.wtfradio.rs/wtfradio.mp3|Radio WTF|Dance, Electronic|SR|128|1",
+        "https://srv7031.dns-lcinternet.com/8050/stream|Radio Sierra|Talk|ESP|96|1",
+        "https://kisskiss.fluidstream.eu/ibiza.mp3|Radio Ibiza|Electrónica|ESP|128|1",
+        "http://217.74.72.10:8000/rmf_maxxx|RMF MAXXX|Electronic|PL|128|1",
+        "http://91.187.93.115:8000/;|Pròxima FM|Hits|AND|128|1",
+        "https://stream.mediasector.es/radio/8120/motiva.mp3|Motiva FM|Reggaeton|ESP|192|1",
+        "https://megastar-cope-rrcast.flumotion.com/cope/megastar.mp3|Megastar|Éxitos|ESP|128|1",
+        "http://streams1.mdtradio.com:8020/mdtweb|MDT Radio|Techno|ESP|128|1",
+        "https://27903.live.streamtheworld.com/LOS40_URBAN.mp3|Los 40 Urban|Reggaeton|ESP|128|1",
+        "https://21223.live.streamtheworld.com/LOS40_SC|Los 40 Principales|Exitos|ESP|128|1",
+        "https://23623.live.streamtheworld.com/LOS40_DANCE_SC|Los 40 Dance|Dance|ESP|128|1",
+        "https://27753.live.streamtheworld.com/LOS40_CLASSIC_SC|Los 40 Classic|Éxitos|ESP|128|1",
+        "http://s3.we4stream.com:8045/liv|Loca FM|Electrónica|ESP|96|1",
+        "https://stream.mediasector.es/radio/8090/laquesuena-alicante.mp3|La Que Suena FM|Variedad|ESP|128|1",
+        "http://pr1cen101.emisionlocal.com:8002/stream|Kiss FM|80's|ESP|128|1",
+        "https://stream.zeno.fm/dfxrsplg0aiuv|Reggaeton Sounds|Reggaeton|ESP|128|1",
+        "http://stm1.emiteonline.com:8003/hitradio|Hit FM|Pop|ESP|112|1",
+        "https://streaming.shoutcast.com/gozadera|Gozadera FM|Reggaeton|ESP|128|1",
+        "https://streaming.giraweb.com/8010/stream|Flaixbac Andorra|Talk|AND|128|1",
+        "http://stream.fibwi.com:9000/stream|Fibwi Radio|Pop|ESP|192|1",
+        "http://live.radioatalaya.fm:9252/stream|Exito FM|Tarot|ESP|128|1",
+        "https://str1.mediatelekom.net:9950/live|Europa FM|Exitos|ESP|128|1",
+        "https://cadena100-cope-rrcast.flumotion.com/cope/cadena100-low.mp3|Cadena-100|Pop|ESP|128|1",
+        "https://27863.live.streamtheworld.com/SER_ZARAGOZA.mp3|Cadena SER|Variedad|ESP|96|1",
+        "https://19993.live.streamtheworld.com/CADENADIAL.mp3|Cadena Dial|Española|ESP|128|1",
+        "https://stream.mediasector.es/radio/8030/bikinifm-valencia.mp3|Bikini FM|Dance|ESP|128|1",
+        "https://best.live24.gr/best1222|Best Radio|Electronic|GR|128|1",
+        "https://server8.emitironline.com:18571/atica|Atica FM|Dance|ESP|128|1",
+        "https://n13.radiojar.com/9ndpdg3c0s8uv?rj-ttl=5&rj-tok=AAABkaOvYUsAAqQP5zVE3-F1SQ|Athens Up Radio|Electronic and House|GR|128|1"
+    ];
+    const radioGrid = document.getElementById('radioGrid');
+    stream_data.forEach(item => {
+        const [url, nombre, genero] = item.split('|');
+        const card = document.createElement('div');
+        card.className = 'radio-card';
+        card.innerHTML = `
+            <div class="radio-logo">${nombre[0] + (nombre.split(' ')[1] ? nombre.split(' ')[1][0] : '')}</div>
+            <div class="radio-name">${nombre}</div>
+            <div class="radio-description">${genero}</div>
+            <audio controls preload="none" style="width:100%;margin-top:10px;">
+                <source src="${url}" type="audio/mpeg">
+                Tu navegador no soporta audio HTML5.
+            </audio>
+        `;
+        radioGrid.appendChild(card);
+    });
+    // Footer player persistente
+    const footer = document.getElementById('radioPlayerFooter');
+    const audio = document.getElementById('footerAudio');
+    let currentRadioName = '';
+    function showFooterPlayer(url, name) {
+        currentRadioName = name;
+        audio.src = url;
+        audio.loop = true;
+        audio.autoplay = true;
+        audio.style.display = 'none';
+        audio.play();
+        localStorage.setItem('radio_stream_url', url);
+        localStorage.setItem('radio_stream_name', name);
+        renderFooterPlayer();
+    }
+    function renderFooterPlayer() {
+        footer.style.display = 'flex';
+        footer.style.position = 'fixed';
+        footer.style.left = '0';
+        footer.style.right = '0';
+        footer.style.bottom = '0';
+        footer.style.height = '90px';
+        footer.style.background = 'linear-gradient(90deg, #111 70%, #00353d 100%)';
+        footer.style.color = '#fff';
+        footer.style.zIndex = '9999';
+        footer.style.alignItems = 'center';
+        footer.style.justifyContent = 'space-between';
+        footer.style.padding = '0 40px';
+        footer.style.boxShadow = '0 -2px 16px rgba(0,0,0,0.25)';
+        footer.innerHTML = `
+            <div style="display:flex;align-items:center;gap:16px;">
+                <svg width="48" height="48" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:12px;object-fit:cover;">
+    <path d="M199.641 113.351C198.353 117.933 193.96 120.61 189.337 119.393C183.956 117.976 179.319 118.749 175.67 123.245C173.924 125.393 173.18 127.87 173.194 130.633C173.208 147.715 173.237 164.811 173.151 181.893C173.151 183.726 172.808 185.745 172.021 187.363C170.174 191.1 165.953 192.803 162.06 191.773C158.396 190.799 155.649 187.191 155.62 183.11C155.591 178.557 155.591 173.989 155.591 169.436C155.591 164.883 155.591 160.315 155.591 155.762C155.591 147.343 155.563 138.924 155.591 130.504C155.663 114.081 168.829 100.908 185.044 101.166C188.035 101.209 191.083 101.853 193.974 102.655C198.597 103.944 200.944 108.64 199.613 113.337L199.641 113.351ZM132.922 189.009C130.418 191.787 127.312 192.689 123.806 191.558C120.171 190.384 118.11 187.735 117.624 183.912C117.552 183.353 117.567 182.781 117.567 182.208C117.567 145.997 117.567 109.786 117.567 73.5746C117.567 67.8902 121.273 63.8524 126.454 63.8524C130.833 63.8524 134.583 67.2315 135.055 71.6273C135.141 72.4434 135.141 73.2739 135.141 74.09C135.141 92.0739 135.141 110.043 135.141 128.027C135.141 146.068 135.141 164.109 135.141 182.165C135.141 184.714 134.668 187.062 132.908 189.023L132.922 189.009ZM96.6865 183.21C96.6865 187.62 93.6239 191.372 89.7027 191.901C85.0515 192.531 81.0587 190.069 79.8566 185.773C79.5846 184.814 79.556 183.769 79.556 182.766C79.5417 170.538 79.556 158.325 79.556 146.097C79.556 133.869 79.556 121.899 79.556 109.814C79.556 104.559 83.1768 100.751 88.1714 100.751C93.1373 100.751 96.7008 104.459 96.7008 109.685C96.7008 114.912 96.7008 183.21 96.7008 183.21H96.6865ZM128.071 0.00688847C60.2645 -0.709029 0.0859603 54.4596 9.31497e-05 127.827C-0.085774 200.378 59.2055 256.849 129.531 255.99C198.954 255.131 254.51 199.118 255.97 130.819C257.53 57.4521 197.809 -0.608801 128.071 0.00688847Z" fill="currentColor"></path>
+</svg>
+                <div>
+                    <div style="font-size:1.1rem;font-weight:600;">${currentRadioName}</div>
+                    <div style="font-size:0.9rem;color:#ccc;">En reproducción</div>
+                </div>
+            </div>
+            <div style="flex:1;text-align:center;">
+                <button id="footerPlayPause" style="background:#222;border:none;border-radius:50%;width:48px;height:48px;color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.18);">
+                    <img id="footerPlayPauseIcon" src="https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f24591d_play.png" alt="Play/Pause" style="width:18px;height:18px;object-fit:contain;filter:brightness(1.2);">
+                </button>
+            </div>
+            <div style="width:120px;text-align:right;">
+                <button id="footerClose" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">✖</button>
+            </div>
+        `;
+        const playIcon = 'https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f24591d_play.png';
+        const pauseIcon = 'https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f245914_pause-button.png';
+        const playPauseImg = document.getElementById('footerPlayPauseIcon');
+        function updatePlayPauseIcon() {
+            playPauseImg.src = audio.paused ? playIcon : pauseIcon;
+        }
+        document.getElementById('footerPlayPause').onclick = function() {
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+            updatePlayPauseIcon();
+        };
+        audio.addEventListener('play', updatePlayPauseIcon);
+        audio.addEventListener('pause', updatePlayPauseIcon);
+        updatePlayPauseIcon();
+        document.getElementById('footerClose').onclick = function() {
+            audio.pause();
+            footer.style.display = 'none';
+            localStorage.removeItem('radio_stream_url');
+            localStorage.removeItem('radio_stream_name');
+        };
+    }
+    // Modificar los botones de escuchar para usar el footer
+    document.querySelectorAll('.radio-card audio').forEach(audioEl => {
+        audioEl.style.display = 'none';
+    });
+    document.querySelectorAll('.radio-card').forEach(card => {
+        const url = card.querySelector('source').src;
+        const name = card.querySelector('.radio-name').textContent;
+        let btn = card.querySelector('.radio-listen-btn');
+        if (!btn) {
+            btn = document.createElement('button');
+            btn.textContent = 'Escuchar';
+            btn.className = 'radio-listen-btn';
+            card.appendChild(btn);
+        }
+        btn.onclick = () => showFooterPlayer(url, name);
+    });
+    // Persistencia al navegar
+    window.addEventListener('DOMContentLoaded', () => {
+        const url = localStorage.getItem('radio_stream_url');
+        const name = localStorage.getItem('radio_stream_name');
+        if (url && name) {
+            showFooterPlayer(url, name);
+        }
+    });
+    </script>
+</body>
+</html>

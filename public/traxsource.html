@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traxsource Scraper - House Music Paradise</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 50%, #2c2c2c 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+            position: relative;
+        }
+
+        .background-orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.3;
+        }
+
+        .orb-blue {
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, #00aaff 0%, #0066cc 50%, transparent 70%);
+            top: -200px;
+            left: -300px;
+            animation: moveOrbBlue 25s ease-in-out infinite;
+        }
+
+        .orb-cyan {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #00ffdd 0%, #008888 50%, transparent 70%);
+            bottom: -150px;
+            right: -250px;
+            animation: moveOrbCyan 30s ease-in-out infinite;
+        }
+
+        .orb-teal {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, #44ddaa 0%, #006644 50%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: moveOrbTeal 35s ease-in-out infinite;
+        }
+
+        @keyframes moveOrbBlue {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(200px, 100px) scale(1.1); }
+            50% { transform: translate(100px, 300px) scale(0.9); }
+            75% { transform: translate(-100px, 200px) scale(1.05); }
+        }
+
+        @keyframes moveOrbCyan {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-150px, -100px) scale(1.15); }
+            66% { transform: translate(-300px, 50px) scale(0.85); }
+        }
+
+        @keyframes moveOrbTeal {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            20% { transform: translate(-60%, -40%) scale(1.1); }
+            40% { transform: translate(-40%, -60%) scale(0.9); }
+            60% { transform: translate(-55%, -45%) scale(1.05); }
+            80% { transform: translate(-45%, -55%) scale(0.95); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding-top: 40px;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.4s ease;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+        }
+
+        .platform-logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 900;
+            color: white;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .main-title {
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5, #00ffdd);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientFlow 6s ease-in-out infinite;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #888888;
+            font-weight: 300;
+            margin-bottom: 30px;
+        }
+
+        .description {
+            font-size: 1.1rem;
+            color: #cccccc;
+            max-width: 600px;
+            margin: 0 auto 60px;
+            font-weight: 300;
+            line-height: 1.8;
+        }
+
+        .controls-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 40px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto 40px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-size: 1rem;
+            border-radius: 0;
+        }
+
+        .search-input::placeholder {
+            color: #888888;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #00d2ff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .search-button {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 50px;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .genres-section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .genres-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .genre-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .genre-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #00d2ff, transparent);
+            transition: left 0.5s ease;
+        }
+
+        .genre-card:hover::before {
+            left: 100%;
+        }
+
+        .genre-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(0, 210, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .genre-card.selected {
+            background: rgba(0, 210, 255, 0.2);
+            border-color: #00d2ff;
+        }
+
+        .genre-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+            text-transform: capitalize;
+        }
+
+        .scrape-controls {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .scrape-button {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            color: white;
+            border: none;
+            padding: 18px 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scrape-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 210, 255, 0.3);
+        }
+
+        .scrape-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            margin-top: 40px;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-count {
+            color: #888888;
+            font-size: 0.9rem;
+        }
+
+        .download-link {
+            background: rgba(0, 210, 255, 0.2);
+            color: #00d2ff;
+            padding: 10px 20px;
+            text-decoration: none;
+            border: 1px solid #00d2ff;
+            transition: all 0.3s ease;
+        }
+
+        .download-link:hover {
+            background: #00d2ff;
+            color: #000000;
+        }
+
+        .tracks-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .tracks-table th,
+        .tracks-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .tracks-table th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 600;
+            color: #ffffff;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+        }
+
+        .tracks-table td {
+            color: #cccccc;
+        }
+
+        .tracks-table tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .position {
+            color: #00d2ff;
+            font-weight: 700;
+            width: 60px;
+        }
+
+        .track-title {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #888888;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 210, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #00d2ff;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes gradientFlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .error-message {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: #ff6b6b;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .success-message {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid rgba(0, 255, 0, 0.3);
+            color: #4ecdc4;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .genres-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 10px;
+            }
+
+            .back-button {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 20px;
+                display: inline-block;
+            }
+
+            .tracks-table {
+                font-size: 0.8rem;
+            }
+
+            .tracks-table th,
+            .tracks-table td {
+                padding: 10px 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-orbs">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-cyan"></div>
+        <div class="orb orb-teal"></div>
+    </div>
+
+    <div class="container">
+        <a href="index.html" class="back-button">← Volver</a>
+        
+        <header class="header">
+            <div class="platform-logo">TS</div>
+            <h1 class="main-title">TRAXSOURCE</h1>
+            <p class="subtitle">The Real Sound of House Music</p>
+            <p class="description">
+                Extrae los mejores tracks de House, Deep House, Soulful y todos los subgéneros 
+                que definen la cultura underground de la música electrónica.
+            </p>
+        </header>
+
+        <section class="controls-section">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar géneros...">
+                <button class="search-button">🔍</button>
+            </div>
+
+            <div class="genres-section">
+                <h2 class="section-title">Selecciona un Género</h2>
+                <div id="genresGrid" class="genres-grid">
+                    <!-- Los géneros se cargarán aquí dinámicamente -->
+                </div>
+            </div>
+
+            <div class="scrape-controls">
+                <button id="scrapeButton" class="scrape-button" disabled>
+                    Extraer Top 100 Tracks
+                </button>
+            </div>
+        </section>
+
+        <section id="resultsSection" class="results-section" style="display: none;">
+            <div class="results-header">
+                <h2 class="section-title">Resultados</h2>
+                <div>
+                    <span id="resultsCount" class="results-count"></span>
+                    <a id="downloadLink" class="download-link" style="display: none;">Descargar CSV</a>
+                </div>
+            </div>
+            <div id="resultsContent"></div>
+        </section>
+    </div>
+
+    <script>
+        let selectedGenre = null;
+        let allGenres = [];
+        let isLoading = false;
+
+        // Cargar géneros al iniciar
+        async function loadGenres() {
+            try {
+                const response = await fetch('/api/traxsource/genres');
+                allGenres = await response.json();
+                renderGenres(allGenres);
+            } catch (error) {
+                console.error('Error cargando géneros:', error);
+                document.getElementById('genresGrid').innerHTML = `
+                    <div class="error-message">
+                        Error cargando géneros. Por favor recarga la página.
+                    </div>
+                `;
+            }
+        }
+
+        // Renderizar géneros
+        function renderGenres(genres) {
+            const grid = document.getElementById('genresGrid');
+            grid.innerHTML = genres.map(genre => `
+                <div class="genre-card" data-genre="${genre.id}">
+                    <div class="genre-name">${genre.name}</div>
+                </div>
+            `).join('');
+
+            // Agregar event listeners
+            document.querySelectorAll('.genre-card').forEach(card => {
+                card.addEventListener('click', () => selectGenre(card.dataset.genre));
+            });
+        }
+
+        // Seleccionar género
+        function selectGenre(genreId) {
+            selectedGenre = genreId;
+            
+            // Actualizar UI
+            document.querySelectorAll('.genre-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-genre="${genreId}"]`).classList.add('selected');
+            
+            // Habilitar botón de scraping
+            document.getElementById('scrapeButton').disabled = false;
+        }
+
+        // Función de búsqueda
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.querySelector('.search-button');
+
+            function performSearch() {
+                const query = searchInput.value.toLowerCase().trim();
+                if (query === '') {
+                    renderGenres(allGenres);
+                } else {
+                    const filtered = allGenres.filter(genre => 
+                        genre.name.toLowerCase().includes(query) ||
+                        genre.id.toLowerCase().includes(query)
+                    );
+                    renderGenres(filtered);
+                }
+            }
+
+            searchInput.addEventListener('input', performSearch);
+            searchButton.addEventListener('click', performSearch);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+        }
+
+        // Hacer scraping
+        async function performScraping() {
+            if (!selectedGenre || isLoading) return;
+
+            isLoading = true;
+            const button = document.getElementById('scrapeButton');
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsContent = document.getElementById('resultsContent');
+
+            // Actualizar UI
+            button.disabled = true;
+            button.textContent = 'Extrayendo...';
+            resultsSection.style.display = 'block';
+            resultsContent.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Extrayendo tracks de Traxsource...</p>
+                    <p>Esto puede tomar varios minutos...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/traxsource/scrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ genre: selectedGenre })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    throw new Error(data.error || 'Error en el scraping');
+                }
+
+            } catch (error) {
+                console.error('Error durante el scraping:', error);
+                resultsContent.innerHTML = `
+                    <div class="error-message">
+                        Error durante el scraping: ${error.message}
+                    </div>
+                `;
+            } finally {
+                isLoading = false;
+                button.disabled = false;
+                button.textContent = 'Extraer Top 100 Tracks';
+            }
+        }
+
+        // Mostrar resultados
+        function displayResults(data) {
+            const resultsCount = document.getElementById('resultsCount');
+            const downloadLink = document.getElementById('downloadLink');
+            const resultsContent = document.getElementById('resultsContent');
+
+            resultsCount.textContent = `${data.tracksCount} tracks encontrados`;
+            
+            if (data.filename) {
+                downloadLink.style.display = 'inline-block';
+                downloadLink.href = `/downloads/${selectedGenre}/${data.filename}`;
+                downloadLink.textContent = `Descargar ${data.filename}`;
+            }
+
+            // Mostrar mensaje de éxito
+            resultsContent.innerHTML = `
+                <div class="success-message">
+                    ✅ Scraping completado exitosamente! Se encontraron ${data.tracksCount} tracks de ${data.genre}.
+                </div>
+            `;
+
+            // Mostrar tabla de tracks si hay datos
+            if (data.tracks && data.tracks.length > 0) {
+                const tracksTable = `
+                    <table class="tracks-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Título</th>
+                                <th>Artista</th>
+                                <th>Label</th>
+                                <th>Duración</th>
+                                <th>BPM</th>
+                                <th>Key</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.tracks.map(track => `
+                                <tr>
+                                    <td class="position">${track.position}</td>
+                                    <td class="track-title">${track.title}</td>
+                                    <td>${track.artist}</td>
+                                    <td>${track.label}</td>
+                                    <td>${track.duration}</td>
+                                    <td>${track.bpm}</td>
+                                    <td>${track.key}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                resultsContent.innerHTML += tracksTable;
+            }
+        }
+
+        // Event listeners
+        document.getElementById('scrapeButton').addEventListener('click', performScraping);
+
+        // Inicializar aplicación
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGenres();
+            setupSearch();
+        });
+    </script>
+</body>
+</html>
+        }
+
+        .features {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 40px 0;
+            text-align: left;
+        }
+
+        .features h3 {
+            color: #4ecdc4;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            margin-bottom: 12px;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-icon {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.3);
+        }
+
+        .progress {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, #4ecdc4, #44a08d);
+            height: 100%;
+            width: 25%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 40px 20px;
+                margin: 10px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .subtitle {
+                font-size: 1.1em;
+            }
+
+            .icon {
+                font-size: 4em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🎶</div>
+        
+        <h1>Traxsource Scraper</h1>
+        <p class="subtitle">Scraper especializado en música House y Underground<br>Actualmente en desarrollo</p>
+        
+        <div class="progress">
+            <div class="progress-bar"></div>
+        </div>
+        <p style="color: #666; font-size: 0.9em;">Progreso: 25% completado</p>
+
+        <div class="features">
+            <h3>🚀 Características planificadas:</h3>
+            <ul class="feature-list">
+                <li><span class="feature-icon">✅</span> House exclusivo y todos sus subgéneros</li>
+                <li><span class="feature-icon">✅</span> Charts de Hype, Top 100 y Essential</li>
+                <li><span class="feature-icon">✅</span> Música underground y exclusiva</li>
+                <li><span class="feature-icon">✅</span> Filtros por BPM y Key</li>
+                <li><span class="feature-icon">✅</span> Información detallada de tracks</li>
+                <li><span class="feature-icon">✅</span> Integración con API de Traxsource</li>
+            </ul>
+        </div>
+
+        <p style="color: #888; margin: 20px 0;">
+            <strong>Fecha estimada de lanzamiento:</strong> Diciembre 2025
+        </p>
+
+        <a href="index.html" class="back-btn">← Volver al inicio</a>
+    </div>
+</body>
+</html>
