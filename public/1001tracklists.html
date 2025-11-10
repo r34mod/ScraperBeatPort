@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1001Tracklists Scraper - En Desarrollo</title>
+    <title>1001Tracklists Scraper - Electronic Music Hub</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        
         * {
             margin: 0;
             padding: 0;
@@ -12,163 +14,891 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a0033 0%, #330066 50%, #1a0033 100%);
+            color: #ffffff;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
-            padding: 60px 40px;
-            text-align: center;
-            max-width: 600px;
-            width: 100%;
-        }
-
-        .icon {
-            font-size: 5em;
-            margin-bottom: 30px;
-        }
-
-        h1 {
-            color: #333;
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            font-weight: 300;
-        }
-
-        .subtitle {
-            color: #666;
-            font-size: 1.3em;
-            margin-bottom: 40px;
+            overflow-x: hidden;
             line-height: 1.6;
+            position: relative;
         }
 
-        .features {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 30px;
-            margin: 40px 0;
-            text-align: left;
-        }
-
-        .features h3 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 1.4em;
-        }
-
-        .feature-list {
-            list-style: none;
-        }
-
-        .feature-list li {
-            margin-bottom: 12px;
-            color: #555;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .feature-icon {
-            color: #667eea;
-            font-weight: bold;
-        }
-
-        .back-btn {
-            display: inline-block;
-            padding: 15px 30px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
-            font-size: 1.1em;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            margin-top: 20px;
-        }
-
-        .back-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .progress {
-            background: #e9ecef;
-            border-radius: 10px;
-            height: 8px;
-            margin: 20px 0;
+        .background-orbs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
             overflow: hidden;
         }
 
-        .progress-bar {
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            height: 100%;
-            width: 15%;
-            animation: pulse 2s infinite;
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.3;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        .orb-purple {
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, #9966ff 0%, #6633cc 50%, transparent 70%);
+            top: -200px;
+            right: -300px;
+            animation: moveOrbPurple 25s ease-in-out infinite;
+        }
+
+        .orb-pink {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #ff66cc 0%, #cc3399 50%, transparent 70%);
+            bottom: -150px;
+            left: -250px;
+            animation: moveOrbPink 30s ease-in-out infinite;
+        }
+
+        @keyframes moveOrbPurple {
+            0%, 100% { 
+                transform: translate(0, 0) scale(1);
+            }
+            25% { 
+                transform: translate(-200px, 100px) scale(1.1);
+            }
+            50% { 
+                transform: translate(-100px, 300px) scale(0.9);
+            }
+            75% { 
+                transform: translate(100px, 200px) scale(1.05);
+            }
+        }
+
+        @keyframes moveOrbPink {
+            0%, 100% { 
+                transform: translate(0, 0) scale(1);
+            }
+            33% { 
+                transform: translate(150px, -100px) scale(1.15);
+            }
+            66% { 
+                transform: translate(300px, 50px) scale(0.85);
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            position: relative;
+            z-index: 3;
+        }
+
+        /* Navigation Header */
+        .nav-header {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: linear-gradient(90deg, #1a0033 80%, #9966ff 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: none;
+            padding: 0.7rem 0;
+            border-radius: 2.5rem;
+            margin-top: 1.2rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            transition: box-shadow 0.2s, background 0.2s;
+            max-width: 900px;
+            width: 90vw;
+        }
+
+        .nav-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-logo-icon {
+            width: 54px;
+            height: 54px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 2.2rem;
+            color: #111;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+            border: 2px solid #222;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 1.7rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 400;
+            text-transform: capitalize;
+            letter-spacing: 0.02em;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: #9966ff;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #9966ff, #ff66cc);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .nav-external-link {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-external-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .nav-listen-btn {
+            background: #9966ff;
+            color: #fff;
+            border: none;
+            border-radius: 2rem;
+            padding: 0.85rem 2.5rem;
+            font-size: 1.15rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(153,102,255,0.13);
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        .nav-listen-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(153, 102, 255, 0.4);
+        }
+
+        .nav-listen-btn::after {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: url('https://cdn.prod.website-files.com/650d9b67d864656415c17b80/651e8871e761a2b4e19fa248_audio-active.svg') no-repeat center center;
+            background-size: contain;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* Mobile Navigation */
+        .nav-mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .nav-header {
+                padding: 0.4rem 0;
+                margin-top: 0.7rem;
+                border-radius: 1.2rem;
+                max-width: 98vw;
+            }
+            .nav-container {
+                max-width: 98vw;
+                padding: 0 10px;
+            }
+            .nav-logo-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 1.5rem;
+            }
+            .nav-menu {
+                display: none;
+            }
+            .nav-mobile-toggle {
+                display: block;
+            }
+            .nav-actions {
+                gap: 10px;
+            }
+            .nav-listen-btn {
+                padding: 0.5rem 1.2rem;
+                font-size: 1rem;
+            }
+            .nav-external-link {
+                display: none;
+            }
+        }
+
+        .main-content {
+            padding-top: 120px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .hero-section {
+            text-align: center;
+            padding: 80px 0;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 900;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #9966ff, #ff66cc, #66ccff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientFlow 6s ease-in-out infinite;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 4vw, 2rem);
+            color: #cccccc;
+            margin-bottom: 60px;
+            font-weight: 300;
+        }
+
+        .scraper-section {
+            background: rgba(26, 0, 51, 0.5);
+            border-radius: 20px;
+            padding: 60px 40px;
+            margin: 60px auto;
+            max-width: 1000px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 50px;
+            color: #ffffff;
+        }
+
+        .search-container {
+            margin-bottom: 40px;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .input-field {
+            flex: 1;
+            min-width: 250px;
+            padding: 15px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #9966ff;
+            background: rgba(153, 102, 255, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: #aaaaaa;
+        }
+
+        .search-type-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .search-type-btn {
+            padding: 12px 24px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            background: transparent;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .search-type-btn:hover,
+        .search-type-btn.active {
+            border-color: #9966ff;
+            background: rgba(153, 102, 255, 0.2);
+            color: #ffffff;
+        }
+
+        .scrape-button {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            display: block;
+            padding: 18px 40px;
+            background: linear-gradient(45deg, #9966ff, #ff66cc);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scrape-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(153, 102, 255, 0.4);
+        }
+
+        .scrape-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(153, 102, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #9966ff;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            margin-top: 60px;
+            display: none;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .results-count {
+            font-size: 1.2rem;
+            color: #cccccc;
+        }
+
+        .download-link {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #9966ff, #ff66cc);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .download-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(153, 102, 255, 0.4);
+        }
+
+        .tracks-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .tracks-table th,
+        .tracks-table td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .tracks-table th {
+            background: rgba(153, 102, 255, 0.2);
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .tracks-table td {
+            color: #cccccc;
+        }
+
+        .tracks-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .position {
+            font-weight: 700;
+            color: #9966ff;
+            width: 60px;
+        }
+
+        .track-title {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .success-message {
+            background: linear-gradient(45deg, rgba(102, 255, 102, 0.1), rgba(102, 204, 255, 0.1));
+            border: 1px solid rgba(102, 255, 102, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #66ff66;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .error-message {
+            background: linear-gradient(45deg, rgba(255, 102, 102, 0.1), rgba(255, 102, 204, 0.1));
+            border: 1px solid rgba(255, 102, 102, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #ff6666;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        @keyframes gradientFlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
         }
 
         @media (max-width: 768px) {
             .container {
+                padding: 0 20px;
+            }
+
+            .scraper-section {
                 padding: 40px 20px;
-                margin: 10px;
+                margin: 40px 20px;
             }
 
-            h1 {
-                font-size: 2em;
+            .search-input-group {
+                flex-direction: column;
             }
 
-            .subtitle {
-                font-size: 1.1em;
+            .input-field {
+                min-width: auto;
             }
 
-            .icon {
-                font-size: 4em;
+            .search-type-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .tracks-table {
+                font-size: 0.9rem;
+            }
+
+            .tracks-table th,
+            .tracks-table td {
+                padding: 10px 8px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="icon">📊</div>
-        
-        <h1>1001Tracklists Scraper</h1>
-        <p class="subtitle">Extrae tracklists de DJ sets y eventos en vivo<br>Actualmente en desarrollo</p>
-        
-        <div class="progress">
-            <div class="progress-bar"></div>
-        </div>
-        <p style="color: #666; font-size: 0.9em;">Progreso: 15% completado</p>
-
-        <div class="features">
-            <h3>🎯 Características planificadas:</h3>
-            <ul class="feature-list">
-                <li><span class="feature-icon">✅</span> DJ sets de festivales y clubes</li>
-                <li><span class="feature-icon">✅</span> Tracklists de artistas populares</li>
-                <li><span class="feature-icon">✅</span> Búsqueda por evento o DJ</li>
-                <li><span class="feature-icon">✅</span> Historial de sets por artista</li>
-                <li><span class="feature-icon">✅</span> Identificación automática de tracks</li>
-                <li><span class="feature-icon">✅</span> Exportación de playlists</li>
-                <li><span class="feature-icon">✅</span> Integración con Spotify/Apple Music</li>
+    <!-- Navigation Header -->
+    <nav class="nav-header">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="./images/icon.PNG" alt="Logo" class="nav-logo-icon" style="width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid #222;box-shadow:0 4px 16px rgba(0,0,0,0.13);">
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="beatport.html" class="nav-link">Beatport</a>
+                </li>
+                <li class="nav-item">
+                    <a href="traxsource.html" class="nav-link">Traxsource</a>
+                </li>
+                <li class="nav-item">
+                    <a href="1001tracklists.html" class="nav-link">1001Tracklists</a>
+                </li>
+                <li class="nav-item">
+                    <a href="radio.html" class="nav-link">Radio</a>
+                </li>
             </ul>
+            
+            <div class="nav-actions">
+                <a href="#" class="nav-external-link">🔗</a>
+                <a href="radio.html" class="nav-listen-btn"><span class="visually-hidden">Listen</span></a>
+            </div>
+            
+            <button class="nav-mobile-toggle">☰</button>
         </div>
+    </nav>
 
-        <p style="color: #888; margin: 20px 0;">
-            <strong>Fecha estimada de lanzamiento:</strong> Enero 2026
-        </p>
-
-        <a href="index.html" class="back-btn">← Volver al inicio</a>
+    <div class="background-orbs">
+        <div class="orb orb-purple"></div>
+        <div class="orb orb-pink"></div>
     </div>
+
+    <div class="container">
+        <div class="main-content">
+            <section class="hero-section">
+                <h1 class="hero-title">1001TRACKLISTS</h1>
+                <p class="hero-subtitle">Descubre setlists de DJs y festivales de todo el mundo</p>
+            </section>
+
+            <section class="scraper-section">
+                <h2 class="section-title">🎧 Extractor de Tracklists</h2>
+                
+                <div class="search-container">
+                    <div class="search-input-group">
+                        <input type="text" id="searchInput" class="input-field" placeholder="Buscar DJ, artista o evento..." />
+                        <input type="text" id="eventInput" class="input-field" placeholder="Evento específico (opcional)" />
+                    </div>
+                    
+                    <div class="search-type-selector">
+                        <button class="search-type-btn active" data-type="dj">DJ / Artista</button>
+                        <button class="search-type-btn" data-type="event">Evento / Festival</button>
+                        <button class="search-type-btn" data-type="popular">Más Populares</button>
+                    </div>
+                    
+                    <button id="scrapeButton" class="scrape-button">
+                        🎵 Extraer Tracklists
+                    </button>
+                </div>
+
+                <div class="results-section" id="resultsSection">
+                    <div class="results-header">
+                        <span class="results-count" id="resultsCount">0 tracklists encontradas</span>
+                        <a id="downloadLink" class="download-link" style="display: none;">Descargar CSV</a>
+                    </div>
+                    <div id="resultsContent"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="radioPlayerFooter" style="display:none;"></div>
+    <audio id="footerAudio" style="display:none;" preload="none"></audio>
+    
+    <script>
+    // Footer player persistente
+    const footer = document.getElementById('radioPlayerFooter');
+    const audio = document.getElementById('footerAudio');
+    let currentRadioName = '';
+    function showFooterPlayer(url, name) {
+        currentRadioName = name;
+        audio.src = url;
+        audio.loop = true;
+        audio.autoplay = true;
+        audio.style.display = 'none';
+        audio.play();
+        localStorage.setItem('radio_stream_url', url);
+        localStorage.setItem('radio_stream_name', name);
+        renderFooterPlayer();
+    }
+    function renderFooterPlayer() {
+        footer.style.display = 'flex';
+        footer.style.position = 'fixed';
+        footer.style.left = '0';
+        footer.style.right = '0';
+        footer.style.bottom = '0';
+        footer.style.height = '90px';
+        footer.style.background = 'linear-gradient(90deg, #111 70%, #00353d 100%)';
+        footer.style.color = '#fff';
+        footer.style.zIndex = '9999';
+        footer.style.alignItems = 'center';
+        footer.style.justifyContent = 'space-between';
+        footer.style.padding = '0 40px';
+        footer.style.boxShadow = '0 -2px 16px rgba(0,0,0,0.25)';
+        footer.innerHTML = `
+            <div style="display:flex;align-items:center;gap:16px;">
+                <svg width="48" height="48" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:12px;object-fit:cover;">
+                    <path d="M199.641 113.351C198.353 117.933 193.96 120.61 189.337 119.393C183.956 117.976 179.319 118.749 175.67 123.245C173.924 125.393 173.18 127.87 173.194 130.633C173.208 147.715 173.237 164.811 173.151 181.893C173.151 183.726 172.808 185.745 172.021 187.363C170.174 191.1 165.953 192.803 162.06 191.773C158.396 190.799 155.649 187.191 155.62 183.11C155.591 178.557 155.591 173.989 155.591 169.436C155.591 164.883 155.591 160.315 155.591 155.762C155.591 147.343 155.563 138.924 155.591 130.504C155.663 114.081 168.829 100.908 185.044 101.166C188.035 101.209 191.083 101.853 193.974 102.655C198.597 103.944 200.944 108.64 199.613 113.337L199.641 113.351ZM132.922 189.009C130.418 191.787 127.312 192.689 123.806 191.558C120.171 190.384 118.11 187.735 117.624 183.912C117.552 183.353 117.567 182.781 117.567 182.208C117.567 145.997 117.567 109.786 117.567 73.5746C117.567 67.8902 121.273 63.8524 126.454 63.8524C130.833 63.8524 134.583 67.2315 135.055 71.6273C135.141 72.4434 135.141 73.2739 135.141 74.09C135.141 92.0739 135.141 110.043 135.141 128.027C135.141 146.068 135.141 164.109 135.141 182.165C135.141 184.714 134.668 187.062 132.908 189.023L132.922 189.009ZM96.6865 183.21C96.6865 187.62 93.6239 191.372 89.7027 191.901C85.0515 192.531 81.0587 190.069 79.8566 185.773C79.5846 184.814 79.556 183.769 79.556 182.766C79.5417 170.538 79.556 158.325 79.556 146.097C79.556 133.869 79.556 121.899 79.556 109.814C79.556 104.559 83.1768 100.751 88.1714 100.751C93.1373 100.751 96.7008 104.459 96.7008 109.685C96.7008 114.912 96.7008 183.21 96.7008 183.21H96.6865ZM128.071 0.00688847C60.2645 -0.709029 0.0859603 54.4596 9.31497e-05 127.827C-0.085774 200.378 59.2055 256.849 129.531 255.99C198.954 255.131 254.51 199.118 255.97 130.819C257.53 57.4521 197.809 -0.608801 128.071 0.00688847Z" fill="currentColor"></path>
+                </svg>
+                <div>
+                    <div style="font-size:1.1rem;font-weight:600;">${currentRadioName}</div>
+                    <div style="font-size:0.9rem;color:#ccc;">En reproducción</div>
+                </div>
+            </div>
+            <div style="flex:1;text-align:center;">
+                <button id="footerPlayPause" style="background:#222;border:none;border-radius:50%;width:48px;height:48px;color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.18);">
+                    <img id="footerPlayPauseIcon" src="https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f24591d_play.png" alt="Play/Pause" style="width:18px;height:18px;object-fit:contain;filter:brightness(1.2);">
+                </button>
+            </div>
+            <div style="width:120px;text-align:right;">
+                <button id="footerClose" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">✖</button>
+            </div>
+        `;
+        const playIcon = 'https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f24591d_play.png';
+        const pauseIcon = 'https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f245914_pause-button.png';
+        const playPauseImg = document.getElementById('footerPlayPauseIcon');
+        function updatePlayPauseIcon() {
+            playPauseImg.src = audio.paused ? playIcon : pauseIcon;
+        }
+        document.getElementById('footerPlayPause').onclick = function() {
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+            updatePlayPauseIcon();
+        };
+        audio.addEventListener('play', updatePlayPauseIcon);
+        audio.addEventListener('pause', updatePlayPauseIcon);
+        updatePlayPauseIcon();
+        document.getElementById('footerClose').onclick = function() {
+            audio.pause();
+            footer.style.display = 'none';
+            localStorage.removeItem('radio_stream_url');
+            localStorage.removeItem('radio_stream_name');
+        };
+    }
+    // Persistencia al navegar
+    window.addEventListener('DOMContentLoaded', () => {
+        const url = localStorage.getItem('radio_stream_url');
+        const name = localStorage.getItem('radio_stream_name');
+        if (url && name) {
+            showFooterPlayer(url, name);
+        }
+    });
+
+    // Variables globales
+    let selectedSearchType = 'dj';
+    let isLoading = false;
+
+    // Selección de tipo de búsqueda
+    document.querySelectorAll('.search-type-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.search-type-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            selectedSearchType = e.target.dataset.type;
+            
+            // Actualizar placeholders según el tipo
+            const searchInput = document.getElementById('searchInput');
+            const eventInput = document.getElementById('eventInput');
+            
+            switch(selectedSearchType) {
+                case 'dj':
+                    searchInput.placeholder = 'Buscar DJ o artista (ej: Martin Garrix, Tiesto)';
+                    eventInput.style.display = 'block';
+                    break;
+                case 'event':
+                    searchInput.placeholder = 'Buscar evento o festival (ej: Tomorrowland, Ultra)';
+                    eventInput.style.display = 'none';
+                    break;
+                case 'popular':
+                    searchInput.placeholder = 'Déjalo vacío para los más populares';
+                    eventInput.style.display = 'none';
+                    break;
+            }
+        });
+    });
+
+    // Función de scraping
+    async function performScraping() {
+        if (isLoading) return;
+        
+        isLoading = true;
+        const button = document.getElementById('scrapeButton');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContent = document.getElementById('resultsContent');
+        const searchQuery = document.getElementById('searchInput').value.trim();
+        const eventQuery = document.getElementById('eventInput').value.trim();
+
+        // Validaciones
+        if (selectedSearchType !== 'popular' && !searchQuery) {
+            alert('Por favor, introduce una búsqueda');
+            isLoading = false;
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = 'Extrayendo...';
+        resultsSection.style.display = 'block';
+        resultsContent.innerHTML = `
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>Extrayendo tracklists de 1001Tracklists...</p>
+                <p>Esto puede tomar varios minutos...</p>
+            </div>
+        `;
+
+        try {
+            const response = await fetch('/api/1001tracklists/scrape', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    searchType: selectedSearchType,
+                    query: searchQuery,
+                    event: eventQuery
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                displayResults(data);
+            } else {
+                throw new Error(data.error || 'Error en el scraping');
+            }
+
+        } catch (error) {
+            console.error('Error durante el scraping:', error);
+            resultsContent.innerHTML = `
+                <div class="error-message">
+                    Error durante el scraping: ${error.message}
+                    <br><br>
+                    <small>Nota: 1001Tracklists está actualmente en desarrollo. Esta funcionalidad estará disponible pronto.</small>
+                </div>
+            `;
+        } finally {
+            isLoading = false;
+            button.disabled = false;
+            button.textContent = '🎵 Extraer Tracklists';
+        }
+    }
+
+    // Mostrar resultados
+    function displayResults(data) {
+        const resultsCount = document.getElementById('resultsCount');
+        const downloadLink = document.getElementById('downloadLink');
+        const resultsContent = document.getElementById('resultsContent');
+
+        resultsCount.textContent = `${data.tracklistsCount || 0} tracklists encontradas`;
+        
+        if (data.filename) {
+            downloadLink.style.display = 'inline-block';
+            downloadLink.href = `/api/1001tracklists/download/${data.filename}`;
+            downloadLink.textContent = `Descargar ${data.filename}`;
+        }
+
+        // Mostrar mensaje de éxito
+        resultsContent.innerHTML = `
+            <div class="success-message">
+                ✅ Scraping completado exitosamente! Se encontraron ${data.tracklistsCount || 0} tracklists.
+            </div>
+        `;
+
+        // Mostrar tabla de tracklists si hay datos
+        if (data.tracklists && data.tracklists.length > 0) {
+            const tracklistsTable = `
+                <table class="tracks-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Título del Set</th>
+                            <th>DJ / Artista</th>
+                            <th>Evento</th>
+                            <th>Fecha</th>
+                            <th>Duración</th>
+                            <th>Tracks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.tracklists.map((tracklist, index) => `
+                            <tr>
+                                <td class="position">${index + 1}</td>
+                                <td class="track-title">${tracklist.title}</td>
+                                <td>${tracklist.artist}</td>
+                                <td>${tracklist.event}</td>
+                                <td>${tracklist.date}</td>
+                                <td>${tracklist.duration}</td>
+                                <td>${tracklist.trackCount}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            resultsContent.innerHTML += tracklistsTable;
+        }
+    }
+
+    // Event listeners
+    document.getElementById('scrapeButton').addEventListener('click', performScraping);
+
+    // Inicializar aplicación
+    document.addEventListener('DOMContentLoaded', () => {
+        // Configurar tipo de búsqueda inicial
+        document.querySelector('.search-type-btn[data-type="dj"]').click();
+    });
+    </script>
 </body>
 </html>

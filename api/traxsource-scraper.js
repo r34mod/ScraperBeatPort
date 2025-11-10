@@ -275,16 +275,18 @@ router.post('/scrape', async (req, res) => {
 
         // Crear nombre de archivo con fecha y género
         const today = new Date().toISOString().split('T')[0];
-        const filename = `traxsource_${genre}_top100_${today}.csv`;
-        const downloadsDir = path.join(__dirname, '../downloads');
-        const genreDir = path.join(downloadsDir, genre);
+        const filename = `traxsource_${genre.replace('-', '_')}_top100_${today}.csv`;
+        const downloadsDir = path.join(__dirname, '..', 'downloads');
+        const genreDir = path.join(downloadsDir, genre.toLowerCase());
         
         // Crear directorios si no existen
         if (!fs.existsSync(downloadsDir)) {
             fs.mkdirSync(downloadsDir, { recursive: true });
+            console.log(`📁 Creado directorio: downloads`);
         }
         if (!fs.existsSync(genreDir)) {
             fs.mkdirSync(genreDir, { recursive: true });
+            console.log(`📁 Creado directorio para género: downloads/${genre.toLowerCase()}`);
         }
 
         const csvFilePath = path.join(genreDir, filename);
@@ -332,6 +334,48 @@ router.post('/scrape', async (req, res) => {
             details: error.message 
         });
     }
+});
+
+// Descargar archivo CSV generado con estructura de carpetas por género
+router.get('/download/:genre/:filename', (req, res) => {
+    const { genre, filename } = req.params;
+    
+    // Buscar en la estructura de carpetas correcta
+    const filePath = path.join(__dirname, '..', 'downloads', genre.toLowerCase(), filename);
+    
+    console.log(`📥 Solicitud de descarga: ${genre}/${filename}`);
+    console.log(`📂 Buscando en: ${filePath}`);
+    
+    if (!fs.existsSync(filePath)) {
+        console.log(`❌ Archivo no encontrado: ${filePath}`);
+        
+        // Buscar también en la carpeta con mayúscula como fallback
+        const oldFilePath = path.join(__dirname, '..', 'Downloads', genre.toLowerCase(), filename);
+        if (fs.existsSync(oldFilePath)) {
+            console.log(`✅ Encontrado en ubicación alternativa: ${oldFilePath}`);
+            return res.download(oldFilePath, filename, (err) => {
+                if (err) {
+                    console.error('Error descargando archivo:', err);
+                    res.status(500).json({ error: 'Error al descargar el archivo' });
+                }
+            });
+        }
+        
+        return res.status(404).json({ 
+            error: 'Archivo no encontrado', 
+            searchedPath: filePath,
+            genre: genre,
+            filename: filename
+        });
+    }
+    
+    console.log(`✅ Enviando archivo desde: ${filePath}`);
+    res.download(filePath, filename, (err) => {
+        if (err) {
+            console.error('Error descargando archivo:', err);
+            res.status(500).json({ error: 'Error al descargar el archivo' });
+        }
+    });
 });
 
 module.exports = router;

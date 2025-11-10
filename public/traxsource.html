@@ -515,6 +515,91 @@
         </section>
     </div>
 
+    <div id="radioPlayerFooter" style="display:none;"></div>
+    <audio id="footerAudio" style="display:none;" preload="none"></audio>
+    <script>
+    // Footer player persistente
+    const footer = document.getElementById('radioPlayerFooter');
+    const audio = document.getElementById('footerAudio');
+    let currentRadioName = '';
+    function showFooterPlayer(url, name) {
+        currentRadioName = name;
+        audio.src = url;
+        audio.loop = true;
+        audio.autoplay = true;
+        audio.style.display = 'none';
+        audio.play();
+        localStorage.setItem('radio_stream_url', url);
+        localStorage.setItem('radio_stream_name', name);
+        renderFooterPlayer();
+    }
+    function renderFooterPlayer() {
+        footer.style.display = 'flex';
+        footer.style.position = 'fixed';
+        footer.style.left = '0';
+        footer.style.right = '0';
+        footer.style.bottom = '0';
+        footer.style.height = '90px';
+        footer.style.background = 'linear-gradient(90deg, #111 70%, #00353d 100%)';
+        footer.style.color = '#fff';
+        footer.style.zIndex = '9999';
+        footer.style.alignItems = 'center';
+        footer.style.justifyContent = 'space-between';
+        footer.style.padding = '0 40px';
+        footer.style.boxshadow = '0 -2px 16px rgba(0,0,0,0.25)';
+        footer.innerHTML = `
+            <div style="display:flex;align-items:center;gap:16px;">
+                <svg width="48" height="48" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" style="border-radius:12px;object-fit:cover;">
+                    <path d="M199.641 113.351C198.353 117.933 193.96 120.61 189.337 119.393C183.956 117.976 179.319 118.749 175.67 123.245C173.924 125.393 173.18 127.87 173.194 130.633C173.208 147.715 173.237 164.811 173.151 181.893C173.151 183.726 172.808 185.745 172.021 187.363C170.174 191.1 165.953 192.803 162.06 191.773C158.396 190.799 155.649 187.191 155.62 183.11C155.591 178.557 155.591 173.989 155.591 169.436C155.591 164.883 155.591 160.315 155.591 155.762C155.591 147.343 155.563 138.924 155.591 130.504C155.663 114.081 168.829 100.908 185.044 101.166C188.035 101.209 191.083 101.853 193.974 102.655C198.597 103.944 200.944 108.64 199.613 113.337L199.641 113.351ZM132.922 189.009C130.418 191.787 127.312 192.689 123.806 191.558C120.171 190.384 118.11 187.735 117.624 183.912C117.552 183.353 117.567 182.781 117.567 182.208C117.567 145.997 117.567 109.786 117.567 73.5746C117.567 67.8902 121.273 63.8524 126.454 63.8524C130.833 63.8524 134.583 67.2315 135.055 71.6273C135.141 72.4434 135.141 73.2739 135.141 74.09C135.141 92.0739 135.141 110.043 135.141 128.027C135.141 146.068 135.141 164.109 135.141 182.165C135.141 184.714 134.668 187.062 132.908 189.023L132.922 189.009ZM96.6865 183.21C96.6865 187.62 93.6239 191.372 89.7027 191.901C85.0515 192.531 81.0587 190.069 79.8566 185.773C79.5846 184.814 79.556 183.769 79.556 182.766C79.5417 170.538 79.556 158.325 79.556 146.097C79.556 133.869 79.556 121.899 79.556 109.814C79.556 104.559 83.1768 100.751 88.1714 100.751C93.1373 100.751 96.7008 104.459 96.7008 109.685C96.7008 114.912 96.7008 183.21 96.7008 183.21H96.6865ZM128.071 0.00688847C60.2645 -0.709029 0.0859603 54.4596 9.31497e-05 127.827C-0.085774 200.378 59.2055 256.849 129.531 255.99C198.954 255.131 254.51 199.118 255.97 130.819C257.53 57.4521 197.809 -0.608801 128.071 0.00688847Z" fill="currentColor"></path>
+                </svg>
+                <div>
+                    <div style="font-size:1.1rem;font-weight:600;">${currentRadioName}</div>
+                    <div style="font-size:0.9rem;color:#ccc;">En reproducción</div>
+                </div>
+            </div>
+            <div style="flex:1;text-align:center;">
+                <button id="footerPlayPause" style="background:#222;border:none;border-radius:50%;width:48px;height:48px;color:#fff;font-size:1.5rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.18);">
+                    <img id="footerPlayPauseIcon" src="https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f24591d_play.png" alt="Play/Pause" style="width:18px;height:18px;object-fit:contain;filter:brightness(1.2);">
+                </button>
+            </div>
+            <div style="width:120px;text-align:right;">
+                <button id="footerClose" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">✖</button>
+            </div>
+        `;
+    const playIcon = 'https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f24591d_play.png';
+    const pauseIcon = 'https://cdn.prod.website-files.com/650d9b67d864656415c17b80/65699589050a0d478f245914_pause-button.png';
+        const playPauseImg = document.getElementById('footerPlayPauseIcon');
+        function updatePlayPauseIcon() {
+            playPauseImg.src = audio.paused ? playIcon : pauseIcon;
+        }
+        document.getElementById('footerPlayPause').onclick = function() {
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+            updatePlayPauseIcon();
+        };
+        audio.addEventListener('play', updatePlayPauseIcon);
+        audio.addEventListener('pause', updatePlayPauseIcon);
+        updatePlayPauseIcon();
+        document.getElementById('footerClose').onclick = function() {
+            audio.pause();
+            footer.style.display = 'none';
+            localStorage.removeItem('radio_stream_url');
+            localStorage.removeItem('radio_stream_name');
+        };
+    }
+    // Persistencia al navegar
+    window.addEventListener('DOMContentLoaded', () => {
+        const url = localStorage.getItem('radio_stream_url');
+        const name = localStorage.getItem('radio_stream_name');
+        if (url && name) {
+            showFooterPlayer(url, name);
+        }
+    });
+    </script>
+
     <script>
         let selectedGenre = null;
         let allGenres = [];
@@ -652,7 +737,7 @@
             
             if (data.filename) {
                 downloadLink.style.display = 'inline-block';
-                downloadLink.href = `/downloads/${selectedGenre}/${data.filename}`;
+                downloadLink.href = `/api/traxsource/download/${selectedGenre}/${data.filename}`;
                 downloadLink.textContent = `Descargar ${data.filename}`;
             }
 
@@ -708,126 +793,4 @@
     </script>
 </body>
 </html>
-        }
-
-        .features {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 30px;
-            margin: 40px 0;
-            text-align: left;
-        }
-
-        .features h3 {
-            color: #4ecdc4;
-            margin-bottom: 20px;
-            font-size: 1.4em;
-        }
-
-        .feature-list {
-            list-style: none;
-        }
-
-        .feature-list li {
-            margin-bottom: 12px;
-            color: #555;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .feature-icon {
-            color: #4ecdc4;
-            font-weight: bold;
-        }
-
-        .back-btn {
-            display: inline-block;
-            padding: 15px 30px;
-            background: linear-gradient(135deg, #4ecdc4, #44a08d);
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
-            font-size: 1.1em;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            margin-top: 20px;
-        }
-
-        .back-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.3);
-        }
-
-        .progress {
-            background: #e9ecef;
-            border-radius: 10px;
-            height: 8px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            background: linear-gradient(90deg, #4ecdc4, #44a08d);
-            height: 100%;
-            width: 25%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 40px 20px;
-                margin: 10px;
-            }
-
-            h1 {
-                font-size: 2em;
-            }
-
-            .subtitle {
-                font-size: 1.1em;
-            }
-
-            .icon {
-                font-size: 4em;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="icon">🎶</div>
         
-        <h1>Traxsource Scraper</h1>
-        <p class="subtitle">Scraper especializado en música House y Underground<br>Actualmente en desarrollo</p>
-        
-        <div class="progress">
-            <div class="progress-bar"></div>
-        </div>
-        <p style="color: #666; font-size: 0.9em;">Progreso: 25% completado</p>
-
-        <div class="features">
-            <h3>🚀 Características planificadas:</h3>
-            <ul class="feature-list">
-                <li><span class="feature-icon">✅</span> House exclusivo y todos sus subgéneros</li>
-                <li><span class="feature-icon">✅</span> Charts de Hype, Top 100 y Essential</li>
-                <li><span class="feature-icon">✅</span> Música underground y exclusiva</li>
-                <li><span class="feature-icon">✅</span> Filtros por BPM y Key</li>
-                <li><span class="feature-icon">✅</span> Información detallada de tracks</li>
-                <li><span class="feature-icon">✅</span> Integración con API de Traxsource</li>
-            </ul>
-        </div>
-
-        <p style="color: #888; margin: 20px 0;">
-            <strong>Fecha estimada de lanzamiento:</strong> Diciembre 2025
-        </p>
-
-        <a href="index.html" class="back-btn">← Volver al inicio</a>
-    </div>
-</body>
-</html>
