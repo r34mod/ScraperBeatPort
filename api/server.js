@@ -1,10 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const beatportScraper = require('./api/beatport-scraper-fixed');
-const traxsourceScraper = require('./api/traxsource-scraper');
-const tracklistsScraper = require('./api/1001tracklists-scraper');
-const youtubeSearch = require('./api/youtube-search');
+const beatportScraper = require('./beatport-scraper-fixed');
+const traxsourceScraper = require('./traxsource-scraper');
+const tracklistsScraper = require('./1001tracklists-scraper');
+const youtubeSearch = require('./youtube-search');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Middleware de logging
 app.use((req, res, next) => {
@@ -28,7 +28,7 @@ app.use('/api/youtube', youtubeSearch);
 
 // Ruta para servir el HTML principal
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 // Ruta de health check
@@ -70,8 +70,8 @@ process.on('SIGTERM', () => {
 const server = app.listen(PORT, () => {
     console.log(`🎵 Beatport Scraper Server iniciado`);
     console.log(`🌐 Servidor ejecutándose en http://localhost:${PORT}`);
-    console.log(`📁 Archivos estáticos servidos desde: ${path.join(__dirname, 'public')}`);
-    console.log(`💾 Descargas guardadas en: ${path.join(__dirname, 'downloads')}`);
+    console.log(`📁 Archivos estáticos servidos desde: ${path.join(__dirname, '..', 'public')}`);
+    console.log(`💾 Descargas guardadas en: ${path.join(__dirname, '..', 'downloads')}`);
     console.log(`⏰ Iniciado en: ${new Date().toISOString()}`);
 });
 

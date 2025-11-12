@@ -1,5 +1,5 @@
 // Script de prueba para verificar el funcionamiento del scraper
-const beatportScraper = require('./api/beatport-scraper');
+const beatportScraper = require('./beatport-scraper-fixed');
 const express = require('express');
 
 // Crear una aplicación Express temporal para pruebas

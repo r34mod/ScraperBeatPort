@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Traxsource Scraper - House Music Paradise</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="images/icon.PNG">
+    <link rel="icon" type="image/png" sizes="16x16" href="images/icon.PNG">
+    <link rel="shortcut icon" href="images/icon.PNG">
+    <link rel="apple-touch-icon" href="images/icon.PNG">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
         
@@ -93,9 +100,35 @@
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 40px;
+            padding: 120px 40px 40px 40px;
             position: relative;
             z-index: 3;
+        }
+
+        .hero-section {
+            text-align: center;
+            padding: 80px 0;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 900;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #9966ff, #ff66cc, #66ccff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientFlow 6s ease-in-out infinite;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 4vw, 2rem);
+            color: #cccccc;
+            margin-bottom: 60px;
+            font-weight: 300;
         }
 
         .header {
@@ -125,6 +158,210 @@
             background: #ffffff;
             color: #000000;
             border-color: #ffffff;
+        }
+
+                /* Navigation Header */
+        .nav-header {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: linear-gradient(90deg, #181818 80%, #3ad6ff 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: none;
+            padding: 0.7rem 0;
+            border-radius: 2.5rem;
+            margin-top: 1.2rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            transition: box-shadow 0.2s, background 0.2s;
+            max-width: 900px;
+            width: 90vw;
+        }
+
+        .nav-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-logo-icon {
+            width: 54px;
+            height: 54px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 2.2rem;
+            color: #111;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+            border: 2px solid #222;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 1.7rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-link {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 400;
+            text-transform: capitalize;
+            letter-spacing: 0.02em;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: #ff4444;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ff4444, #ff0000);
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .nav-dropdown {
+            position: relative;
+        }
+
+        .nav-dropdown::after {
+            content: '▼';
+            margin-left: 5px;
+            font-size: 0.7rem;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-dropdown:hover::after {
+            transform: rotate(180deg);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+        }
+
+        .nav-external-link {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-external-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .nav-listen-btn {
+            background: #ff1744;
+            color: #fff;
+            border: none;
+            border-radius: 2rem;
+            padding: 0.85rem 2.5rem;
+            font-size: 1.15rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(255,23,68,0.13);
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        .nav-listen-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 68, 68, 0.4);
+        }
+
+        .nav-listen-btn::after {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: url('https://cdn.prod.website-files.com/650d9b67d864656415c17b80/651e8871e761a2b4e19fa248_audio-active.svg') no-repeat center center;
+            background-size: contain;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* Mobile Navigation */
+        .nav-mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .nav-header {
+                padding: 0.4rem 0;
+                margin-top: 0.7rem;
+                border-radius: 1.2rem;
+                max-width: 98vw;
+            }
+            .nav-container {
+                max-width: 98vw;
+                padding: 0 10px;
+            }
+            .nav-logo-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 1.5rem;
+            }
+            .nav-menu {
+                display: none;
+            }
+            .nav-mobile-toggle {
+                display: block;
+            }
+            .nav-actions {
+                gap: 10px;
+            }
+            .nav-listen-btn {
+                padding: 0.5rem 1.2rem;
+                font-size: 1rem;
+            }
+            .nav-external-link {
+                display: none;
+            }
         }
 
         .platform-logo {
@@ -464,6 +701,42 @@
     </style>
 </head>
 <body>
+    <!-- Navigation Header -->
+    <nav class="nav-header">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="./images/icon.PNG" alt="Logo" class="nav-logo-icon" style="width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid #222;box-shadow:0 4px 16px rgba(0,0,0,0.13);">
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a href="beatport.html" class="nav-link">Beatport</a>
+                </li>
+                <li class="nav-item">
+                    <a href="traxsource.html" class="nav-link">Traxsource</a>
+                </li>
+                <li class="nav-item">
+                    <a href="1001tracklists.html" class="nav-link">1001Tracklists</a>
+                </li>
+                <li class="nav-item">
+                    <a href="visualiceList.html" class="nav-link">Visualice</a>
+                </li>
+                <li class="nav-item">
+                    <a href="radio.html" class="nav-link">Radio</a>
+                </li>
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="radio.html" class="nav-listen-btn"><span class="visually-hidden">Listen</span></a>
+            </div>
+            
+            <button class="nav-mobile-toggle">☰</button>
+        </div>
+    </nav>
+
     <div class="background-orbs">
         <div class="orb orb-blue"></div>
         <div class="orb orb-cyan"></div>
@@ -474,9 +747,10 @@
         <a href="index.html" class="back-button">← Volver</a>
         
         <header class="header">
-            <div class="platform-logo">TS</div>
-            <h1 class="main-title">TRAXSOURCE</h1>
-            <p class="subtitle">The Real Sound of House Music</p>
+           <section class="hero-section">
+                <h1 class="hero-title">TRAXSOURCE</h1>
+                <p class="hero-subtitle">Descubre la mejor musica electronica</p>
+            </section>
             <p class="description">
                 Extrae los mejores tracks de House, Deep House, Soulful y todos los subgéneros 
                 que definen la cultura underground de la música electrónica.
