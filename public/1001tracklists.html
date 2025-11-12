@@ -254,6 +254,53 @@
             color: #ffffff;
             font-size: 1.5rem;
             cursor: pointer;
+            z-index: 100000;
+        }
+
+        .nav-mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(24, 24, 24, 0.98);
+            backdrop-filter: blur(20px);
+            z-index: 99999;
+            padding-top: 120px;
+            text-align: center;
+        }
+
+        .nav-mobile-menu.open {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-mobile-menu .nav-link {
+            font-size: 1.5rem;
+            font-weight: 500;
+            padding: 1rem 0;
+            width: 100%;
+            text-decoration: none;
+            color: #e5e5e5;
+            transition: all 0.3s ease;
+        }
+
+        .nav-mobile-menu .nav-link:hover,
+        .nav-mobile-menu .nav-link.active {
+            color: #00d2ff;
+            transform: translateX(10px);
+        }
+
+        .nav-mobile-menu .nav-listen-btn {
+            background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            margin-top: 1rem;
         }
 
         @media (max-width: 768px) {
@@ -613,9 +660,20 @@
                 <a href="radio.html" class="nav-listen-btn"><span class="visually-hidden">Listen</span></a>
             </div>
             
-            <button class="nav-mobile-toggle">☰</button>
+            <button class="nav-mobile-toggle" id="mobileToggle">☰</button>
         </div>
     </nav>
+
+    <!-- Mobile Menu -->
+    <div class="nav-mobile-menu" id="mobileMenu">
+        <a href="index.html" class="nav-link">Inicio</a>
+        <a href="beatport.html" class="nav-link">Beatport</a>
+        <a href="traxsource.html" class="nav-link">Traxsource</a>
+        <a href="1001tracklists.html" class="nav-link active">1001Tracklists</a>
+        <a href="visualiceList.html" class="nav-link">Visualice</a>
+        <a href="radio.html" class="nav-link">Radio</a>
+        <a href="radio.html" class="nav-listen-btn">♪ Listen</a>
+    </div>
 
     <div class="background-orbs">
         <div class="orb orb-purple"></div>
@@ -664,6 +722,53 @@
     <audio id="footerAudio" style="display:none;" preload="none"></audio>
     
     <script>
+    // Mobile menu toggle
+    const mobileToggle = document.getElementById('mobileToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+
+    console.log('1001Tracklists - Mobile Toggle:', mobileToggle);
+    console.log('1001Tracklists - Mobile Menu:', mobileMenu);
+
+    if (mobileToggle && mobileMenu) {
+        console.log('Adding event listener to mobile toggle in 1001Tracklists');
+        mobileToggle.addEventListener('click', function() {
+            console.log('Mobile toggle clicked in 1001Tracklists');
+            const isOpen = mobileMenu.classList.contains('open');
+            console.log('Is menu open?', isOpen);
+            
+            if (isOpen) {
+                mobileMenu.classList.remove('open');
+                mobileToggle.innerHTML = '☰';
+                document.body.style.overflow = '';
+                console.log('Menu closed in 1001Tracklists');
+            } else {
+                mobileMenu.classList.add('open');
+                mobileToggle.innerHTML = '✕';
+                document.body.style.overflow = 'hidden';
+                console.log('Menu opened in 1001Tracklists');
+            }
+        });
+
+        // Close mobile menu when clicking on a link
+        const mobileLinks = mobileMenu.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+                mobileToggle.innerHTML = '☰';
+                document.body.style.overflow = '';
+            });
+        });
+
+        // Close mobile menu when clicking outside
+        mobileMenu.addEventListener('click', function(e) {
+            if (e.target === mobileMenu) {
+                mobileMenu.classList.remove('open');
+                mobileToggle.innerHTML = '☰';
+                document.body.style.overflow = '';
+            }
+        });
+    }
+
     // Footer player persistente
     const footer = document.getElementById('radioPlayerFooter');
     const audio = document.getElementById('footerAudio');

@@ -328,6 +328,51 @@
             color: #ffffff;
             font-size: 1.5rem;
             cursor: pointer;
+            z-index: 100000;
+        }
+
+        .nav-mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(24, 24, 24, 0.98);
+            backdrop-filter: blur(20px);
+            z-index: 99999;
+            padding-top: 120px;
+            text-align: center;
+        }
+
+        .nav-mobile-menu.open {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-mobile-menu .nav-link {
+            font-size: 1.5rem;
+            font-weight: 500;
+            padding: 1rem 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        .nav-mobile-menu .nav-link.active {
+            color: #00d2ff;
+        }
+
+        .nav-mobile-menu .nav-listen-btn {
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            background: #ff4444;
+            color: #fff;
+            border: none;
+            border-radius: 2rem;
+            text-decoration: none;
         }
 
         @media (max-width: 768px) {
@@ -339,7 +384,7 @@
             }
             .nav-container {
                 max-width: 98vw;
-                padding: 0 10px;
+                padding: 0 20px;
             }
             .nav-logo-icon {
                 width: 44px;
@@ -356,8 +401,7 @@
                 gap: 10px;
             }
             .nav-listen-btn {
-                padding: 0.5rem 1.2rem;
-                font-size: 1rem;
+                display: none;
             }
             .nav-external-link {
                 display: none;
@@ -1014,11 +1058,11 @@
             </div>
             
             <ul class="nav-menu">
-                 <li class="nav-item">
+                <li class="nav-item">
                     <a href="index.html" class="nav-link">Inicio</a>
                 </li>
                 <li class="nav-item">
-                    <a href="beatport.html" class="nav-link">Beatport</a>
+                    <a href="beatport.html" class="nav-link active">Beatport</a>
                 </li>
                 <li class="nav-item">
                     <a href="traxsource.html" class="nav-link">Traxsource</a>
@@ -1038,9 +1082,20 @@
                 <a href="radio.html" class="nav-listen-btn"><span class="visually-hidden">Listen</span></a>
             </div>
             
-            <button class="nav-mobile-toggle">☰</button>
+            <button class="nav-mobile-toggle" id="mobileToggle">☰</button>
         </div>
     </nav>
+
+    <!-- Mobile Menu -->
+    <div class="nav-mobile-menu" id="mobileMenu">
+        <a href="index.html" class="nav-link">Inicio</a>
+        <a href="beatport.html" class="nav-link active">Beatport</a>
+        <a href="traxsource.html" class="nav-link">Traxsource</a>
+        <a href="1001tracklists.html" class="nav-link">1001Tracklists</a>
+        <a href="visualiceList.html" class="nav-link">Visualice</a>
+        <a href="radio.html" class="nav-link">Radio</a>
+        <a href="radio.html" class="nav-listen-btn">♪ Listen</a>
+    </div>
 
      <div class="background-orbs">
         <div class="orb orb-blue"></div>
@@ -1153,6 +1208,26 @@
     <div id="radioPlayerFooter" style="display:none;"></div>
     <audio id="footerAudio" style="display:none;" preload="none"></audio>
     <script>
+    // Mobile menu toggle
+    const mobileToggle = document.getElementById('mobileToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+
+    if (mobileToggle && mobileMenu) {
+        mobileToggle.addEventListener('click', function() {
+            mobileMenu.classList.toggle('open');
+        });
+    }
+
+    // Close mobile menu when clicking on a link
+    if (mobileMenu) {
+        const mobileLinks = mobileMenu.querySelectorAll('a');
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('open');
+            });
+        });
+    }
+
     // Footer player persistente
     const footer = document.getElementById('radioPlayerFooter');
     const audio = document.getElementById('footerAudio');

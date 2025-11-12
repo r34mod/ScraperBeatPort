@@ -321,6 +321,42 @@
             color: #ffffff;
             font-size: 1.5rem;
             cursor: pointer;
+            z-index: 100000;
+        }
+
+        .nav-mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(24, 24, 24, 0.98);
+            backdrop-filter: blur(20px);
+            z-index: 99999;
+            padding-top: 120px;
+            text-align: center;
+        }
+
+        .nav-mobile-menu.open {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-mobile-menu .nav-link {
+            font-size: 1.5rem;
+            font-weight: 500;
+            padding: 1rem 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        .nav-mobile-menu .nav-listen-btn {
+            margin-top: 2rem;
+            padding: 1rem 2rem;
         }
 
         @media (max-width: 768px) {
@@ -332,7 +368,7 @@
             }
             .nav-container {
                 max-width: 98vw;
-                padding: 0 10px;
+                padding: 0 20px;
             }
             .nav-logo-icon {
                 width: 44px;
@@ -349,8 +385,7 @@
                 gap: 10px;
             }
             .nav-listen-btn {
-                padding: 0.5rem 1.2rem;
-                font-size: 1rem;
+                display: none;
             }
             .nav-external-link {
                 display: none;
@@ -719,9 +754,19 @@
                 <a href="radio.html" class="nav-listen-btn"><span class="visually-hidden">Listen</span></a>
             </div>
             
-            <button class="nav-mobile-toggle">☰</button>
+            <button class="nav-mobile-toggle" id="mobileToggle">☰</button>
         </div>
     </nav>
+
+    <!-- Mobile Menu -->
+    <div class="nav-mobile-menu" id="mobileMenu">
+        <a href="beatport.html" class="nav-link">Beatport</a>
+        <a href="traxsource.html" class="nav-link">Traxsource</a>
+        <a href="1001tracklists.html" class="nav-link">1001Tracklists</a>
+        <a href="visualiceList.html" class="nav-link">Visualice</a>
+        <a href="radio.html" class="nav-link">Radio</a>
+        <a href="radio.html" class="nav-listen-btn">♪ Listen</a>
+    </div>
 
     <div class="background-orbs">
         <div class="orb orb-red"></div>
@@ -1013,8 +1058,52 @@
         // Navigation functionality
         document.addEventListener('DOMContentLoaded', function() {
             const navHeader = document.querySelector('.nav-header');
-            const mobileToggle = document.querySelector('.nav-mobile-toggle');
-            const navMenu = document.querySelector('.nav-menu');
+            const mobileToggle = document.getElementById('mobileToggle');
+            const mobileMenu = document.getElementById('mobileMenu');
+
+            console.log('Mobile Toggle:', mobileToggle);
+            console.log('Mobile Menu:', mobileMenu);
+
+            // Mobile menu toggle functionality
+            if (mobileToggle && mobileMenu) {
+                console.log('Adding event listener to mobile toggle');
+                mobileToggle.addEventListener('click', function() {
+                    console.log('Mobile toggle clicked');
+                    const isOpen = mobileMenu.classList.contains('open');
+                    console.log('Is menu open?', isOpen);
+                    
+                    if (isOpen) {
+                        mobileMenu.classList.remove('open');
+                        mobileToggle.innerHTML = '☰';
+                        document.body.style.overflow = '';
+                        console.log('Menu closed');
+                    } else {
+                        mobileMenu.classList.add('open');
+                        mobileToggle.innerHTML = '✕';
+                        document.body.style.overflow = 'hidden';
+                        console.log('Menu opened');
+                    }
+                });
+
+                // Close mobile menu when clicking on links
+                const mobileLinks = mobileMenu.querySelectorAll('.nav-link');
+                mobileLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        mobileMenu.classList.remove('open');
+                        mobileToggle.innerHTML = '☰';
+                        document.body.style.overflow = '';
+                    });
+                });
+
+                // Close mobile menu when clicking outside
+                mobileMenu.addEventListener('click', function(e) {
+                    if (e.target === mobileMenu) {
+                        mobileMenu.classList.remove('open');
+                        mobileToggle.innerHTML = '☰';
+                        document.body.style.overflow = '';
+                    }
+                });
+            }
 
             // Scroll effect for navigation
             let lastScrollY = window.scrollY;
@@ -1023,9 +1112,11 @@
                 const currentScrollY = window.scrollY;
                 
                 if (currentScrollY > 100) {
-                    navHeader.style.background = 'linear-gradient(135deg, rgba(44, 44, 44, 0.98) 0%, rgba(26, 26, 26, 0.98) 100%)';
+                    navHeader.style.background = 'linear-gradient(90deg, #181818 80%, #3ad6ff 100%)';
+                    navHeader.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3)';
                 } else {
-                    navHeader.style.background = 'linear-gradient(135deg, rgba(44, 44, 44, 0.95) 0%, rgba(26, 26, 26, 0.95) 100%)';
+                    navHeader.style.background = 'linear-gradient(90deg, #181818 80%, #3ad6ff 100%)';
+                    navHeader.style.boxShadow = '0 4px 24px rgba(0,0,0,0.18)';
                 }
                 
                 lastScrollY = currentScrollY;
@@ -1047,13 +1138,6 @@
                     }
                 });
             });
-
-            // Mobile menu toggle
-            if (mobileToggle && navMenu) {
-                mobileToggle.addEventListener('click', () => {
-                    navMenu.style.display = navMenu.style.display === 'flex' ? 'none' : 'flex';
-                });
-            }
 
             // Logo animation on hover
             const logoIcon = document.querySelector('.nav-logo-icon');
