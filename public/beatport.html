@@ -22,7 +22,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 50%, #2c2c2c 100%);
+            background: linear-gradient(135deg, #1a0033 0%, #330066 50%, #1a0033 100%);
             color: #ffffff;
             min-height: 100vh;
             overflow-x: hidden;
@@ -1103,7 +1103,6 @@
         <div class="orb orb-teal"></div>
     </div>
     <div class="container">
-        <a href="index.html" class="back-button">← Volver</a>
         <div class="header">
            <section class="hero-section">
                 <h1 class="hero-title">BEATPORT</h1>
@@ -1505,7 +1504,7 @@
                 if (genreArray.length === 1) {
                     // Scraping de un solo género
                     const genre = genreArray[0];
-                    const response = await fetch(`/api/scrape/${genre}`);
+                    const response = await fetch(`/api/scrape?genre=${genre}`);
                     const result = await response.json();
                     
                     if (result.success) {

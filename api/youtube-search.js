@@ -26,12 +26,20 @@ router.post('/search', async (req, res) => {
         // Limpiar y mejorar el query de búsqueda
         const cleanQuery = cleanSearchQuery(query);
         
-        // Método 1: Intentar con YouTube API oficial
+        // Método 1: Intentar con YouTube API oficial si está configurada
         let searchResults = await searchWithYouTubeAPI(cleanQuery, maxResults);
         
-        // Método 2: Si no funciona la API, usar scraping
-        if (!searchResults || searchResults.length === 0) {
-            searchResults = await searchWithScraping(cleanQuery, maxResults);
+        // Verificar si la API no está configurada y usar métodos alternativos
+        if (!searchResults || searchResults.fallback || searchResults.length === 0) {
+            console.log('Using fallback search methods...');
+            
+            // Método 2: Usar scraping como alternativa
+            try {
+                searchResults = await searchWithScraping(cleanQuery, maxResults);
+            } catch (scrapingError) {
+                console.log('Scraping search failed, using local database');
+                searchResults = searchInLocalDatabase(cleanQuery);
+            }
         }
         
         // Método 3: Si todo falla, usar base de datos local
@@ -42,7 +50,8 @@ router.post('/search', async (req, res) => {
         res.json({
             success: true,
             query: cleanQuery,
-            results: searchResults
+            results: searchResults || [],
+            method: searchResults?.method || 'fallback'
         });
 
     } catch (error) {
@@ -86,7 +95,11 @@ async function searchWithYouTubeAPI(query, maxResults) {
     try {
         if (!YOUTUBE_API_KEY || YOUTUBE_API_KEY === 'YOUR_API_KEY_HERE') {
             console.log('YouTube API key not configured, skipping API search');
-            return null;
+            return {
+                success: false,
+                error: 'YouTube API key not configured',
+                fallback: true
+            };
         }
 
         const response = await youtube.search.list({

@@ -6,11 +6,43 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/genres.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/scrape.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/scrape-multiple.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/youtube-search-vercel.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
   ],
   "routes": [
+    {
+      "src": "/api/genres",
+      "dest": "/api/genres.js"
+    },
+    {
+      "src": "/api/scrape-multiple",
+      "dest": "/api/scrape-multiple.js"
+    },
+    {
+      "src": "/api/youtube/search",
+      "dest": "/api/youtube-search-vercel.js"
+    },
+    {
+      "src": "/api/scrape",
+      "dest": "/api/scrape.js"
+    },
     {
       "src": "/api/(.*)",
       "dest": "/api/server.js"

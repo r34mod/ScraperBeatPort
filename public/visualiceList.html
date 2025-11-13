@@ -21,7 +21,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 50%, #2c2c2c 100%);
+            background: linear-gradient(135deg, #1a0033 0%, #330066 50%, #1a0033 100%);
             color: #ffffff;
             min-height: 100vh;
             overflow-x: hidden;
@@ -1237,7 +1237,6 @@
             </ul>
             
             <div class="nav-actions">
-                <a href="index.html" class="nav-external-link">🏠</a>
                 <a href="radio.html" class="nav-listen-btn"><span class="visually-hidden">Listen</span></a>
             </div>
             
@@ -2083,15 +2082,11 @@
                         <p>Buscando "${title}" de ${artist}...</p>
                     `;
 
-                    // Método 1: Intentar con backend API
-                    let videoId = await this.searchViaBackendAPI(searchQuery);
-                    
-                    // Método 2: Fallback a búsqueda local si el backend falla
-                    if (!videoId) {
-                        videoId = await this.findYouTubeVideoId(searchQuery);
-                    }
+                    // Método 1: Intentar encontrar video para embed
+                    let videoId = await this.findYouTubeVideoId(searchQuery);
                     
                     if (videoId) {
+                        // Hay un video para hacer embed
                         const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&showinfo=0&modestbranding=1`;
                         
                         iframe.onload = () => {
@@ -2109,12 +2104,14 @@
                         // Fallback timeout
                         setTimeout(() => {
                             if (loading.style.display !== 'none') {
-                                loading.style.display = 'none';
-                                iframe.style.display = 'block';
+                                this.handleVideoError(searchQuery);
                             }
-                        }, 3000);
+                        }, 10000);
                     } else {
-                        throw new Error('No se encontró el video');
+                        // No hay video para embed, ya se abrió búsqueda directa en nueva ventana
+                        loading.style.display = 'none';
+                        iframe.style.display = 'none';
+                        this.showToast(`Búsqueda abierta en nueva ventana: ${title} - ${artist}`, 'info');
                     }
 
                 } catch (error) {
@@ -2137,15 +2134,31 @@
                     });
                     
                     if (!response.ok) {
-                        console.log('API backend no disponible, usando método local');
-                        return null;
+                        console.log('API backend no disponible, abriendo búsqueda directa');
+                        return { directSearch: true, searchQuery };
                     }
                     
                     const data = await response.json();
                     
+                    if (!data.success) {
+                        // La API no está configurada o falló, usar búsqueda directa
+                        console.log('YouTube API not available, opening direct search');
+                        return { 
+                            directSearch: true, 
+                            searchQuery,
+                            directSearchUrl: data.directSearchUrl 
+                        };
+                    }
+                    
                     if (data.success && data.results && data.results.length > 0) {
-                        console.log('Usando resultado de API backend:', data.results[0]);
+                        console.log(`Usando resultado de ${data.method || 'API'} backend:`, data.results[0]);
+                        if (data.warning) {
+                            console.warn('YouTube API Warning:', data.warning);
+                        }
                         return data.results[0].videoId;
+                    } else {
+                        console.log('No results from backend API, opening direct search');
+                        return { directSearch: true, searchQuery };
                     }
                     
                     return null;
@@ -2158,19 +2171,30 @@
 
             async findYouTubeVideoId(searchQuery) {
                 try {
-                    // Intentar buscar usando YouTube Search API (simulado)
-                    // En una implementación real, esto haría una llamada a tu backend
+                    console.log(`🔍 Searching for: ${searchQuery}`);
                     
-                    // Método 1: Intentar con una base de datos de tracks populares
-                    const videoId = await this.searchInMusicDatabase(searchQuery);
-                    if (videoId) return videoId;
-
-                    // Método 2: Usar scraping simulado (en producción sería un endpoint de tu backend)
-                    const scrapedId = await this.simulateYouTubeSearch(searchQuery);
-                    if (scrapedId) return scrapedId;
+                    // Método 1: Intentar con backend API (maneja YouTube API o fallbacks gracefully)
+                    const backendResult = await this.searchViaBackendAPI(searchQuery);
                     
-                    // Método 3: Fallback a videos genéricos por género
-                    return this.getFallbackVideo(searchQuery);
+                    // Verificar si debe abrir búsqueda directa
+                    if (backendResult && backendResult.directSearch) {
+                        console.log('🌐 Opening direct YouTube search');
+                        const searchUrl = backendResult.directSearchUrl || 
+                                        `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+                        window.open(searchUrl, '_blank');
+                        return null; // No hay video para embed
+                    }
+                    
+                    if (backendResult && typeof backendResult === 'string') {
+                        console.log('✅ Video found via backend API');
+                        return backendResult;
+                    }
+                    
+                    // Si llegamos aquí, no hay API disponible, abrir búsqueda directa
+                    console.log('🌐 No video embed available, opening direct YouTube search');
+                    const directSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+                    window.open(directSearchUrl, '_blank');
+                    return null;
 
                 } catch (error) {
                     console.error('Error finding video:', error);
