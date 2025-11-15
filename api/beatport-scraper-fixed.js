@@ -275,9 +275,9 @@ router.get('/genres', (req, res) => {
     }
 });
 
-// Obtener Top100 de un género específico y generar CSV
-router.get('/scrape/:genre', async (req, res) => {
-    const { genre } = req.params;
+// Obtener Top100 de un género específico y generar CSV (usando query params)
+router.get('/scrape', async (req, res) => {
+    const { genre } = req.query;
     
     console.log(`🚀 Iniciando scraping para género: ${genre}`);
     
