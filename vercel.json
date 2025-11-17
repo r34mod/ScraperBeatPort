@@ -22,6 +22,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/beatport-scraper-fixed.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
