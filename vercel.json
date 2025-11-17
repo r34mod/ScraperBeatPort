@@ -26,6 +26,26 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/1001tracklists-scraper.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/beatport-scraper.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/get-tracks.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/traxsource-scraper.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/youtube-search.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -46,6 +66,30 @@
     {
       "src": "/api/scrape",
       "dest": "/api/scrape.js"
+    },
+    {
+      "src": "/api/1001tracklists",
+      "dest": "/api/1001tracklists-scraper.js"
+    },
+    {
+      "src": "/api/beatport",
+      "dest": "/api/beatport-scraper.js"
+    },
+    {
+      "src": "/api/beatport-fixed",
+      "dest": "/api/beatport-scraper-fixed.js"
+    },
+    {
+      "src": "/api/get-tracks",
+      "dest": "/api/get-tracks.js"
+    },
+    {
+      "src": "/api/traxsource",
+      "dest": "/api/traxsource-scraper.js"
+    },
+    {
+      "src": "/api/youtube-search",
+      "dest": "/api/youtube-search.js"
     },
     {
       "src": "/api/(.*)",
