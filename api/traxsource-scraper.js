@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay } = require('./scraper-utils');
 
 const router = express.Router();
 
@@ -94,24 +95,17 @@ async function scrapeTraxsourceGenre(genreUrl, genreName) {
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         });
         const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        await page.setUserAgent(getRandomUserAgent());
         await page.setViewport({ width: 1200, height: 900 });
 
         // Navegar a la URL
         await page.goto(genreUrl, { waitUntil: 'networkidle2', timeout: 45000 });
         
         // Esperar un poco para que cargue la página
-        await page.waitForTimeout(3000);
+        await delay(3000);
 
         // Intentar cerrar posibles banners de cookies
-        try {
-            const cookieSelector = '.cookie-notice .btn, .accept-cookies, .gdpr-accept, [data-dismiss="modal"]';
-            await page.waitForSelector(cookieSelector, { timeout: 3000 });
-            await page.click(cookieSelector);
-            await page.waitForTimeout(1000);
-        } catch (e) {
-            console.log('ℹ️  No se encontró banner de cookies o ya está cerrado');
-        }
+        await handleCookieConsent(page);
 
         // Esperar a que carguen los tracks
         await page.waitForSelector('.track, .track-item, .chart-item, .row', { timeout: 10000 });
@@ -171,16 +165,14 @@ async function scrapeTraxsourceGenre(genreUrl, genreName) {
         console.log(`📊 Tracks encontrados en ${genreName}:`, tracks.length);
 
         if (tracks.length === 0) {
-            console.log('⚠️  No se encontraron tracks, generando datos de ejemplo...');
-            return generateSampleTraxsourceTracks(genreName);
+            throw new Error(`No se encontraron tracks para el género ${genreName}. Es posible que la estructura de la página haya cambiado.`);
         }
 
         return tracks.slice(0, 100); // Limitar a top 100
 
     } catch (error) {
         console.error(`❌ Error durante el scraping de ${genreName}:`, error.message);
-        console.log('⚠️  Generando datos de ejemplo como respaldo...');
-        return generateSampleTraxsourceTracks(genreName);
+        throw error;
     } finally {
         if (browser) {
             await browser.close();
@@ -188,55 +180,7 @@ async function scrapeTraxsourceGenre(genreUrl, genreName) {
     }
 }
 
-// Función para generar datos de ejemplo
-function generateSampleTraxsourceTracks(genreName) {
-    const sampleArtists = [
-        'Kerri Chandler', 'Black Coffee', 'Dennis Ferrer', 'Louie Vega', 'Masters At Work',
-        'Horse Meat Disco', 'Joey Negro', 'Disclosure', 'ODESZA', 'Lane 8', 'Eric Prydz',
-        'Maya Jane Coles', 'Purple Disco Machine', 'Basement Jaxx', 'Fatboy Slim',
-        'Todd Terry', 'Armand Van Helden', 'Roger Sanchez', 'Erick Morillo', 'David Morales',
-        'Mark Knight', 'Defected Records', 'Soul Clap', 'Hot Since 82', 'Carl Cox',
-        'Artbat', 'Ben Böhmer', 'Rodriguez Jr.', 'Stephan Bodzin', 'Tale Of Us'
-    ];
 
-    const sampleTitles = [
-        'Deep Feelings', 'Soul Connection', 'House Vibes', 'Underground', 'Vocal Deep',
-        'Funky Groove', 'Soulful Journey', 'Dancing Queen', 'House Party', 'Deep Love',
-        'Afro Soul', 'Tribal Nights', 'Disco Funk', 'House Music', 'Feel Good',
-        'Underground Anthem', 'Soulful House', 'Deep Emotion', 'Funky Beat', 'House Nation',
-        'Vocal Paradise', 'Deep House Vibes', 'Soul Train', 'Funky Disco', 'House Forever'
-    ];
-
-    const sampleLabels = [
-        'Defected Records', 'Strictly Rhythm', 'Nervous Records', 'King Street Sounds',
-        'Soul Heaven Records', 'Quantize Recordings', 'Large Music', 'Toolroom Records',
-        'Armada Deep', 'Spinnin\' Deep', 'Noir Music', 'Suara', 'Hot Creations',
-        'VIVa Music', 'Crosstown Rebels', 'Circus Recordings', 'Saved Records',
-        'Bedrock Records', 'Global Underground', 'Renaissance Records'
-    ];
-
-    const tracks = [];
-    for (let i = 1; i <= 100; i++) {
-        const randomArtist = sampleArtists[Math.floor(Math.random() * sampleArtists.length)];
-        const randomTitle = sampleTitles[Math.floor(Math.random() * sampleTitles.length)];
-        const randomLabel = sampleLabels[Math.floor(Math.random() * sampleLabels.length)];
-        
-        tracks.push({
-            position: i,
-            title: `${randomTitle} ${Math.random() > 0.7 ? '(Original Mix)' : Math.random() > 0.5 ? '(Extended Mix)' : '(Radio Edit)'}`,
-            artist: randomArtist,
-            label: randomLabel,
-            duration: `${Math.floor(Math.random() * 3) + 4}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
-            genre: genreName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            bpm: Math.floor(Math.random() * 40) + 120,
-            key: ['A', 'B', 'C', 'D', 'E', 'F', 'G'][Math.floor(Math.random() * 7)] + ['maj', 'min'][Math.floor(Math.random() * 2)],
-            releaseDate: '2024',
-            price: '$1.49',
-            platform: 'Traxsource'
-        });
-    }
-    return tracks;
-}
 
 // Ruta para obtener géneros disponibles
 router.get('/genres', (req, res) => {
@@ -269,7 +213,10 @@ router.post('/scrape', optionalAuth, async (req, res) => {
         console.log(`🎵 Iniciando scraping de Traxsource - Género: ${genre}`);
         
         const genreUrl = TRAXSOURCE_GENRES[genre];
-        const tracks = await scrapeTraxsourceGenre(genreUrl, genre);
+        const tracks = await retryWithBackoff(
+            () => scrapeTraxsourceGenre(genreUrl, genre),
+            2, 3000
+        );
 
         if (tracks.length === 0) {
             return res.status(404).json({ error: 'No se encontraron tracks para este género' });
@@ -390,18 +337,6 @@ router.get('/download/:genre/:filename', (req, res) => {
     
     if (!fs.existsSync(filePath)) {
         console.log(`❌ Archivo no encontrado: ${filePath}`);
-        
-        // Buscar también en la carpeta con mayúscula como fallback
-        const oldFilePath = path.join(__dirname, '..', 'Downloads', genre.toLowerCase(), filename);
-        if (fs.existsSync(oldFilePath)) {
-            console.log(`✅ Encontrado en ubicación alternativa: ${oldFilePath}`);
-            return res.download(oldFilePath, filename, (err) => {
-                if (err) {
-                    console.error('Error descargando archivo:', err);
-                    res.status(500).json({ error: 'Error al descargar el archivo' });
-                }
-            });
-        }
         
         return res.status(404).json({ 
             error: 'Archivo no encontrado', 

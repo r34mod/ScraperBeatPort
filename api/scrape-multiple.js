@@ -1,8 +1,5 @@
 const puppeteer = require('puppeteer');
 
-// Importar la función de scraping desde el archivo principal
-const { scrapeBeatport } = require('./scrape');
-
 // Géneros disponibles
 const BEATPORT_GENRES = {
     'house': 'https://www.beatport.com/genre/house/5/top-100',

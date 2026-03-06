@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, smoothScroll, validateTrackData, delay } = require('./scraper-utils');
 
 const router = express.Router();
 
@@ -93,18 +94,14 @@ async function scrapeBeatportGenre(genreUrl, genreName) {
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         });
         const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        await page.setUserAgent(getRandomUserAgent());
         await page.setViewport({ width: 1200, height: 900 });
 
         // Navegar a la URL
         await page.goto(genreUrl, { waitUntil: 'networkidle2', timeout: 45000 });
 
-        // Intentar cerrar posibles banners de cookies (silencioso)
-        try {
-            const cookieSel = 'button[data-testid="uc-accept-all-button"], button[aria-label*="Accept"], button.cookie-accept';
-            const btn = await page.$(cookieSel);
-            if (btn) { await btn.click(); await page.waitForTimeout(1000); }
-        } catch (e) {}
+        // Intentar cerrar posibles banners de cookies
+        await handleCookieConsent(page);
 
         // Esperar que la página cargue y buscar los elementos de tracks
         console.log('🔍 Buscando elementos de tracks en la página...');
@@ -125,7 +122,7 @@ async function scrapeBeatportGenre(genreUrl, genreName) {
                     await delay(400); 
                 }
             });
-            await page.waitForTimeout(2000);
+            await delay(2000);
             
         } catch (error) {
             console.log('⚠️ No se encontraron elementos de tracks inmediatamente, continuando...');
@@ -135,23 +132,27 @@ async function scrapeBeatportGenre(genreUrl, genreName) {
         const tracks = await page.evaluate(() => {
             // Buscar todos los enlaces a tracks como elemento base
             const trackLinks = Array.from(document.querySelectorAll('a[href*="/track/"]'));
-            console.log(`Encontrados ${trackLinks.length} enlaces de tracks`);
             
             const out = [];
+            const seenTitles = new Set();
             let position = 1;
             
             // Procesar cada enlace de track para obtener información
-            trackLinks.forEach((trackLink, idx) => {
-                if (position > 100) return; // Limitar a Top 100
+            trackLinks.forEach((trackLink) => {
+                if (position > 100) return;
                 
                 // Obtener el título del enlace del track
                 const title = trackLink.textContent.trim();
-                if (!title || title.length < 2) return; // Saltar enlaces vacíos o muy cortos
+                if (!title || title.length < 2) return;
+                
+                // Evitar duplicados por título
+                if (seenTitles.has(title)) return;
+                seenTitles.add(title);
                 
                 // Buscar el contenedor padre que contiene toda la información del track
                 let container = trackLink.closest('div');
                 let attempts = 0;
-                while (container && attempts < 5) {
+                while (container && attempts < 8) {
                     const artistLinks = container.querySelectorAll('a[href*="/artist/"]');
                     const labelLink = container.querySelector('a[href*="/label/"]');
                     
@@ -165,17 +166,85 @@ async function scrapeBeatportGenre(genreUrl, genreName) {
                         // Extraer sello
                         const label = labelLink ? labelLink.textContent.trim() : '';
                         
+                        // Extraer remixer - buscar texto entre paréntesis en título o en links de artista remix
+                        let remixer = '';
+                        const remixMatch = title.match(/\(([^)]+(?:remix|mix|edit|dub|rework|bootleg)[^)]*)\)/i);
+                        if (remixMatch) {
+                            remixer = remixMatch[1].trim();
+                        }
+                        
+                        // Extraer BPM - buscar elementos con texto numérico de 2-3 dígitos (rango 60-200)
+                        let bpm = '';
+                        const allSpans = container.querySelectorAll('span, div.bpm, span.bpm, [class*="bpm"], [data-track-bpm]');
+                        for (const el of allSpans) {
+                            const txt = el.textContent.trim();
+                            if (/^\d{2,3}$/.test(txt)) {
+                                const num = parseInt(txt, 10);
+                                if (num >= 60 && num <= 200) {
+                                    bpm = txt;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Extraer Key - buscar elementos que contengan clave musical
+                        let key = '';
+                        const keyPattern = /^[A-G][#b♯♭]?\s*(maj|min|major|minor)?$/i;
+                        const keyElements = container.querySelectorAll('span, div.key, span.key, [class*="key"], [data-track-key]');
+                        for (const el of keyElements) {
+                            const txt = el.textContent.trim();
+                            if (keyPattern.test(txt)) {
+                                key = txt;
+                                break;
+                            }
+                        }
+                        // Beatport also uses Camelot notation (1A-12B)
+                        if (!key) {
+                            const camelotPattern = /^(1[0-2]|[1-9])[AB]$/;
+                            for (const el of keyElements) {
+                                const txt = el.textContent.trim();
+                                if (camelotPattern.test(txt)) {
+                                    key = txt;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Extraer Duration - buscar elementos con formato M:SS o MM:SS
+                        let length = '';
+                        const durationPattern = /^\d{1,2}:\d{2}$/;
+                        const durationElements = container.querySelectorAll('span, div.length, span.length, [class*="duration"], [class*="length"], [data-track-length]');
+                        for (const el of durationElements) {
+                            const txt = el.textContent.trim();
+                            if (durationPattern.test(txt)) {
+                                length = txt;
+                                break;
+                            }
+                        }
+                        
+                        // Extraer Release Date - buscar elementos con formato fecha
+                        let releaseDate = '';
+                        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+                        const dateElements = container.querySelectorAll('span, [class*="release"], [class*="date"], [data-track-released]');
+                        for (const el of dateElements) {
+                            const txt = el.textContent.trim();
+                            if (datePattern.test(txt)) {
+                                releaseDate = txt;
+                                break;
+                            }
+                        }
+                        
                         out.push({
                             position: position++,
                             title: title,
                             artist: artists || 'Unknown Artist',
-                            remixer: '',
+                            remixer: remixer,
                             label: label || '',
-                            releaseDate: '',
+                            releaseDate: releaseDate,
                             genre: window.location.pathname.split('/')[2] || '',
-                            bpm: '',
-                            key: '',
-                            length: ''
+                            bpm: bpm,
+                            key: key,
+                            length: length
                         });
                         break;
                     }
@@ -203,26 +272,26 @@ async function scrapeBeatportGenre(genreUrl, genreName) {
 // Función para generar CSV con carpetas organizadas por género
 async function generateCSV(tracks, genreName) {
     try {
-        // Crear estructura de carpetas: Downloads/genero/
-        const downloadsDir = path.join(__dirname, '..', 'Downloads');
+        // Crear estructura de carpetas: downloads/genero/
+        const downloadsDir = path.join(__dirname, '..', 'downloads');
         const genreDir = path.join(downloadsDir, genreName.toLowerCase());
         
-        // Crear directorio principal Downloads si no existe
+        // Crear directorio principal downloads si no existe
         if (!fs.existsSync(downloadsDir)) {
             fs.mkdirSync(downloadsDir, { recursive: true });
-            console.log(`📁 Creado directorio: Downloads`);
+            console.log(`📁 Creado directorio: downloads`);
         }
         
         // Crear subdirectorio del género si no existe
         if (!fs.existsSync(genreDir)) {
             fs.mkdirSync(genreDir, { recursive: true });
-            console.log(`📁 Creado directorio para género: Downloads/${genreName.toLowerCase()}`);
+            console.log(`📁 Creado directorio para género: downloads/${genreName.toLowerCase()}`);
         }
 
         const timestamp = new Date().toISOString().split('T')[0];
         const fileName = `beatport_${genreName.replace('-', '_')}_top100_${timestamp}.csv`;
         const filePath = path.join(genreDir, fileName);
-        const relativePath = path.join('Downloads', genreName.toLowerCase(), fileName);
+        const relativePath = path.join('downloads', genreName.toLowerCase(), fileName);
 
         console.log(`💾 Generando CSV en: ${relativePath}`);
 
@@ -292,8 +361,14 @@ router.get('/scrape', optionalAuth, async (req, res) => {
     }
 
     try {
-        // Hacer scraping (actualmente genera datos de prueba)
-        const tracks = await scrapeBeatportGenre(BEATPORT_GENRES[genre], genre);
+        // Hacer scraping con reintentos automáticos
+        const rawTracks = await retryWithBackoff(
+            () => scrapeBeatportGenre(BEATPORT_GENRES[genre], genre),
+            2, 3000
+        );
+        
+        // Validar y limpiar datos de cada track
+        const tracks = rawTracks.map(t => validateTrackData(t));
         
         if (tracks.length === 0) {
             console.log(`⚠️ No se obtuvieron tracks para ${genre}`);
@@ -371,26 +446,14 @@ router.get('/scrape', optionalAuth, async (req, res) => {
 router.get('/download/:genre/:filename', (req, res) => {
     const { genre, filename } = req.params;
     
-    // Buscar en la nueva estructura de carpetas
-    const filePath = path.join(__dirname, '..', 'Downloads', genre.toLowerCase(), filename);
+    // Buscar en la estructura de carpetas
+    const filePath = path.join(__dirname, '..', 'downloads', genre.toLowerCase(), filename);
     
     console.log(`📥 Solicitud de descarga: ${genre}/${filename}`);
     console.log(`📂 Buscando en: ${filePath}`);
     
     if (!fs.existsSync(filePath)) {
         console.log(`❌ Archivo no encontrado: ${filePath}`);
-        
-        // Buscar también en la carpeta antigua (downloads) como fallback
-        const oldFilePath = path.join(__dirname, '..', 'downloads', filename);
-        if (fs.existsSync(oldFilePath)) {
-            console.log(`✅ Encontrado en ubicación antigua: ${oldFilePath}`);
-            return res.download(oldFilePath, filename, (err) => {
-                if (err) {
-                    console.error('Error descargando archivo:', err);
-                    res.status(500).json({ error: 'Error al descargar el archivo' });
-                }
-            });
-        }
         
         return res.status(404).json({ 
             error: 'Archivo no encontrado', 
@@ -414,7 +477,7 @@ router.get('/files/:genre?', (req, res) => {
     const { genre } = req.params;
     
     try {
-        const downloadsDir = path.join(__dirname, '..', 'Downloads');
+        const downloadsDir = path.join(__dirname, '..', 'downloads');
         
         if (!fs.existsSync(downloadsDir)) {
             return res.json({ 
@@ -550,9 +613,9 @@ router.get('/test', (req, res) => {
             scrapeMultiple: '/api/scrape-multiple - Extrae múltiples géneros'
         },
         folderStructure: {
-            downloads: 'Downloads/',
-            byGenre: 'Downloads/{genre}/',
-            csvFiles: 'Downloads/{genre}/beatport_{genre}_top100_{date}.csv'
+            downloads: 'downloads/',
+            byGenre: 'downloads/{genre}/',
+            csvFiles: 'downloads/{genre}/beatport_{genre}_top100_{date}.csv'
         }
     });
 });
