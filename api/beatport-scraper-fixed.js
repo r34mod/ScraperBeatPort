@@ -3,6 +3,8 @@ const puppeteer = require('puppeteer');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs');
 const path = require('path');
+const { supabase, isSupabaseEnabled } = require('./supabase');
+const { optionalAuth } = require('./auth-middleware');
 
 const router = express.Router();
 
@@ -276,7 +278,7 @@ router.get('/genres', (req, res) => {
 });
 
 // Obtener Top100 de un género específico y generar CSV (usando query params)
-router.get('/scrape', async (req, res) => {
+router.get('/scrape', optionalAuth, async (req, res) => {
     const { genre } = req.query;
     
     console.log(`🚀 Iniciando scraping para género: ${genre}`);
@@ -303,6 +305,44 @@ router.get('/scrape', async (req, res) => {
 
         // Generar CSV
         const { filePath, fileName } = await generateCSV(tracks, genre);
+
+        // Guardar en Supabase si está configurado y el usuario está autenticado
+        let supabaseSaved = false;
+        let sessionId = null;
+        if (isSupabaseEnabled() && req.userId && req.userClient) {
+            try {
+                const db = req.userClient;
+                const { data: session, error: sessionError } = await db
+                    .from('scrape_sessions')
+                    .insert({ user_id: req.userId, platform: 'beatport', genre: genre.toLowerCase(), tracks_count: tracks.length })
+                    .select()
+                    .single();
+
+                if (!sessionError && session) {
+                    const rows = tracks.map((t, idx) => ({
+                        session_id: session.id,
+                        user_id: req.userId,
+                        platform: 'beatport',
+                        genre: genre.toLowerCase(),
+                        position: t.position || idx + 1,
+                        title: t.title || '',
+                        artist: t.artist || '',
+                        remixer: t.remixer || '',
+                        label: t.label || '',
+                        release_date: t.releaseDate || null,
+                        bpm: t.bpm || null,
+                        key: t.key || null,
+                        duration: t.length || null,
+                    }));
+                    await db.from('tracks').insert(rows);
+                    supabaseSaved = true;
+                    sessionId = session.id;
+                    console.log(`☁️ Tracks guardados en Supabase (sesión ${session.id}, user ${req.userId})`);
+                }
+            } catch (e) {
+                console.warn('⚠️ No se pudieron guardar tracks en Supabase:', e.message);
+            }
+        }
         
         console.log(`✅ Proceso completado para ${genre}: ${tracks.length} tracks`);
         
@@ -312,6 +352,8 @@ router.get('/scrape', async (req, res) => {
             tracksCount: tracks.length,
             fileName,
             downloadUrl: `/api/download/${genre}/${fileName}`,
+            supabaseSaved,
+            sessionId,
             tracks: tracks.slice(0, 10) // Mostrar solo los primeros 10 como preview
         });
 

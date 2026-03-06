@@ -1,0 +1,90 @@
+.radio-page { padding-bottom: 120px; }
+
+.radio-title {
+  font-size: clamp(2rem, 6vw, 4rem); font-weight: 700;
+  margin-bottom: 20px; color: #fff; text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+.radio-filters { margin-bottom: 30px; }
+
+.radio-search {
+  width: 100%; max-width: 400px; padding: 12px 18px;
+  border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.06); color: #fff; font-size: 0.95rem;
+  margin-bottom: 14px; outline: none; transition: border-color 0.2s;
+}
+.radio-search:focus { border-color: #ff4444; }
+.radio-search::placeholder { color: #666; }
+
+.radio-genre-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.radio-genre-tag {
+  padding: 6px 14px; border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
+  color: #bbb; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+}
+.radio-genre-tag.active,
+.radio-genre-tag:hover {
+  background: rgba(255,68,68,0.15); border-color: #ff4444; color: #fff;
+}
+
+.radio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.radio-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 1.5rem; padding: 36px 28px;
+  text-align: center;
+  transition: all 0.4s cubic-bezier(0.23,1,0.32,1);
+  position: relative; overflow: hidden;
+}
+.radio-card:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.2);
+  transform: translateY(-5px);
+}
+.radio-card.playing {
+  border-color: rgba(255,68,68,0.4);
+  background: rgba(255,68,68,0.06);
+}
+
+.radio-logo {
+  width: 64px; height: 64px; margin: 0 auto 16px;
+  border-radius: 50%; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; color: #222; font-weight: 700;
+}
+
+.radio-name { font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.radio-description { color: #aaa; margin-bottom: 4px; font-weight: 300; }
+.radio-country { color: #666; font-size: 0.8rem; margin-bottom: 16px; }
+
+.radio-listen-btn {
+  background: #ff1744; color: #fff; border: none;
+  border-radius: 2rem; padding: 0.7rem 2rem;
+  font-size: 1rem; font-weight: 600; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255,23,68,0.13);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+.radio-listen-btn:hover {
+  background: #ff4444;
+  box-shadow: 0 4px 16px rgba(255,23,68,0.18);
+  transform: translateY(-2px);
+}
+.radio-listen-btn.active {
+  background: #333; color: #ff4444;
+}
+
+.radio-empty {
+  grid-column: 1 / -1; text-align: center;
+  padding: 60px 20px; color: #888; font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .radio-grid { grid-template-columns: 1fr; gap: 16px; }
+  .radio-card { padding: 24px 18px; }
+}

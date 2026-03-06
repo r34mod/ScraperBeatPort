@@ -1,78 +1,132 @@
+// Cargar variables de entorno desde .env en desarrollo
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const pino = require('pino');
+
+// Importar rutas de los scrapers
 const beatportScraper = require('./beatport-scraper-fixed');
 const traxsourceScraper = require('./traxsource-scraper');
 const tracklistsScraper = require('./1001tracklists-scraper');
 const youtubeSearch = require('./youtube-search');
+const tracksApi = require('./tracks-api');
+const authApi = require('./auth-api');
 
-const app = express();
+// --- CONFIGURACIÓN ---
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Configurar logger (pino)
+const logger = pino({
+    level: IS_PRODUCTION ? 'info' : 'debug',
+    // En desarrollo, usar pino-pretty para logs más legibles
+    transport: IS_PRODUCTION ? undefined : { target: 'pino-pretty' },
+});
+
+const app = express();
+
+// --- MIDDLEWARE ---
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Middleware de logging
+// Middleware de logging para cada petición
 app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    logger.info({ method: req.method, url: req.url }, 'Petición recibida');
     next();
 });
 
-// Rutas API
+
+// --- RUTAS API (unificadas) ---
+// Se definen de manera incondicional para que la estructura de la app sea consistente.
+// Vercel gestionará los archivos en /api como serverless functions automáticamente.
 app.use('/api', beatportScraper);
 app.use('/api/traxsource', traxsourceScraper);
 app.use('/api/1001tracklists', tracklistsScraper);
 app.use('/api/youtube', youtubeSearch);
-
-// Ruta para servir el HTML principal
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-});
+app.use('/api/auth', authApi);
+app.use('/api/tracks', tracksApi);
 
 // Ruta de health check
 app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
+    res.json({
+        status: 'OK',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        memory: process.memoryUsage()
+        memory: process.memoryUsage(),
     });
 });
 
-// Manejo de errores 404
-app.use('*', (req, res) => {
-    res.status(404).json({ 
+
+// --- LÓGICA ESPECIAL PARA ENTORNO LOCAL ---
+if (!IS_PRODUCTION) {
+    // Servir archivos estáticos desde la carpeta 'public'
+    app.use(express.static(path.join(__dirname, '..', 'public')));
+
+    // Ruta para servir el HTML principal en la raíz
+    app.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+    });
+    
+    logger.info('🏠 Configuración de desarrollo local activa');
+} else {
+    logger.info('☁️ Configuración de producción (Vercel) activa');
+}
+
+
+// --- MANEJO DE ERRORES ---
+
+// Manejador para rutas no encontradas (404)
+// Se ejecuta si ninguna ruta anterior coincide
+app.use((req, res, next) => {
+    res.status(404).json({
         error: 'Ruta no encontrada',
-        path: req.originalUrl 
+        path: req.originalUrl,
     });
 });
 
-// Manejo global de errores
+// Manejador de errores global
+// Express lo identifica por tener 4 argumentos
 app.use((error, req, res, next) => {
-    console.error('Error del servidor:', error);
-    res.status(500).json({ 
+    logger.error(error, 'Ha ocurrido un error en el servidor');
+    
+    // Evitar filtrar detalles internos en producción
+    const message = IS_PRODUCTION ? 'Ha ocurrido un error interno' : error.message;
+
+    res.status(error.statusCode || 500).json({
         error: 'Error interno del servidor',
-        message: process.env.NODE_ENV === 'development' ? error.message : 'Ha ocurrido un error'
+        message: message,
     });
 });
 
-// Manejo de cierre graceful
-process.on('SIGTERM', () => {
-    console.log('Cerrando servidor...');
-    server.close(() => {
-        console.log('Servidor cerrado exitosamente');
-        process.exit(0);
+
+// --- INICIO DEL SERVIDOR (solo en local) ---
+// Vercel se encarga de ejecutar el servidor, por lo que este bloque
+// solo debe ejecutarse en un entorno de desarrollo.
+if (!IS_PRODUCTION) {
+    const server = app.listen(PORT, () => {
+        logger.info(`🎵 Beatport Scraper Server iniciado`);
+        logger.info(`🌐 Servidor ejecutándose en http://localhost:${PORT}`);
+        logger.info(`📁 Sirviendo archivos estáticos desde: ${path.join(__dirname, '..', 'public')}`);
+        logger.info(`💾 Las descargas se guardarán en: ${path.join(__dirname, '..', 'downloads')}`);
     });
-});
 
-const server = app.listen(PORT, () => {
-    console.log(`🎵 Beatport Scraper Server iniciado`);
-    console.log(`🌐 Servidor ejecutándose en http://localhost:${PORT}`);
-    console.log(`📁 Archivos estáticos servidos desde: ${path.join(__dirname, '..', 'public')}`);
-    console.log(`💾 Descargas guardadas en: ${path.join(__dirname, '..', 'downloads')}`);
-    console.log(`⏰ Iniciado en: ${new Date().toISOString()}`);
-});
+    // Manejo de cierre "graceful" para limpiar recursos
+    const gracefulShutdown = (signal) => {
+        logger.warn(`Señal ${signal} recibida, cerrando servidor...`);
+        server.close(() => {
+            logger.info('✅ Servidor cerrado exitosamente');
+            process.exit(0);
+        });
+    };
 
+    // Escuchar señales de terminación
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM')); // ej. 'kill'
+    process.on('SIGINT', () => gracefulShutdown('SIGINT')); // ej. Ctrl+C
+}
+
+// Exportar la app para que Vercel pueda usarla
 module.exports = app;

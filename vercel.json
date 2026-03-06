@@ -46,8 +46,25 @@
       "use": "@vercel/node"
     },
     {
-      "src": "public/**",
-      "use": "@vercel/static"
+      "src": "api/tracks-api.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/supabase.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/auth-api.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/auth-middleware.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
     }
   ],
   "routes": [
@@ -92,6 +109,14 @@
       "dest": "/api/youtube-search.js"
     },
     {
+      "src": "/api/tracks/(.*)",
+      "dest": "/api/tracks-api.js"
+    },
+    {
+      "src": "/api/auth/(.*)",
+      "dest": "/api/auth-api.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/server.js"
     },
@@ -101,11 +126,11 @@
     },
     {
       "src": "/(.*\\.(css|js|html|png|jpg|gif|ico|svg|json|csv))",
-      "dest": "/public/$1"
+      "dest": "/dist/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/public/$1"
+      "dest": "/dist/index.html"
     }
   ]
 }

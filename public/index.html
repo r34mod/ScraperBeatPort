@@ -746,11 +746,17 @@
                     <a href="visualiceList.html" class="nav-link">Visualice</a>
                 </li>
                 <li class="nav-item">
+                    <a href="mis-listas.html" class="nav-link">Mis Listas</a>
+                </li>
+                <li class="nav-item">
                     <a href="radio.html" class="nav-link">Radio</a>
                 </li>
             </ul>
             
             <div class="nav-actions">
+                <span id="navUserEmail" style="display:none;color:#aaa;font-size:.85rem;margin-right:8px;"></span>
+                <button id="navLogout" style="display:none;background:#ff4444;color:#fff;border:none;padding:4px 12px;border-radius:6px;font-size:.8rem;cursor:pointer;">Salir</button>
+                <a id="navLoginLink" href="login.html" style="display:none;color:#00ffdd;font-size:.85rem;margin-right:8px;text-decoration:none;">Iniciar sesión</a>
                 <a href="radio.html" class="nav-listen-btn"><span class="visually-hidden">Listen</span></a>
             </div>
             
@@ -764,6 +770,7 @@
         <a href="traxsource.html" class="nav-link">Traxsource</a>
         <a href="1001tracklists.html" class="nav-link">1001Tracklists</a>
         <a href="visualiceList.html" class="nav-link">Visualice</a>
+        <a href="mis-listas.html" class="nav-link">Mis Listas</a>
         <a href="radio.html" class="nav-link">Radio</a>
         <a href="radio.html" class="nav-listen-btn">♪ Listen</a>
     </div>
@@ -1152,5 +1159,6 @@
             }
         });
     </script>
+    <script src="auth-helper.js"></script>
 </body>
 </html>

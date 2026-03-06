@@ -3,6 +3,8 @@ const puppeteer = require('puppeteer');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs');
 const path = require('path');
+const { supabase, isSupabaseEnabled } = require('./supabase');
+const { optionalAuth } = require('./auth-middleware');
 
 const router = express.Router();
 
@@ -254,7 +256,7 @@ router.get('/genres', (req, res) => {
 });
 
 // Ruta para hacer scraping de un género específico
-router.post('/scrape', async (req, res) => {
+router.post('/scrape', optionalAuth, async (req, res) => {
     const { genre } = req.body;
 
     if (!genre || !TRAXSOURCE_GENRES[genre]) {
@@ -316,6 +318,44 @@ router.post('/scrape', async (req, res) => {
         console.log(`📁 Ruta: ${csvFilePath}`);
         console.log(`📊 Total de tracks: ${tracks.length}`);
 
+        // Guardar en Supabase si está configurado y el usuario está autenticado
+        let supabaseSaved = false;
+        let sessionId = null;
+        if (isSupabaseEnabled() && req.userId && req.userClient) {
+            try {
+                const db = req.userClient;
+                const { data: session, error: sessionError } = await db
+                    .from('scrape_sessions')
+                    .insert({ user_id: req.userId, platform: 'traxsource', genre: genre.toLowerCase(), tracks_count: tracks.length })
+                    .select()
+                    .single();
+
+                if (!sessionError && session) {
+                    const rows = tracks.map((t, idx) => ({
+                        session_id: session.id,
+                        user_id: req.userId,
+                        platform: 'traxsource',
+                        genre: genre.toLowerCase(),
+                        position: t.position || idx + 1,
+                        title: t.title || '',
+                        artist: t.artist || '',
+                        remixer: '',
+                        label: t.label || '',
+                        release_date: t.releaseDate || null,
+                        bpm: t.bpm ? String(t.bpm) : null,
+                        key: t.key || null,
+                        duration: t.duration || null,
+                    }));
+                    await db.from('tracks').insert(rows);
+                    supabaseSaved = true;
+                    sessionId = session.id;
+                    console.log(`☁️ Tracks guardados en Supabase (sesión ${session.id}, user ${req.userId})`);
+                }
+            } catch (e) {
+                console.warn('⚠️ No se pudieron guardar tracks en Supabase:', e.message);
+            }
+        }
+
         res.json({
             success: true,
             message: `Scraping de ${genre} completado exitosamente`,
@@ -324,6 +364,8 @@ router.post('/scrape', async (req, res) => {
             filePath: csvFilePath,
             genre: genre,
             platform: 'Traxsource',
+            supabaseSaved,
+            sessionId,
             tracks: tracks.slice(0, 10) // Mostrar solo los primeros 10 tracks en la respuesta
         });
 
