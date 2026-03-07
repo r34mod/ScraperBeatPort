@@ -1,11 +1,10 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs');
 const path = require('path');
 const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
-const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, smoothScroll, validateTrackData, delay } = require('./scraper-utils');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, smoothScroll, validateTrackData, delay, launchBrowser, getDownloadsDir } = require('./scraper-utils');
 
 const router = express.Router();
 
@@ -89,10 +88,7 @@ async function scrapeBeatportGenre(genreUrl, genreName) {
     let browser = null;
     try {
         console.log(`🌐 Lanzando navegador para scraping de ${genreName}...`);
-        browser = await puppeteer.launch({ 
-            headless: true, 
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        });
+        browser = await launchBrowser();
         const page = await browser.newPage();
         await page.setUserAgent(getRandomUserAgent());
         await page.setViewport({ width: 1200, height: 900 });
@@ -273,8 +269,8 @@ async function scrapeBeatportGenre(genreUrl, genreName) {
 async function generateCSV(tracks, genreName) {
     try {
         // Crear estructura de carpetas: downloads/genero/
-        const downloadsDir = path.join(__dirname, '..', 'downloads');
-        const genreDir = path.join(downloadsDir, genreName.toLowerCase());
+        const downloadsDir = getDownloadsDir();
+        const genreDir = getDownloadsDir(genreName);
         
         // Crear directorio principal downloads si no existe
         if (!fs.existsSync(downloadsDir)) {
@@ -447,7 +443,7 @@ router.get('/download/:genre/:filename', (req, res) => {
     const { genre, filename } = req.params;
     
     // Buscar en la estructura de carpetas
-    const filePath = path.join(__dirname, '..', 'downloads', genre.toLowerCase(), filename);
+    const filePath = path.join(getDownloadsDir(genre), filename);
     
     console.log(`📥 Solicitud de descarga: ${genre}/${filename}`);
     console.log(`📂 Buscando en: ${filePath}`);
@@ -477,7 +473,7 @@ router.get('/files/:genre?', (req, res) => {
     const { genre } = req.params;
     
     try {
-        const downloadsDir = path.join(__dirname, '..', 'downloads');
+        const downloadsDir = getDownloadsDir();
         
         if (!fs.existsSync(downloadsDir)) {
             return res.json({ 

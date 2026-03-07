@@ -1,5 +1,9 @@
 // Configuración y utilidades para el scraper de Beatport
 
+const path = require('path');
+
+const IS_VERCEL = !!process.env.VERCEL;
+
 const CONFIG = {
     // Configuración de Puppeteer
     PUPPETEER: {
@@ -196,8 +200,35 @@ async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
     }
 }
 
+// Función para lanzar el navegador según el entorno
+async function launchBrowser() {
+    if (IS_VERCEL) {
+        const chromium = require('@sparticuz/chromium');
+        const puppeteerCore = require('puppeteer-core');
+        return puppeteerCore.launch({
+            args: chromium.args,
+            defaultViewport: chromium.defaultViewport,
+            executablePath: await chromium.executablePath(),
+            headless: chromium.headless,
+        });
+    } else {
+        const puppeteer = require('puppeteer');
+        return puppeteer.launch({
+            headless: true,
+            args: CONFIG.PUPPETEER.args,
+        });
+    }
+}
+
+// Devuelve el directorio de descargas según el entorno
+function getDownloadsDir(genre = '') {
+    const base = IS_VERCEL ? '/tmp' : path.join(__dirname, '..', 'downloads');
+    return genre ? path.join(base, genre.toLowerCase()) : base;
+}
+
 module.exports = {
     CONFIG,
+    IS_VERCEL,
     delay,
     getRandomUserAgent,
     randomDelay,
@@ -211,5 +242,7 @@ module.exports = {
     detectPageStructure,
     smoothScroll,
     handleCookieConsent,
-    retryWithBackoff
+    retryWithBackoff,
+    launchBrowser,
+    getDownloadsDir,
 };

@@ -1,11 +1,10 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs');
 const path = require('path');
 const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
-const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay } = require('./scraper-utils');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay, launchBrowser, getDownloadsDir } = require('./scraper-utils');
 
 const router = express.Router();
 
@@ -53,10 +52,7 @@ async function scrapeTraxsourceGenre(genreUrl, genreName) {
 
     let browser = null;
     try {
-        browser = await puppeteer.launch({ 
-            headless: true, 
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        });
+        browser = await launchBrowser();
         const page = await browser.newPage();
         await page.setUserAgent(getRandomUserAgent());
         await page.setViewport({ width: 1280, height: 900 });
@@ -241,8 +237,8 @@ router.post('/scrape', optionalAuth, async (req, res) => {
         // Crear nombre de archivo con fecha y género
         const today = new Date().toISOString().split('T')[0];
         const filename = `traxsource_${genre.replace('-', '_')}_top100_${today}.csv`;
-        const downloadsDir = path.join(__dirname, '..', 'downloads');
-        const genreDir = path.join(downloadsDir, genre.toLowerCase());
+        const downloadsDir = getDownloadsDir();
+        const genreDir = getDownloadsDir(genre);
         
         // Crear directorios si no existen
         if (!fs.existsSync(downloadsDir)) {
@@ -346,7 +342,7 @@ router.get('/download/:genre/:filename', (req, res) => {
     const { genre, filename } = req.params;
     
     // Buscar en la estructura de carpetas correcta
-    const filePath = path.join(__dirname, '..', 'downloads', genre.toLowerCase(), filename);
+    const filePath = path.join(getDownloadsDir(genre), filename);
     
     console.log(`📥 Solicitud de descarga: ${genre}/${filename}`);
     console.log(`📂 Buscando en: ${filePath}`);
