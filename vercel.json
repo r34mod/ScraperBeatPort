@@ -3,7 +3,8 @@
   "builds": [
     {
       "src": "api/server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": { "maxDuration": 60 }
     },
     {
       "src": "package.json",
@@ -11,11 +12,6 @@
       "config": { "distDir": "dist" }
     }
   ],
-  "functions": {
-    "api/server.js": {
-      "maxDuration": 60
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
