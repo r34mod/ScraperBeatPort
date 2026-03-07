@@ -10,6 +10,7 @@ const pino = require('pino');
 
 // Importar rutas de los scrapers
 const beatportScraper = require('./beatport-scraper-fixed');
+const beatportScraperLegacy = require('./beatport-scraper');
 const traxsourceScraper = require('./traxsource-scraper');
 const tracklistsScraper = require('./1001tracklists-scraper');
 const youtubeSearch = require('./youtube-search');
@@ -43,12 +44,13 @@ app.use((req, res, next) => {
 // --- RUTAS API (unificadas) ---
 // Se definen de manera incondicional para que la estructura de la app sea consistente.
 // Vercel gestionará los archivos en /api como serverless functions automáticamente.
-app.use('/api', beatportScraper);
+app.use('/api/beatport', beatportScraperLegacy);
 app.use('/api/traxsource', traxsourceScraper);
 app.use('/api/1001tracklists', tracklistsScraper);
 app.use('/api/youtube', youtubeSearch);
 app.use('/api/auth', authApi);
 app.use('/api/tracks', tracksApi);
+app.use('/api', beatportScraper);
 
 // Ruta de health check
 app.get('/health', (req, res) => {

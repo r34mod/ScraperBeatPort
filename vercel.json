@@ -6,116 +6,12 @@
       "use": "@vercel/node"
     },
     {
-      "src": "api/genres.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/scrape.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/scrape-multiple.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/youtube-search-vercel.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/beatport-scraper-fixed.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/1001tracklists-scraper.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/beatport-scraper.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/get-tracks.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/traxsource-scraper.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/youtube-search.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/tracks-api.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/supabase.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/auth-api.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/auth-middleware.js",
-      "use": "@vercel/node"
-    },
-    {
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": { "distDir": "dist" }
     }
   ],
   "routes": [
-    {
-      "src": "/api/genres",
-      "dest": "/api/genres.js"
-    },
-    {
-      "src": "/api/scrape-multiple",
-      "dest": "/api/scrape-multiple.js"
-    },
-    {
-      "src": "/api/youtube/search",
-      "dest": "/api/youtube-search-vercel.js"
-    },
-    {
-      "src": "/api/scrape",
-      "dest": "/api/scrape.js"
-    },
-    {
-      "src": "/api/1001tracklists",
-      "dest": "/api/1001tracklists-scraper.js"
-    },
-    {
-      "src": "/api/beatport",
-      "dest": "/api/beatport-scraper.js"
-    },
-    {
-      "src": "/api/beatport-fixed",
-      "dest": "/api/beatport-scraper-fixed.js"
-    },
-    {
-      "src": "/api/get-tracks",
-      "dest": "/api/get-tracks.js"
-    },
-    {
-      "src": "/api/traxsource",
-      "dest": "/api/traxsource-scraper.js"
-    },
-    {
-      "src": "/api/youtube-search",
-      "dest": "/api/youtube-search.js"
-    },
-    {
-      "src": "/api/tracks/(.*)",
-      "dest": "/api/tracks-api.js"
-    },
-    {
-      "src": "/api/auth/(.*)",
-      "dest": "/api/auth-api.js"
-    },
     {
       "src": "/api/(.*)",
       "dest": "/api/server.js"
