@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { autoSaveTracks } from '../utils/autoSave';
+import { useDuplicateGuard, DuplicateModal } from '../hooks/useDuplicateGuard';
 import './BeatportPage.css';
 
 const genreCategories = {
@@ -28,6 +28,7 @@ function getGenreCategory(genreId) {
 
 export default function BeatportPage() {
   const { token } = useAuth();
+  const { saveTracks, duplicateInfo, confirmReplace, dismissDuplicate } = useDuplicateGuard();
   const [genres, setGenres] = useState([]);
   const [selected, setSelected] = useState(new Set());
   const [search, setSearch] = useState('');
@@ -79,7 +80,7 @@ export default function BeatportPage() {
         if (data.success) {
           setSuccess(`✅ Extraídos ${data.tracksCount} tracks de ${data.genre}`);
           setResults([data]);
-          autoSaveTracks({ tracks: data.tracks, platform: 'beatport', genre: data.genre, token });
+          saveTracks({ tracks: data.tracks, platform: 'beatport', genre: data.genre, token });
         } else {
           setError(data.error || 'Error desconocido');
         }
@@ -95,7 +96,7 @@ export default function BeatportPage() {
         if (ok.length) {
           setSuccess(`✅ Completado: ${ok.length} géneros extraídos`);
           setResults(ok);
-          ok.forEach(r => autoSaveTracks({ tracks: r.tracks, platform: 'beatport', genre: r.genre, token }));
+          ok.forEach(r => saveTracks({ tracks: r.tracks, platform: 'beatport', genre: r.genre, token }));
         }
         if (fail.length) setError(`❌ Errores: ${fail.map(r => `${r.genre}: ${r.error}`).join(', ')}`);
       }
@@ -178,6 +179,8 @@ export default function BeatportPage() {
           ))}
         </div>
       )}
+      {/* Duplicate detection modal */}
+      <DuplicateModal info={duplicateInfo} onReplace={confirmReplace} onSkip={dismissDuplicate} />
     </div>
   );
 }

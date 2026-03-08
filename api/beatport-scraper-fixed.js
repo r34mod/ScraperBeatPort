@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
-const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, smoothScroll, validateTrackData, delay, launchBrowser, getDownloadsDir } = require('./scraper-utils');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, smoothScroll, validateTrackData, delay, launchBrowser, createPage, getDownloadsDir } = require('./scraper-utils');
+const scrapeCache = require('./scrape-cache');
 
 const router = express.Router();
 
@@ -80,16 +81,8 @@ const BEATPORT_GENRES = {
     'rnb': 'https://www.beatport.com/genre/rnb/36/top-100'
 };
 
-// Función simplificada para hacer scraping o generar datos de prueba
-async function scrapeBeatportGenre(genreUrl, genreName) {
-    console.log(`🎵 Procesando género: ${genreName}`);
-    console.log(`🔗 URL: ${genreUrl}`);
-
-    let browser = null;
-    try {
-        console.log(`🌐 Lanzando navegador para scraping de ${genreName}...`);
-        browser = await launchBrowser();
-        const page = await browser.newPage();
+// Extrae tracks usando una página ya abierta (sin gestionar el browser)
+async function _doScrapeBeatportPage(page, genreUrl, genreName) {
         await page.setUserAgent(getRandomUserAgent());
         await page.setViewport({ width: 1200, height: 900 });
 
@@ -255,13 +248,21 @@ async function scrapeBeatportGenre(genreUrl, genreName) {
         });
 
         console.log(`✅ Scrape completado: ${tracks.length} tracks extraídos (hasta 100)`);
-        await browser.close();
         return tracks;
+}
 
-    } catch (error) {
+// Gestiona el ciclo de vida del browser para scraping individual
+async function scrapeBeatportGenre(genreUrl, genreName) {
+    console.log(`🎵 Procesando género: ${genreName}`);
+    console.log(`🔗 URL: ${genreUrl}`);
+    let browser = null;
+    try {
+        console.log(`🌐 Lanzando navegador para scraping de ${genreName}...`);
+        browser = await launchBrowser();
+        const page = await createPage(browser);
+        return await _doScrapeBeatportPage(page, genreUrl, genreName);
+    } finally {
         if (browser) { try { await browser.close(); } catch (e) {} }
-        console.error(`❌ Error scraping real de ${genreName}:`, error.message);
-        throw error;
     }
 }
 
@@ -357,6 +358,22 @@ router.get('/scrape', optionalAuth, async (req, res) => {
     }
 
     try {
+        // Verificar caché antes de lanzar un nuevo browser
+        const cached = scrapeCache.get('beatport', genre);
+        if (cached) {
+            console.log(`⚡ Devolviendo resultados cacheados para ${genre}`);
+            const cacheExpiresIn = Math.round((cached.expiresAt - Date.now()) / 60000);
+            const { fileName } = await generateCSV(cached.tracks, genre).catch(() => ({ fileName: null }));
+            return res.json({
+                success: true, genre, fromCache: true,
+                cachedAt: cached.cachedAt, cacheExpiresIn: `${cacheExpiresIn} min`,
+                tracksCount: cached.tracks.length,
+                fileName,
+                downloadUrl: fileName ? `/api/download/${genre}/${fileName}` : null,
+                tracks: cached.tracks.slice(0, 10),
+            });
+        }
+
         // Hacer scraping con reintentos automáticos
         const rawTracks = await retryWithBackoff(
             () => scrapeBeatportGenre(BEATPORT_GENRES[genre], genre),
@@ -373,6 +390,9 @@ router.get('/scrape', optionalAuth, async (req, res) => {
                 genre 
             });
         }
+
+        // Guardar en caché para evitar scrapes redundantes
+        scrapeCache.set('beatport', genre, tracks);
 
         // Generar CSV
         const { filePath, fileName } = await generateCSV(tracks, genre);
@@ -550,45 +570,76 @@ router.get('/files/:genre?', (req, res) => {
     }
 });
 
-// Obtener múltiples géneros
+// Obtener múltiples géneros (browser único compartido + caché por género)
 router.post('/scrape-multiple', async (req, res) => {
     const { genres } = req.body;
-    
     console.log(`🎯 Procesando múltiples géneros:`, genres);
-    
+
     if (!Array.isArray(genres) || genres.length === 0) {
         return res.status(400).json({ error: 'Debe proporcionar un array de géneros' });
     }
 
     const results = [];
-    
-    for (const genre of genres) {
-        console.log(`⏳ Procesando género: ${genre}`);
-        
-        if (!BEATPORT_GENRES[genre]) {
-            results.push({ genre, error: 'Género no válido' });
-            continue;
-        }
+    let browser = null;
+    try {
+        // Lanzar UN único browser compartido para todos los géneros
+        browser = await launchBrowser();
+        console.log('🌐 Browser compartido lanzado para múltiples géneros');
 
-        try {
-            const tracks = await scrapeBeatportGenre(BEATPORT_GENRES[genre], genre);
-            const { fileName } = await generateCSV(tracks, genre);
-            
-            results.push({
-                genre,
-                success: true,
-                tracksCount: tracks.length,
-                fileName,
-                downloadUrl: `/api/download/${genre}/${fileName}`
-            });
-            
-            console.log(`✅ Completado: ${genre} (${tracks.length} tracks)`);
-        } catch (error) {
-            console.error(`❌ Error en ${genre}:`, error.message);
-            results.push({
-                genre,
-                error: error.message
-            });
+        for (const genre of genres) {
+            console.log(`⏳ Procesando género: ${genre}`);
+            if (!BEATPORT_GENRES[genre]) {
+                results.push({ genre, error: 'Género no válido' });
+                continue;
+            }
+
+            // ── Verificar caché ──────────────────────────────────────────────
+            const cached = scrapeCache.get('beatport', genre);
+            if (cached) {
+                console.log(`⚡ Usando caché para ${genre}`);
+                try {
+                    const { fileName } = await generateCSV(cached.tracks, genre);
+                    results.push({
+                        genre, success: true, fromCache: true, cachedAt: cached.cachedAt,
+                        tracksCount: cached.tracks.length, tracks: cached.tracks,
+                        fileName, downloadUrl: `/api/download/${genre}/${fileName}`,
+                    });
+                } catch (e) {
+                    results.push({
+                        genre, success: true, fromCache: true, cachedAt: cached.cachedAt,
+                        tracksCount: cached.tracks.length, tracks: cached.tracks,
+                    });
+                }
+                continue;
+            }
+
+            // ── Scraping con página propia pero browser compartido ───────────
+            let page = null;
+            try {
+                page = await createPage(browser);
+                const rawTracks = await _doScrapeBeatportPage(page, BEATPORT_GENRES[genre], genre);
+                const tracks = rawTracks.map(t => validateTrackData(t));
+                scrapeCache.set('beatport', genre, tracks);
+                const { fileName } = await generateCSV(tracks, genre);
+                results.push({
+                    genre, success: true, fromCache: false,
+                    tracksCount: tracks.length, tracks,
+                    fileName, downloadUrl: `/api/download/${genre}/${fileName}`,
+                });
+                console.log(`✅ Completado: ${genre} (${tracks.length} tracks)`);
+            } catch (error) {
+                console.error(`❌ Error en ${genre}:`, error.message);
+                results.push({ genre, error: error.message });
+            } finally {
+                if (page) { try { await page.close(); } catch (e) {} }
+            }
+            // Pausa entre géneros para evitar sobrecarga
+            if (genres.indexOf(genre) < genres.length - 1) await delay(1500);
+        }
+    } finally {
+        if (browser) {
+            try { await browser.close(); } catch (e) {}
+            console.log('🚪 Browser compartido cerrado');
         }
     }
 

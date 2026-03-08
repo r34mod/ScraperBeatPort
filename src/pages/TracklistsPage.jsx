@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { autoSaveTracks } from '../utils/autoSave';
+import { useDuplicateGuard, DuplicateModal } from '../hooks/useDuplicateGuard';
 import './TracklistsPage.css';
 
 const searchTypes = [
@@ -11,6 +11,7 @@ const searchTypes = [
 
 export default function TracklistsPage() {
   const { token } = useAuth();
+  const { saveTracks, duplicateInfo, confirmReplace, dismissDuplicate } = useDuplicateGuard();
   const [searchType, setSearchType] = useState('dj');
   const [query, setQuery] = useState('');
   const [eventQuery, setEventQuery] = useState('');
@@ -38,7 +39,7 @@ export default function TracklistsPage() {
             position: i + 1, title: tl.title, artist: tl.artist,
             label: tl.event || '', duration: tl.duration || '',
           }));
-          autoSaveTracks({ tracks, platform: '1001tracklists', genre: query.trim() || 'popular', token });
+          saveTracks({ tracks, platform: '1001tracklists', genre: query.trim() || 'popular', token });
         }
       }
       else throw new Error(data.error || 'Error en el scraping');
@@ -107,6 +108,8 @@ export default function TracklistsPage() {
           )}
         </div>
       )}
+      {/* Duplicate detection modal */}
+      <DuplicateModal info={duplicateInfo} onReplace={confirmReplace} onSkip={dismissDuplicate} />
     </div>
   );
 }

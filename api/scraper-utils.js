@@ -200,6 +200,14 @@ async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
     }
 }
 
+// Crea una página con timeouts seguros pre-configurados para evitar browsers colgados
+async function createPage(browser) {
+    const page = await browser.newPage();
+    page.setDefaultNavigationTimeout(45000);
+    page.setDefaultTimeout(30000);
+    return page;
+}
+
 // Función para lanzar el navegador según el entorno
 async function launchBrowser() {
     if (IS_VERCEL) {
@@ -243,6 +251,7 @@ module.exports = {
     smoothScroll,
     handleCookieConsent,
     retryWithBackoff,
+    createPage,
     launchBrowser,
     getDownloadsDir,
 };

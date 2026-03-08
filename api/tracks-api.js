@@ -28,15 +28,48 @@ if (!isSupabaseEnabled()) {
     router.use(requireAuth);
 
     router.post('/save', (req, res) => {
-        const { tracks, platform, genre } = req.body;
+        const { tracks, platform, genre, replaceExisting } = req.body;
         if (!tracks || !Array.isArray(tracks) || !tracks.length || !platform || !genre) {
             return res.status(400).json({ error: 'Se requiere tracks[], platform y genre.' });
         }
+
+        const plat = platform.toLowerCase();
+        const gen = genre.toLowerCase();
+
+        // Buscar sesiones existentes del mismo usuario + plataforma + género
+        const existing = mockSessions.filter(s =>
+            s.user_id === req.userId && s.platform === plat && s.genre === gen
+        );
+
+        if (existing.length > 0 && !replaceExisting) {
+            return res.status(409).json({
+                error: 'duplicate',
+                message: `Ya existen ${existing.length} sesión(es) para ${platform} / ${genre}.`,
+                existing_sessions: existing.map(s => ({
+                    session_id: s.id,
+                    tracks_count: s.tracks_count,
+                    scraped_at: s.created_at,
+                })),
+            });
+        }
+
+        // Si replaceExisting, eliminar sesiones anteriores
+        if (replaceExisting && existing.length > 0) {
+            existing.forEach(s => {
+                const idx = mockSessions.indexOf(s);
+                if (idx !== -1) mockSessions.splice(idx, 1);
+                for (let i = mockTracks.length - 1; i >= 0; i--) {
+                    if (mockTracks[i].session_id === s.id) mockTracks.splice(i, 1);
+                }
+            });
+            console.log(`🔄 Mock: eliminadas ${existing.length} sesiones antiguas de ${plat}/${gen}`);
+        }
+
         const session = {
             id: String(nextSessionId++),
             user_id: req.userId,
-            platform: platform.toLowerCase(),
-            genre: genre.toLowerCase(),
+            platform: plat,
+            genre: gen,
             tracks_count: tracks.length,
             created_at: new Date().toISOString(),
         };
@@ -149,7 +182,7 @@ router.use(requireAuth); // Todas las rutas requieren usuario autenticado
 // ─── POST /save ─── Guardar tracks de un scrape ──────────────────────────────
 router.post('/save', async (req, res) => {
     try {
-        const { tracks, platform, genre } = req.body;
+        const { tracks, platform, genre, replaceExisting } = req.body;
         const db = req.userClient;
         const userId = req.userId;
 
@@ -160,13 +193,59 @@ router.post('/save', async (req, res) => {
             return res.status(400).json({ error: 'Se requieren los campos "platform" y "genre".' });
         }
 
+        const plat = platform.toLowerCase();
+        const gen = genre.toLowerCase();
+
+        // 0. Verificar duplicados: buscar sesiones existentes del mismo usuario + plataforma + género
+        const { data: existingSessions, error: checkError } = await db
+            .from('scrape_sessions')
+            .select('id, tracks_count, created_at')
+            .eq('platform', plat)
+            .eq('genre', gen);
+
+        if (checkError) {
+            console.error('Error verificando duplicados:', checkError);
+            // No bloquear: continuar con el guardado
+        }
+
+        if (existingSessions && existingSessions.length > 0 && !replaceExisting) {
+            return res.status(409).json({
+                error: 'duplicate',
+                message: `Ya existen ${existingSessions.length} sesión(es) para ${platform} / ${genre}.`,
+                existing_sessions: existingSessions.map(s => ({
+                    session_id: s.id,
+                    tracks_count: s.tracks_count,
+                    scraped_at: s.created_at,
+                })),
+            });
+        }
+
+        // Si replaceExisting, eliminar sesiones anteriores y sus tracks
+        if (replaceExisting && existingSessions && existingSessions.length > 0) {
+            const oldIds = existingSessions.map(s => s.id);
+
+            const { error: delTracksErr } = await db
+                .from('tracks')
+                .delete()
+                .in('session_id', oldIds);
+            if (delTracksErr) console.error('Error eliminando tracks antiguos:', delTracksErr);
+
+            const { error: delSessionsErr } = await db
+                .from('scrape_sessions')
+                .delete()
+                .in('id', oldIds);
+            if (delSessionsErr) console.error('Error eliminando sesiones antiguas:', delSessionsErr);
+
+            console.log(`🔄 Eliminadas ${oldIds.length} sesiones antiguas de ${plat}/${gen}`);
+        }
+
         // 1. Crear sesión de scrape
         const { data: session, error: sessionError } = await db
             .from('scrape_sessions')
             .insert({
                 user_id: userId,
-                platform: platform.toLowerCase(),
-                genre: genre.toLowerCase(),
+                platform: plat,
+                genre: gen,
                 tracks_count: tracks.length,
             })
             .select()

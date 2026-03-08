@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { autoSaveTracks } from '../utils/autoSave';
+import { useDuplicateGuard, DuplicateModal } from '../hooks/useDuplicateGuard';
 import './TraxsourcePage.css';
 
 export default function TraxsourcePage() {
   const { token } = useAuth();
+  const { saveTracks, duplicateInfo, confirmReplace, dismissDuplicate } = useDuplicateGuard();
   const [genres, setGenres] = useState([]);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
@@ -35,7 +36,7 @@ export default function TraxsourcePage() {
       const data = await res.json();
       if (data.success) {
         setResults(data);
-        autoSaveTracks({ tracks: data.tracks, platform: 'traxsource', genre: selected, token });
+        saveTracks({ tracks: data.tracks, platform: 'traxsource', genre: selected, token });
       }
       else throw new Error(data.error || 'Error en el scraping');
     } catch (e) {
@@ -93,6 +94,8 @@ export default function TraxsourcePage() {
           )}
         </div>
       )}
+      {/* Duplicate detection modal */}
+      <DuplicateModal info={duplicateInfo} onReplace={confirmReplace} onSkip={dismissDuplicate} />
     </div>
   );
 }

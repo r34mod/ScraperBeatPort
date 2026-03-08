@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
-const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay, launchBrowser, getDownloadsDir } = require('./scraper-utils');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay, launchBrowser, createPage, getDownloadsDir } = require('./scraper-utils');
+const scrapeCache = require('./scrape-cache');
 
 const router = express.Router();
 
@@ -53,7 +54,7 @@ async function scrapeTraxsourceGenre(genreUrl, genreName) {
     let browser = null;
     try {
         browser = await launchBrowser();
-        const page = await browser.newPage();
+        const page = await createPage(browser);
         await page.setUserAgent(getRandomUserAgent());
         await page.setViewport({ width: 1280, height: 900 });
 
@@ -222,6 +223,19 @@ router.post('/scrape', optionalAuth, async (req, res) => {
     }
 
     try {
+        // Verificar caché antes de lanzar un nuevo browser
+        const cached = scrapeCache.get('traxsource', genre);
+        if (cached) {
+            console.log(`⚡ Devolviendo resultados cacheados para Traxsource/${genre}`);
+            const cacheExpiresIn = Math.round((cached.expiresAt - Date.now()) / 60000);
+            return res.json({
+                success: true, genre, fromCache: true,
+                cachedAt: cached.cachedAt, cacheExpiresIn: `${cacheExpiresIn} min`,
+                tracksCount: cached.tracks.length, tracks: cached.tracks,
+                platform: 'Traxsource',
+            });
+        }
+
         console.log(`🎵 Iniciando scraping de Traxsource - Género: ${genre}`);
         
         const genreUrl = TRAXSOURCE_GENRES[genre];
@@ -233,6 +247,9 @@ router.post('/scrape', optionalAuth, async (req, res) => {
         if (tracks.length === 0) {
             return res.status(404).json({ error: 'No se encontraron tracks para este género' });
         }
+
+        // Guardar en caché para evitar scrapes redundantes
+        scrapeCache.set('traxsource', genre, tracks);
 
         // Crear nombre de archivo con fecha y género
         const today = new Date().toISOString().split('T')[0];
