@@ -333,13 +333,13 @@ async function generateTracklistsCSV(tracklists, searchType, query) {
         const csvWriter = createCsvWriter({
             path: filePath,
             header: [
-                { id: 'position', title: 'Posición' },
-                { id: 'title', title: 'Título del Tracklist' },
-                { id: 'artist', title: 'DJ / Artista' },
+                { id: 'position', title: 'Posicion' },
+                { id: 'title', title: 'Titulo' },
+                { id: 'artist', title: 'Artista' },
                 { id: 'event', title: 'Evento' },
                 { id: 'date', title: 'Fecha' },
-                { id: 'duration', title: 'Duración' },
-                { id: 'trackCount', title: 'Número de Tracks' },
+                { id: 'duration', title: 'Duracion' },
+                { id: 'trackCount', title: 'Numero de Tracks' },
                 { id: 'url', title: 'URL' },
                 { id: 'platform', title: 'Plataforma' }
             ]

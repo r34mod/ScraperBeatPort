@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tidal Downloader</title>
+
+    <link rel="icon" type="image/png" href="images/icon.PNG">
+    <link rel="apple-touch-icon" href="images/icon.PNG">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a0033 0%, #330066 50%, #1a0033 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ── Background orbs ─────────────────────────────────────── */
+        .background-orbs {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none; z-index: 0; overflow: hidden;
+        }
+        .orb {
+            position: absolute; border-radius: 50%;
+            filter: blur(120px); opacity: 0.25;
+        }
+        .orb-blue {
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, #00aaff 0%, #0066cc 50%, transparent 70%);
+            top: -200px; left: -200px;
+            animation: moveBlue 25s ease-in-out infinite;
+        }
+        .orb-cyan {
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, #00ffcc 0%, #00aaaa 50%, transparent 70%);
+            bottom: 10%; right: 5%;
+            animation: moveCyan 30s ease-in-out infinite;
+        }
+        .orb-purple {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, #aa00ff 0%, #6600cc 50%, transparent 70%);
+            top: 40%; left: 50%;
+            transform: translate(-50%, -50%);
+            animation: movePurple 35s ease-in-out infinite;
+        }
+        @keyframes moveBlue  { 0%,100%{transform:translate(0,0)} 50%{transform:translate(80px,60px)} }
+        @keyframes moveCyan  { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-60px,-80px)} }
+        @keyframes movePurple{ 0%,100%{transform:translate(-50%,-50%)} 50%{transform:translate(-45%,-55%)} }
+
+        /* ── Layout ──────────────────────────────────────────────── */
+        .container {
+            position: relative; z-index: 1;
+            max-width: 720px; margin: 0 auto;
+            padding: 40px 20px 80px;
+        }
+
+        /* ── Header ──────────────────────────────────────────────── */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header .logo-icon {
+            width: 64px; height: 64px;
+            background: linear-gradient(135deg, #00e5ff, #7b2ff7);
+            border-radius: 20px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 32px; margin-bottom: 16px;
+            box-shadow: 0 8px 32px rgba(0, 229, 255, 0.3);
+        }
+        .header h1 {
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            font-weight: 800;
+            background: linear-gradient(90deg, #00e5ff, #a855f7, #ff6b9d);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        .header p {
+            color: rgba(255,255,255,0.55);
+            font-size: 0.95rem;
+        }
+
+        /* ── Card ────────────────────────────────────────────────── */
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 20px;
+            padding: 28px 32px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            margin-bottom: 24px;
+        }
+
+        /* ── Form ────────────────────────────────────────────────── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 520px) { .form-grid { grid-template-columns: 1fr; } }
+
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label {
+            font-size: 0.78rem; font-weight: 600;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        .form-group input {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-family: inherit;
+            padding: 12px 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input::placeholder { color: rgba(255,255,255,0.3); }
+        .form-group input:focus {
+            border-color: rgba(0, 229, 255, 0.6);
+            box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.12);
+        }
+
+        /* ── Quality selector ────────────────────────────────────── */
+        .quality-row {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .quality-row label {
+            font-size: 0.78rem; font-weight: 600;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        .quality-btn {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.8rem; font-weight: 600;
+            font-family: inherit;
+            padding: 6px 14px; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quality-btn.active {
+            background: rgba(0, 229, 255, 0.15);
+            border-color: rgba(0, 229, 255, 0.5);
+            color: #00e5ff;
+        }
+        .quality-btn:hover:not(.active) {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        /* ── Buttons ─────────────────────────────────────────────── */
+        .btn-search {
+            width: 100%;
+            padding: 14px;
+            border: none; border-radius: 12px; cursor: pointer;
+            font-size: 1rem; font-weight: 700; font-family: inherit;
+            background: linear-gradient(135deg, #7b2ff7, #00e5ff);
+            color: #fff;
+            box-shadow: 0 4px 24px rgba(123, 47, 247, 0.35);
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-search:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+        .btn-search:active:not(:disabled) { transform: translateY(0); }
+        .btn-search:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .btn-download {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 24px;
+            border: none; border-radius: 12px; cursor: pointer;
+            font-size: 0.95rem; font-weight: 700; font-family: inherit;
+            background: linear-gradient(135deg, #00c853, #00e5ff);
+            color: #0a0a0a;
+            box-shadow: 0 4px 20px rgba(0, 200, 83, 0.3);
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-download:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+        .btn-download:active:not(:disabled) { transform: translateY(0); }
+        .btn-download:disabled { opacity: 0.45; cursor: not-allowed; background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+
+        /* ── Status / spinner ────────────────────────────────────── */
+        .status {
+            text-align: center;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            margin-top: 16px;
+            display: none;
+        }
+        .status.loading {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            color: #00e5ff;
+        }
+        .status.error {
+            display: block;
+            background: rgba(255, 80, 80, 0.1);
+            border: 1px solid rgba(255, 80, 80, 0.3);
+            color: #ff6b6b;
+        }
+
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(0,229,255,0.3);
+            border-top-color: #00e5ff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Track result card ───────────────────────────────────── */
+        .result-card {
+            display: none;
+        }
+        .result-card.visible { display: block; }
+
+        .track-info {
+            display: flex; gap: 20px; align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .track-cover {
+            width: 96px; height: 96px; border-radius: 12px;
+            object-fit: cover; flex-shrink: 0;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .track-cover.placeholder {
+            display: flex; align-items: center; justify-content: center;
+            font-size: 36px;
+        }
+        .track-meta { flex: 1; min-width: 0; }
+        .track-meta h2 {
+            font-size: 1.15rem; font-weight: 700;
+            margin-bottom: 4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .track-meta .artist {
+            font-size: 0.9rem; color: rgba(255,255,255,0.65);
+            margin-bottom: 2px;
+        }
+        .track-meta .album {
+            font-size: 0.82rem; color: rgba(255,255,255,0.4);
+            margin-bottom: 10px;
+        }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+        }
+        .badge-available {
+            background: rgba(0, 200, 83, 0.15);
+            border: 1px solid rgba(0, 200, 83, 0.35);
+            color: #4cff91;
+        }
+        .badge-unavailable {
+            background: rgba(255, 80, 80, 0.1);
+            border: 1px solid rgba(255, 80, 80, 0.25);
+            color: #ff6b6b;
+        }
+
+        .download-row {
+            display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        }
+
+        .quality-info {
+            font-size: 0.78rem; color: rgba(255,255,255,0.4);
+        }
+
+        /* ── Preview audio bar ───────────────────────────────────── */
+        .preview-bar {
+            margin-top: 14px; display: none;
+        }
+        .preview-bar.visible { display: block; }
+        .preview-bar audio {
+            width: 100%; height: 36px;
+            border-radius: 8px;
+        }
+        .preview-label {
+            font-size: 0.75rem; color: rgba(255,255,255,0.35);
+            margin-bottom: 6px;
+        }
+
+        /* ── Download progress ───────────────────────────────────── */
+        .download-status {
+            margin-top: 14px;
+            font-size: 0.85rem; color: rgba(255,255,255,0.6);
+            display: none; align-items: center; gap: 8px;
+        }
+        .download-status.visible { display: flex; }
+
+        /* ── Back link ───────────────────────────────────────────── */
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.85rem; text-decoration: none;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.8); }
+    </style>
+</head>
+<body>
+
+<div class="background-orbs">
+    <div class="orb orb-blue"></div>
+    <div class="orb orb-cyan"></div>
+    <div class="orb orb-purple"></div>
+</div>
+
+<div class="container">
+
+    <a href="index.html" class="back-link">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Volver al inicio
+    </a>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo-icon">🌊</div>
+        <h1>Tidal Downloader</h1>
+        <p>Busca una canción por título y artista para descargarla en alta calidad</p>
+    </div>
+
+    <!-- Search card -->
+    <div class="card">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="trackTitle">Título</label>
+                <input id="trackTitle" type="text" placeholder="p. ej. Blinding Lights" autocomplete="off" />
+            </div>
+            <div class="form-group">
+                <label for="trackArtist">Artista</label>
+                <input id="trackArtist" type="text" placeholder="p. ej. The Weeknd" autocomplete="off" />
+            </div>
+        </div>
+
+        <div class="quality-row">
+            <label>Calidad:</label>
+            <button class="quality-btn" data-quality="HIGH">M4A (Alta)</button>
+            <button class="quality-btn active" data-quality="LOSSLESS">FLAC (Lossless)</button>
+            <button class="quality-btn" data-quality="HI_RES">HiRes</button>
+        </div>
+
+        <button class="btn-search" id="btnSearch">
+            🔍&nbsp; Buscar canción
+        </button>
+
+        <div class="status" id="searchStatus">
+            <div class="spinner"></div>
+            <span id="searchStatusText">Buscando...</span>
+        </div>
+    </div>
+
+    <!-- Result card -->
+    <div class="card result-card" id="resultCard">
+
+        <div class="track-info">
+            <img id="trackCover" class="track-cover" src="" alt="Cover" onerror="this.style.display='none'; document.getElementById('coverPlaceholder').style.display='flex';" />
+            <div id="coverPlaceholder" class="track-cover placeholder" style="display:none;">🎵</div>
+
+            <div class="track-meta">
+                <h2 id="trackResultTitle">—</h2>
+                <div class="artist" id="trackResultArtist">—</div>
+                <div class="album" id="trackResultAlbum">—</div>
+                <span id="tidalBadge" class="badge">—</span>
+            </div>
+        </div>
+
+        <!-- Deezer preview -->
+        <div class="preview-bar" id="previewBar">
+            <div class="preview-label">Vista previa (30 seg)</div>
+            <audio id="previewAudio" controls preload="none"></audio>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 16px 0;" />
+
+        <div class="download-row">
+            <button class="btn-download" id="btnDownload" disabled>
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Descargar
+            </button>
+            <span class="quality-info" id="qualityInfo">—</span>
+        </div>
+
+        <div class="download-status" id="downloadStatus">
+            <div class="spinner"></div>
+            <span id="downloadStatusText">Preparando descarga...</span>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    // ── State ─────────────────────────────────────────────────────────────────
+    let selectedQuality = 'LOSSLESS';
+    let currentTrack = null;
+
+    const API_BASE = window.location.hostname === 'localhost'
+        ? 'http://localhost:3000/api/tidal'
+        : '/api/tidal';
+
+    // ── Quality buttons ───────────────────────────────────────────────────────
+    document.querySelectorAll('.quality-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedQuality = btn.dataset.quality;
+            updateQualityInfo();
+        });
+    });
+
+    function updateQualityInfo() {
+        const map = {
+            HIGH: 'AAC ~320 kbps · .m4a',
+            LOSSLESS: 'FLAC 16-bit / 44.1 kHz · .m4a',
+            HI_RES: 'FLAC 24-bit / hasta 192 kHz · .m4a',
+        };
+        document.getElementById('qualityInfo').textContent = map[selectedQuality] || '';
+    }
+    updateQualityInfo();
+
+    // ── Search ────────────────────────────────────────────────────────────────
+    document.getElementById('btnSearch').addEventListener('click', doSearch);
+
+    ['trackTitle', 'trackArtist'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', e => {
+            if (e.key === 'Enter') doSearch();
+        });
+    });
+
+    async function doSearch() {
+        const title  = document.getElementById('trackTitle').value.trim();
+        const artist = document.getElementById('trackArtist').value.trim();
+
+        if (!title || !artist) {
+            showSearchError('Por favor, introduce el título y el artista.');
+            return;
+        }
+
+        setSearchLoading(true);
+        hideResult();
+
+        try {
+            const resp = await fetch(`${API_BASE}/search?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`);
+            const data = await resp.json();
+
+            if (!resp.ok || !data.success) {
+                throw new Error(data.error || 'No se encontró la canción');
+            }
+
+            currentTrack = data.track;
+            renderResult(data.track);
+        } catch (err) {
+            showSearchError(err.message);
+        } finally {
+            setSearchLoading(false);
+        }
+    }
+
+    function renderResult(track) {
+        // Cover
+        const coverEl = document.getElementById('trackCover');
+        const placeholder = document.getElementById('coverPlaceholder');
+        if (track.cover) {
+            coverEl.src = track.cover;
+            coverEl.style.display = 'block';
+            placeholder.style.display = 'none';
+        } else {
+            coverEl.style.display = 'none';
+            placeholder.style.display = 'flex';
+        }
+
+        document.getElementById('trackResultTitle').textContent = track.title;
+        document.getElementById('trackResultArtist').textContent = track.artist;
+        document.getElementById('trackResultAlbum').textContent = track.album || '—';
+
+        // Tidal badge
+        const badge = document.getElementById('tidalBadge');
+        if (track.tidalAvailable) {
+            badge.className = 'badge badge-available';
+            badge.textContent = '✓ Disponible en Tidal';
+        } else {
+            badge.className = 'badge badge-unavailable';
+            badge.textContent = '✗ No encontrado en Tidal';
+        }
+
+        // Preview
+        const previewBar = document.getElementById('previewBar');
+        if (track.preview) {
+            document.getElementById('previewAudio').src = track.preview;
+            previewBar.classList.add('visible');
+        } else {
+            previewBar.classList.remove('visible');
+        }
+
+        // Download button
+        const btnDownload = document.getElementById('btnDownload');
+        btnDownload.disabled = !track.tidalAvailable;
+
+        updateQualityInfo();
+        document.getElementById('downloadStatus').classList.remove('visible');
+        document.getElementById('resultCard').classList.add('visible');
+    }
+
+    function hideResult() {
+        document.getElementById('resultCard').classList.remove('visible');
+        currentTrack = null;
+    }
+
+    // ── Download ───────────────────────────────────────────────────────────────
+    document.getElementById('btnDownload').addEventListener('click', doDownload);
+
+    async function doDownload() {
+        if (!currentTrack?.tidalId) return;
+
+        const btnDownload = document.getElementById('btnDownload');
+        const statusEl    = document.getElementById('downloadStatus');
+        const statusText  = document.getElementById('downloadStatusText');
+
+        btnDownload.disabled = true;
+        statusEl.classList.add('visible');
+        statusText.textContent = 'Obteniendo enlace de descarga...';
+
+        try {
+            const safeFilename = `${currentTrack.artist} - ${currentTrack.title}`
+                .replace(/[^\w\s-]/g, '').trim();
+
+            const url = `${API_BASE}/download?tidalId=${currentTrack.tidalId}&quality=${selectedQuality}&filename=${encodeURIComponent(safeFilename)}`;
+
+            statusText.textContent = 'Descargando... (esto puede tardar unos segundos)';
+
+            // Use a hidden <a> with the endpoint URL so the browser handles the download.
+            // The server streams the file (or redirects to CDN).
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = safeFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Give feedback after triggering
+            setTimeout(() => {
+                statusText.textContent = '✓ Descarga iniciada en tu navegador';
+                btnDownload.disabled = false;
+            }, 2000);
+
+        } catch (err) {
+            statusText.textContent = `Error: ${err.message}`;
+            btnDownload.disabled = false;
+        }
+    }
+
+    // ── UI helpers ─────────────────────────────────────────────────────────────
+    function setSearchLoading(loading) {
+        const btn    = document.getElementById('btnSearch');
+        const status = document.getElementById('searchStatus');
+        btn.disabled = loading;
+        btn.textContent = loading ? '⏳  Buscando...' : '🔍\u00A0 Buscar canción';
+        if (loading) {
+            status.className = 'status loading';
+        } else {
+            status.className = 'status';
+        }
+    }
+
+    function showSearchError(msg) {
+        const status = document.getElementById('searchStatus');
+        status.className = 'status error';
+        status.textContent = msg;
+    }
+</script>
+</body>
+</html>

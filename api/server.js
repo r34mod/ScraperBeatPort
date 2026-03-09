@@ -16,6 +16,7 @@ const tracklistsScraper = require('./1001tracklists-scraper');
 const youtubeSearch = require('./youtube-search');
 const tracksApi = require('./tracks-api');
 const authApi = require('./auth-api');
+const tidalDownloader = require('./tidal-downloader');
 
 // --- CONFIGURACIÓN ---
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -50,6 +51,7 @@ app.use('/api/1001tracklists', tracklistsScraper);
 app.use('/api/youtube', youtubeSearch);
 app.use('/api/auth', authApi);
 app.use('/api/tracks', tracksApi);
+app.use('/api/tidal', tidalDownloader);
 app.use('/api', beatportScraper);
 
 // Ruta de health check

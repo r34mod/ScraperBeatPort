@@ -70,6 +70,7 @@ export default function Layout() {
     { to: '/visualice', label: 'Visualice' },
     { to: '/mis-listas', label: 'Mis Listas' },
     { to: '/radio', label: 'Radio' },
+    { to: '/tidal', label: 'Tidal' },
   ];
 
   const closeMobile = () => { setMobileOpen(false); document.body.style.overflow = ''; };

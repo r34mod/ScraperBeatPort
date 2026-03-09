@@ -102,16 +102,42 @@ async function _doScrapeBeatportPage(page, genreUrl, genreName) {
             await page.waitForSelector('a[href*="/track/"]', { timeout: 30000 });
             console.log('✅ Encontrados enlaces a tracks');
             
-            // Hacer scroll para cargar contenido lazy
-            await page.evaluate(async () => {
-                const distance = 800;
-                const delay = ms => new Promise(r => setTimeout(r, ms));
-                for (let i = 0; i < 10; i++) { 
-                    window.scrollBy(0, distance); 
-                    await delay(400); 
+            // Scroll dinámico: continuar hasta que no haya tracks nuevos o se alcancen 100
+            let lastCount = 0;
+            let stableRounds = 0;
+            const MAX_ITERS = 25;    // tope de seguridad (~20 s máximo)
+            const STABLE_NEEDED = 2; // rondas sin cambio para considerar carga completa
+
+            for (let i = 0; i < MAX_ITERS; i++) {
+                const currentCount = await page.evaluate(() =>
+                    new Set(
+                        Array.from(document.querySelectorAll('a[href*="/track/"]'))
+                            .map(a => a.textContent.trim())
+                            .filter(t => t.length > 1)
+                    ).size
+                );
+
+                console.log(`🔄 Scroll ${i + 1}: ${currentCount} tracks únicos detectados`);
+
+                if (currentCount >= 100) {
+                    console.log('✅ 100 tracks cargados, deteniendo scroll');
+                    break;
                 }
-            });
-            await delay(2000);
+
+                if (currentCount === lastCount) {
+                    stableRounds++;
+                    if (stableRounds >= STABLE_NEEDED) {
+                        console.log(`✅ Sin tracks nuevos tras ${STABLE_NEEDED} rondas, deteniendo scroll`);
+                        break;
+                    }
+                } else {
+                    stableRounds = 0;
+                }
+
+                lastCount = currentCount;
+                await page.evaluate(() => window.scrollBy(0, 800));
+                await delay(600);
+            }
             
         } catch (error) {
             console.log('⚠️ No se encontraron elementos de tracks inmediatamente, continuando...');
@@ -295,16 +321,16 @@ async function generateCSV(tracks, genreName) {
         const csvWriter = createCsvWriter({
             path: filePath,
             header: [
-                { id: 'position', title: 'Posición' },
-                { id: 'title', title: 'Título' },
+                { id: 'position', title: 'Posicion' },
+                { id: 'title', title: 'Titulo' },
                 { id: 'artist', title: 'Artista' },
                 { id: 'remixer', title: 'Remixer' },
                 { id: 'label', title: 'Sello' },
                 { id: 'releaseDate', title: 'Fecha de Lanzamiento' },
-                { id: 'genre', title: 'Género' },
+                { id: 'genre', title: 'Genero' },
                 { id: 'bpm', title: 'BPM' },
                 { id: 'key', title: 'Clave Musical' },
-                { id: 'length', title: 'Duración' }
+                { id: 'length', title: 'Duracion' }
             ]
         });
 
