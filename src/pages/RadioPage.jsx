@@ -40,16 +40,16 @@ export default function RadioPage() {
           onChange={e => setFilter(e.target.value)}
           className="radio-search"
         />
-        <div className="radio-genre-tags">
-          {genres.map(g => (
-            <button
-              key={g}
-              className={`radio-genre-tag ${selectedGenre === g ? 'active' : ''}`}
-              onClick={() => setSelectedGenre(g)}
-            >
-              {g}
-            </button>
-          ))}
+        <div className="radio-genre-dropdown">
+          <select
+            value={selectedGenre}
+            onChange={e => setSelectedGenre(e.target.value)}
+            className="radio-genre-select"
+          >
+            {genres.map(g => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </select>
         </div>
       </div>
 

@@ -1,4 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
+import {
+  IconMusic,
+  IconPlaylist,
+  IconListCheck,
+  IconChartBar,
+  IconHeart,
+  IconRadio,
+  IconDownload,
+} from '@tabler/icons-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useRadio } from '../context/RadioContext';
@@ -64,13 +73,13 @@ export default function Layout() {
   const userName = prefs.displayName || email?.split('@')[0] || 'Usuario';
 
   const links = [
-    { to: '/beatport', label: 'Beatport' },
-    { to: '/traxsource', label: 'Traxsource' },
-    { to: '/1001tracklists', label: '1001Tracklists' },
-    { to: '/visualice', label: 'Visualice' },
-    { to: '/mis-listas', label: 'Mis Listas' },
-    { to: '/radio', label: 'Radio' },
-    { to: '/tidal', label: 'Tidal' },
+    { to: '/beatport',        label: 'Beatport',       icon: <IconMusic size={22} stroke={1.7} /> },
+    { to: '/traxsource',      label: 'Traxsource',     icon: <IconPlaylist size={22} stroke={1.7} /> },
+    { to: '/1001tracklists',  label: '1001Tracklists', icon: <IconListCheck size={22} stroke={1.7} /> },
+    { to: '/visualice',       label: 'Previsualizar Canciones', icon: <IconChartBar size={22} stroke={1.7} /> },
+    { to: '/mis-listas',      label: 'Mis Listas',     icon: <IconHeart size={22} stroke={1.7} color="#e05555" /> },
+    { to: '/radio',           label: 'Radio',          icon: <IconRadio size={22} stroke={1.7} /> },
+    { to: '/tidal',           label: 'Descarga Musica', icon: <IconDownload size={22} stroke={1.7} /> },
   ];
 
   const closeMobile = () => { setMobileOpen(false); document.body.style.overflow = ''; };
@@ -152,12 +161,46 @@ export default function Layout() {
         </div>
       </nav>
 
-      {/* Mobile Menu */}
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div className="nav-mobile-backdrop" onClick={closeMobile} />
+      )}
+
+      {/* Mobile Menu - Side Drawer */}
       <div className={`nav-mobile-menu${mobileOpen ? ' open' : ''}`}>
-        {links.map(l => (
-          <NavLink key={l.to} to={l.to} className="nav-link" onClick={closeMobile}>{l.label}</NavLink>
-        ))}
-        <button className="nav-logout-btn" onClick={() => { closeMobile(); handleLogout(); }}>Salir</button>
+        <div className="mobile-menu-header">
+          <div className="mobile-menu-user">
+            <div className="mobile-user-avatar">{userName[0].toUpperCase()}</div>
+            <div>
+              <div className="mobile-user-name">{userName}</div>
+              <div className="mobile-user-email">{email}</div>
+            </div>
+          </div>
+          <button className="mobile-menu-close" onClick={closeMobile}>✕</button>
+        </div>
+
+        <div className="mobile-menu-divider" />
+
+        <nav className="mobile-menu-nav">
+          {links.map(l => (
+            <NavLink key={l.to} to={l.to} className="mobile-nav-link" onClick={closeMobile}>
+              <span className="mobile-nav-icon">{l.icon}</span>
+              <span className="mobile-nav-label">{l.label}</span>
+              <svg className="mobile-nav-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="mobile-menu-footer">
+          <button className="mobile-logout-btn" onClick={() => { closeMobile(); handleLogout(); }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Cerrar sesión
+          </button>
+        </div>
       </div>
 
       {/* Page Content */}

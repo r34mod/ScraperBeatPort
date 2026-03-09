@@ -17,15 +17,27 @@
 .radio-search:focus { border-color: #ff4444; }
 .radio-search::placeholder { color: #666; }
 
-.radio-genre-tags { display: flex; gap: 8px; flex-wrap: wrap; }
-.radio-genre-tag {
-  padding: 6px 14px; border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
-  color: #bbb; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+/* Dropdown genre filter */
+.radio-genre-dropdown {
+  margin-bottom: 12px;
 }
-.radio-genre-tag.active,
-.radio-genre-tag:hover {
-  background: rgba(255,68,68,0.15); border-color: #ff4444; color: #fff;
+.radio-genre-select {
+  width: 100%; max-width: 320px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.13);
+  background: rgba(255,255,255,0.07);
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 8px;
+}
+.radio-genre-select:focus {
+  border-color: #ff4444;
+}
+.radio-genre-select option {
+  background: #222; color: #fff;
 }
 
 .radio-grid {
