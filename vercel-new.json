@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/genres.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/scrape.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/scrape-multiple.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/youtube-search.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "public/**/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/genres",
+      "dest": "/api/genres.js"
+    },
+    {
+      "src": "/api/scrape",
+      "dest": "/api/scrape.js"
+    },
+    {
+      "src": "/api/scrape-multiple",
+      "dest": "/api/scrape-multiple.js"
+    },
+    {
+      "src": "/api/youtube/search",
+      "dest": "/api/youtube-search.js"
+    },
+    {
+      "src": "/beatport.html",
+      "dest": "/public/beatport.html"
+    },
+    {
+      "src": "/(.*\\.(css|js|html|png|jpg|gif|ico|svg|json|csv))",
+      "dest": "/public/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/public/index.html"
+    }
+  ]
+}

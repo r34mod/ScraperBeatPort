@@ -1,82 +1,49 @@
 const express = require('express');
-const puppeteer = require('puppeteer');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs');
 const path = require('path');
+const { supabase, isSupabaseEnabled } = require('./supabase');
+const { optionalAuth } = require('./auth-middleware');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay, launchBrowser, createPage, getDownloadsDir } = require('./scraper-utils');
+const scrapeCache = require('./scrape-cache');
 
 const router = express.Router();
 
 // Géneros disponibles en Traxsource con sus URLs oficiales
 const TRAXSOURCE_GENRES = {
     // House principales
-    'house': 'https://www.traxsource.com/genre/1/house/top-100-tracks',
-    'deep-house': 'https://www.traxsource.com/genre/71/deep-house/top-100-tracks',
-    'tech-house': 'https://www.traxsource.com/genre/79/tech-house/top-100-tracks',
-    'afro-house': 'https://www.traxsource.com/genre/85/afro-house/top-100-tracks',
-    'soulful-house': 'https://www.traxsource.com/genre/83/soulful-house/top-100-tracks',
-    'jackin-house': 'https://www.traxsource.com/genre/84/jackin-house/top-100-tracks',
-    'vocal-house': 'https://www.traxsource.com/genre/80/vocal-house/top-100-tracks',
-    'funky-house': 'https://www.traxsource.com/genre/5/funky-house/top-100-tracks',
-    'progressive-house': 'https://www.traxsource.com/genre/81/progressive-house/top-100-tracks',
-    'garage-house': 'https://www.traxsource.com/genre/17/garage-house/top-100-tracks',
+    'house': 'https://www.traxsource.com/genre/4/house/top',
+    'deep-house': 'https://www.traxsource.com/genre/13/deep-house/top',
+    'tech-house': 'https://www.traxsource.com/genre/18/tech-house/top',
+    'afro-house': 'https://www.traxsource.com/genre/27/afro-house/top',
+    'soulful-house': 'https://www.traxsource.com/genre/24/soulful-house/top',
+    'jackin-house': 'https://www.traxsource.com/genre/15/jackin-house/top',
+    'funky-house': 'https://www.traxsource.com/genre/5/funky-house/top',
+    'garage-house': 'https://www.traxsource.com/genre/29/garage/top',
+    'melodic-house/progressive': 'https://www.traxsource.com/genre/19/melodic-progressive-house/top',
     
     // Subgéneros House
-    'tribal-house': 'https://www.traxsource.com/genre/32/tribal-house/top-100-tracks',
-    'acid-house': 'https://www.traxsource.com/genre/33/acid-house/top-100-tracks',
-    'latin-house': 'https://www.traxsource.com/genre/34/latin-house/top-100-tracks',
-    'hard-house': 'https://www.traxsource.com/genre/35/hard-house/top-100-tracks',
-    'disco-house': 'https://www.traxsource.com/genre/36/disco-house/top-100-tracks',
+    'tribal-house': 'https://www.traxsource.com/genre/32/tribal-house/top',
+    'latin-house': 'https://www.traxsource.com/genre/23/afro-latin-brazilian/top',
+    'classic-house': 'https://www.traxsource.com/genre/12/classic-house/top',
     
     // Techno y géneros relacionados
-    'techno': 'https://www.traxsource.com/genre/3/techno/top-100-tracks',
-    'minimal-techno': 'https://www.traxsource.com/genre/37/minimal-techno/top-100-tracks',
-    'hard-techno': 'https://www.traxsource.com/genre/38/hard-techno/top-100-tracks',
+    'techno': 'https://www.traxsource.com/genre/20/techno/top',
     
     // Disco y Nu-Disco
-    'disco': 'https://www.traxsource.com/genre/14/disco/top-100-tracks',
-    'nu-disco': 'https://www.traxsource.com/genre/82/nu-disco/top-100-tracks',
-    'funk': 'https://www.traxsource.com/genre/15/funk/top-100-tracks',
+    'disco/leftfield': 'https://www.traxsource.com/genre/14/disco/top',
+    'nu-disco': 'https://www.traxsource.com/genre/17/nu-disco-indie-dance/top',
+    'funk': 'https://www.traxsource.com/genre/15/funk/top',
+    'soul-funk-disco': 'https://www.traxsource.com/genre/3/soul-funk-disco/top',
     
-    // Indie y Alternativo
-    'indie-dance': 'https://www.traxsource.com/genre/86/indie-dance/top-100-tracks',
-    'leftfield-house': 'https://www.traxsource.com/genre/87/leftfield-house/top-100-tracks',
     
     // Trance
-    'trance': 'https://www.traxsource.com/genre/7/trance/top-100-tracks',
-    'progressive-trance': 'https://www.traxsource.com/genre/39/progressive-trance/top-100-tracks',
-    'uplifting-trance': 'https://www.traxsource.com/genre/40/uplifting-trance/top-100-tracks',
-    
+    'trance': 'https://www.traxsource.com/genre/7/trance/top',
+
     // Electronica y Experimental
-    'electronica': 'https://www.traxsource.com/genre/41/electronica/top-100-tracks',
-    'ambient': 'https://www.traxsource.com/genre/42/ambient/top-100-tracks',
-    'downtempo': 'https://www.traxsource.com/genre/43/downtempo/top-100-tracks',
-    
-    // Bass y UK Garage
-    'uk-garage': 'https://www.traxsource.com/genre/18/uk-garage/top-100-tracks',
-    'breaks': 'https://www.traxsource.com/genre/44/breaks/top-100-tracks',
-    'drum-bass': 'https://www.traxsource.com/genre/45/drum-bass/top-100-tracks',
-    'dubstep': 'https://www.traxsource.com/genre/46/dubstep/top-100-tracks',
-    
-    // R&B y Soul
-    'rnb-soul': 'https://www.traxsource.com/genre/47/rnb-soul/top-100-tracks',
-    'gospel': 'https://www.traxsource.com/genre/48/gospel/top-100-tracks',
-    
-    // Hip Hop y Rap
-    'hip-hop': 'https://www.traxsource.com/genre/49/hip-hop/top-100-tracks',
-    'rap': 'https://www.traxsource.com/genre/50/rap/top-100-tracks',
-    
-    // Latino y Afro
-    'latin': 'https://www.traxsource.com/genre/51/latin/top-100-tracks',
-    'afrobeat': 'https://www.traxsource.com/genre/88/afrobeat/top-100-tracks',
-    'amapiano': 'https://www.traxsource.com/genre/89/amapiano/top-100-tracks',
-    
-    // Pop y Mainstream
-    'pop': 'https://www.traxsource.com/genre/52/pop/top-100-tracks',
-    'dance-pop': 'https://www.traxsource.com/genre/53/dance-pop/top-100-tracks',
-    
-    // Electro
-    'electro': 'https://www.traxsource.com/genre/54/electro/top-100-tracks',
-    'electro-house': 'https://www.traxsource.com/genre/55/electro-house/top-100-tracks'
+    'electronica': 'https://www.traxsource.com/genre/5/electronica/top',
+    'drum-bass': 'https://www.traxsource.com/genre/31/drum-and-bass/top',
+    'electro-house': 'https://www.traxsource.com/genre/11/electro-house/top'
 };
 
 // Función para hacer scraping de Traxsource
@@ -86,99 +53,139 @@ async function scrapeTraxsourceGenre(genreUrl, genreName) {
 
     let browser = null;
     try {
-        console.log(`🌐 Lanzando navegador para scraping de Traxsource ${genreName}...`);
-        browser = await puppeteer.launch({ 
-            headless: true, 
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        });
-        const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-        await page.setViewport({ width: 1200, height: 900 });
+        browser = await launchBrowser();
+        const page = await createPage(browser);
+        await page.setUserAgent(getRandomUserAgent());
+        await page.setViewport({ width: 1280, height: 900 });
 
-        // Navegar a la URL
-        await page.goto(genreUrl, { waitUntil: 'networkidle2', timeout: 45000 });
-        
-        // Esperar un poco para que cargue la página
-        await page.waitForTimeout(3000);
+        await page.goto(genreUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+        await delay(5000);
+        await handleCookieConsent(page);
 
-        // Intentar cerrar posibles banners de cookies
-        try {
-            const cookieSelector = '.cookie-notice .btn, .accept-cookies, .gdpr-accept, [data-dismiss="modal"]';
-            await page.waitForSelector(cookieSelector, { timeout: 3000 });
-            await page.click(cookieSelector);
-            await page.waitForTimeout(1000);
-        } catch (e) {
-            console.log('ℹ️  No se encontró banner de cookies o ya está cerrado');
-        }
-
-        // Esperar a que carguen los tracks
-        await page.waitForSelector('.track, .track-item, .chart-item, .row', { timeout: 10000 });
-
-        // Extraer información de los tracks
-        const tracks = await page.evaluate(() => {
-            const trackElements = document.querySelectorAll('.track, .track-item, .chart-item, .row');
-            const extractedTracks = [];
-
-            trackElements.forEach((element, index) => {
-                try {
-                    // Buscar elementos de título, artista, etc.
-                    const titleElement = element.querySelector('.track-title, .title, .track-name, h3, h4, a[href*="/track/"]');
-                    const artistElement = element.querySelector('.track-artist, .artist, .track-performer, .by, .track-artists');
-                    const labelElement = element.querySelector('.track-label, .label, .track-record-label');
-                    const durationElement = element.querySelector('.track-duration, .duration, .time');
-                    const genreElement = element.querySelector('.track-genre, .genre, .track-style');
-                    const bpmElement = element.querySelector('.track-bpm, .bpm, .tempo');
-                    const keyElement = element.querySelector('.track-key, .key, .track-musical-key');
-                    const releaseDateElement = element.querySelector('.track-release-date, .release-date, .date');
-                    const priceElement = element.querySelector('.track-price, .price, .cost');
-
-                    const title = titleElement ? titleElement.textContent?.trim() || titleElement.getAttribute('title')?.trim() : null;
-                    const artist = artistElement ? artistElement.textContent?.trim() : null;
-                    const label = labelElement ? labelElement.textContent?.trim() : null;
-                    const duration = durationElement ? durationElement.textContent?.trim() : null;
-                    const genre = genreElement ? genreElement.textContent?.trim() : null;
-                    const bpm = bpmElement ? bpmElement.textContent?.trim() : null;
-                    const key = keyElement ? keyElement.textContent?.trim() : null;
-                    const releaseDate = releaseDateElement ? releaseDateElement.textContent?.trim() : null;
-                    const price = priceElement ? priceElement.textContent?.trim() : null;
-
-                    // Solo agregar si tiene al menos título y artista
-                    if (title && artist && title.length > 2 && artist.length > 2) {
-                        extractedTracks.push({
-                            position: index + 1,
-                            title: title,
-                            artist: artist,
-                            label: label || 'N/A',
-                            duration: duration || 'N/A',
-                            genre: genre || 'N/A',
-                            bpm: bpm || 'N/A',
-                            key: key || 'N/A',
-                            releaseDate: releaseDate || 'N/A',
-                            price: price || 'N/A',
-                            platform: 'Traxsource'
-                        });
-                    }
-                } catch (error) {
-                    console.log(`Error procesando track ${index + 1}:`, error.message);
-                }
+        // Log de clases disponibles para diagnóstico
+        const availableClasses = await page.evaluate(() => {
+            const allEls = document.querySelectorAll('[class]');
+            const classes = new Set();
+            allEls.forEach(el => {
+                const cn = el.getAttribute('class') || '';
+                cn.split(' ').forEach(c => { if (c) classes.add(c); });
             });
-
-            return extractedTracks;
+            return Array.from(classes).filter(c => c.toLowerCase().includes('track') || c.toLowerCase().includes('row') || c.toLowerCase().includes('item') || c.toLowerCase().includes('cue') || c.toLowerCase().includes('chart'));
         });
+        console.log('🔍 Clases relevantes encontradas:', availableClasses.join(', '));
 
-        console.log(`📊 Tracks encontrados en ${genreName}:`, tracks.length);
+        // Intentar varios selectores conocidos de Traxsource
+        const SELECTORS = [
+            '.cue-buy-row',
+            '.trk-row',
+            '.track-row',
+            '.chart-item',
+            '.track-item',
+            '[data-trackid]',
+            'li.trk',
+            '.traxsource-track',
+        ];
+        let usedSelector = null;
+        for (const sel of SELECTORS) {
+            const found = await page.$(sel);
+            if (found) { usedSelector = sel; break; }
+        }
+        if (!usedSelector) {
+            // último recurso: links a /track/
+            const fallback = await page.$('a[href*="/track/"]');
+            if (fallback) usedSelector = 'a[href*="/track/"]';
+        }
+        console.log(`✅ Selector usado: ${usedSelector}`);
+        if (!usedSelector) throw new Error('No se encontró ningún selector de tracks en la página');
+
+        const tracks = await page.evaluate((selector) => {
+            const results = [];
+
+            if (selector === 'a[href*="/track/"]') {
+                // Fallback: extraer desde los links de tracks directamente
+                const trackLinks = document.querySelectorAll('a[href*="/track/"]');
+                trackLinks.forEach((el, index) => {
+                    const title = el.textContent.trim();
+                    if (!title || title.length < 2) return;
+                    // Buscar el contenedor padre más cercano con info de artista
+                    const container = el.closest('li, tr, div[class*="row"], div[class*="item"], div[class*="track"]') || el.parentElement;
+                    const artistEls = container ? container.querySelectorAll('a[href*="/artist/"]') : [];
+                    const artist = Array.from(artistEls).map(a => a.textContent.trim()).join(', ');
+                    const labelEl = container ? container.querySelector('a[href*="/label/"]') : null;
+                    const label = labelEl ? labelEl.textContent.trim() : 'N/A';
+                    if (title && artist) {
+                        results.push({ position: index + 1, title, mix: 'N/A', artist, label, duration: 'N/A', genre: 'N/A', bpm: 'N/A', key: 'N/A', price: 'N/A', platform: 'Traxsource' });
+                    }
+                });
+            } else {
+                const rows = document.querySelectorAll(selector);
+                rows.forEach((row, index) => {
+                    try {
+                        const posEl = row.querySelector('.position, [class*="pos"]');
+                        const position = posEl ? parseInt(posEl.textContent.trim(), 10) || (index + 1) : index + 1;
+
+                        const titleEl = row.querySelector('a[href*="/track/"]');
+                        const title = titleEl ? titleEl.textContent.trim() : null;
+
+                        // Versión/Mix: texto que sigue al título + duración entre paréntesis
+                        const versionEl = row.querySelector('.version, [class*="version"], [class*="mix"]');
+                        let mix = 'N/A';
+                        let duration = 'N/A';
+                        if (versionEl) {
+                            const vt = versionEl.textContent.trim();
+                            const durMatch = vt.match(/\((\d+:\d+)\)\s*$/);
+                            if (durMatch) {
+                                duration = durMatch[1];
+                                mix = vt.replace(durMatch[0], '').trim() || 'N/A';
+                            } else {
+                                mix = vt;
+                            }
+                        }
+                        // Si no hay .version, buscar duración directamente
+                        if (duration === 'N/A') {
+                            const allText = row.textContent;
+                            const durMatch = allText.match(/\((\d+:\d+)\)/);
+                            if (durMatch) duration = durMatch[1];
+                        }
+
+                        const artistEls = row.querySelectorAll('a[href*="/artist/"]');
+                        const artist = Array.from(artistEls).map(a => a.textContent.trim()).join(', ');
+
+                        const labelEl = row.querySelector('a[href*="/label/"]');
+                        const label = labelEl ? labelEl.textContent.trim() : 'N/A';
+
+                        const genreEl = row.querySelector('a[href*="/genre/"]');
+                        const genre = genreEl ? genreEl.textContent.trim() : 'N/A';
+
+                        const bpmEl = row.querySelector('[class*="bpm"]');
+                        const bpm = bpmEl ? bpmEl.textContent.trim() : 'N/A';
+
+                        const keyEl = row.querySelector('[class*="key"]');
+                        const key = keyEl ? keyEl.textContent.trim() : 'N/A';
+
+                        const priceEl = row.querySelector('[class*="price"], [class*="buy"]');
+                        const price = priceEl ? priceEl.textContent.trim() : 'N/A';
+
+                        if (title && artist) {
+                            results.push({ position, title, mix, artist, label, duration, genre, bpm, key, price, platform: 'Traxsource' });
+                        }
+                    } catch (err) { /* skip */ }
+                });
+            }
+            return results;
+        }, usedSelector);
+
+        console.log(`📊 Tracks encontrados en ${genreName}: ${tracks.length}`);
 
         if (tracks.length === 0) {
-            console.log('⚠️  No se encontraron tracks, generando datos de ejemplo...');
-            return generateSampleTraxsourceTracks(genreName);
+            throw new Error(`No se encontraron tracks para el género ${genreName}. Es posible que la estructura de la página haya cambiado.`);
         }
 
-        return tracks.slice(0, 100); // Limitar a top 100
+        return tracks.slice(0, 100);
 
     } catch (error) {
         console.error(`❌ Error durante el scraping de ${genreName}:`, error.message);
-        console.log('⚠️  Generando datos de ejemplo como respaldo...');
-        return generateSampleTraxsourceTracks(genreName);
+        throw error;
     } finally {
         if (browser) {
             await browser.close();
@@ -186,55 +193,7 @@ async function scrapeTraxsourceGenre(genreUrl, genreName) {
     }
 }
 
-// Función para generar datos de ejemplo
-function generateSampleTraxsourceTracks(genreName) {
-    const sampleArtists = [
-        'Kerri Chandler', 'Black Coffee', 'Dennis Ferrer', 'Louie Vega', 'Masters At Work',
-        'Horse Meat Disco', 'Joey Negro', 'Disclosure', 'ODESZA', 'Lane 8', 'Eric Prydz',
-        'Maya Jane Coles', 'Purple Disco Machine', 'Basement Jaxx', 'Fatboy Slim',
-        'Todd Terry', 'Armand Van Helden', 'Roger Sanchez', 'Erick Morillo', 'David Morales',
-        'Mark Knight', 'Defected Records', 'Soul Clap', 'Hot Since 82', 'Carl Cox',
-        'Artbat', 'Ben Böhmer', 'Rodriguez Jr.', 'Stephan Bodzin', 'Tale Of Us'
-    ];
 
-    const sampleTitles = [
-        'Deep Feelings', 'Soul Connection', 'House Vibes', 'Underground', 'Vocal Deep',
-        'Funky Groove', 'Soulful Journey', 'Dancing Queen', 'House Party', 'Deep Love',
-        'Afro Soul', 'Tribal Nights', 'Disco Funk', 'House Music', 'Feel Good',
-        'Underground Anthem', 'Soulful House', 'Deep Emotion', 'Funky Beat', 'House Nation',
-        'Vocal Paradise', 'Deep House Vibes', 'Soul Train', 'Funky Disco', 'House Forever'
-    ];
-
-    const sampleLabels = [
-        'Defected Records', 'Strictly Rhythm', 'Nervous Records', 'King Street Sounds',
-        'Soul Heaven Records', 'Quantize Recordings', 'Large Music', 'Toolroom Records',
-        'Armada Deep', 'Spinnin\' Deep', 'Noir Music', 'Suara', 'Hot Creations',
-        'VIVa Music', 'Crosstown Rebels', 'Circus Recordings', 'Saved Records',
-        'Bedrock Records', 'Global Underground', 'Renaissance Records'
-    ];
-
-    const tracks = [];
-    for (let i = 1; i <= 100; i++) {
-        const randomArtist = sampleArtists[Math.floor(Math.random() * sampleArtists.length)];
-        const randomTitle = sampleTitles[Math.floor(Math.random() * sampleTitles.length)];
-        const randomLabel = sampleLabels[Math.floor(Math.random() * sampleLabels.length)];
-        
-        tracks.push({
-            position: i,
-            title: `${randomTitle} ${Math.random() > 0.7 ? '(Original Mix)' : Math.random() > 0.5 ? '(Extended Mix)' : '(Radio Edit)'}`,
-            artist: randomArtist,
-            label: randomLabel,
-            duration: `${Math.floor(Math.random() * 3) + 4}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`,
-            genre: genreName.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            bpm: Math.floor(Math.random() * 40) + 120,
-            key: ['A', 'B', 'C', 'D', 'E', 'F', 'G'][Math.floor(Math.random() * 7)] + ['maj', 'min'][Math.floor(Math.random() * 2)],
-            releaseDate: '2024',
-            price: '$1.49',
-            platform: 'Traxsource'
-        });
-    }
-    return tracks;
-}
 
 // Ruta para obtener géneros disponibles
 router.get('/genres', (req, res) => {
@@ -254,7 +213,7 @@ router.get('/genres', (req, res) => {
 });
 
 // Ruta para hacer scraping de un género específico
-router.post('/scrape', async (req, res) => {
+router.post('/scrape', optionalAuth, async (req, res) => {
     const { genre } = req.body;
 
     if (!genre || !TRAXSOURCE_GENRES[genre]) {
@@ -264,20 +223,39 @@ router.post('/scrape', async (req, res) => {
     }
 
     try {
+        // Verificar caché antes de lanzar un nuevo browser
+        const cached = scrapeCache.get('traxsource', genre);
+        if (cached) {
+            console.log(`⚡ Devolviendo resultados cacheados para Traxsource/${genre}`);
+            const cacheExpiresIn = Math.round((cached.expiresAt - Date.now()) / 60000);
+            return res.json({
+                success: true, genre, fromCache: true,
+                cachedAt: cached.cachedAt, cacheExpiresIn: `${cacheExpiresIn} min`,
+                tracksCount: cached.tracks.length, tracks: cached.tracks,
+                platform: 'Traxsource',
+            });
+        }
+
         console.log(`🎵 Iniciando scraping de Traxsource - Género: ${genre}`);
         
         const genreUrl = TRAXSOURCE_GENRES[genre];
-        const tracks = await scrapeTraxsourceGenre(genreUrl, genre);
+        const tracks = await retryWithBackoff(
+            () => scrapeTraxsourceGenre(genreUrl, genre),
+            2, 3000
+        );
 
         if (tracks.length === 0) {
             return res.status(404).json({ error: 'No se encontraron tracks para este género' });
         }
 
+        // Guardar en caché para evitar scrapes redundantes
+        scrapeCache.set('traxsource', genre, tracks);
+
         // Crear nombre de archivo con fecha y género
         const today = new Date().toISOString().split('T')[0];
         const filename = `traxsource_${genre.replace('-', '_')}_top100_${today}.csv`;
-        const downloadsDir = path.join(__dirname, '..', 'downloads');
-        const genreDir = path.join(downloadsDir, genre.toLowerCase());
+        const downloadsDir = getDownloadsDir();
+        const genreDir = getDownloadsDir(genre);
         
         // Crear directorios si no existen
         if (!fs.existsSync(downloadsDir)) {
@@ -297,13 +275,13 @@ router.post('/scrape', async (req, res) => {
             header: [
                 { id: 'position', title: 'Position' },
                 { id: 'title', title: 'Title' },
+                { id: 'mix', title: 'Mix' },
                 { id: 'artist', title: 'Artist' },
                 { id: 'label', title: 'Label' },
                 { id: 'duration', title: 'Duration' },
                 { id: 'genre', title: 'Genre' },
                 { id: 'bpm', title: 'BPM' },
                 { id: 'key', title: 'Key' },
-                { id: 'releaseDate', title: 'Release Date' },
                 { id: 'price', title: 'Price' },
                 { id: 'platform', title: 'Platform' }
             ]
@@ -316,6 +294,44 @@ router.post('/scrape', async (req, res) => {
         console.log(`📁 Ruta: ${csvFilePath}`);
         console.log(`📊 Total de tracks: ${tracks.length}`);
 
+        // Guardar en Supabase si está configurado y el usuario está autenticado
+        let supabaseSaved = false;
+        let sessionId = null;
+        if (isSupabaseEnabled() && req.userId && req.userClient) {
+            try {
+                const db = req.userClient;
+                const { data: session, error: sessionError } = await db
+                    .from('scrape_sessions')
+                    .insert({ user_id: req.userId, platform: 'traxsource', genre: genre.toLowerCase(), tracks_count: tracks.length })
+                    .select()
+                    .single();
+
+                if (!sessionError && session) {
+                    const rows = tracks.map((t, idx) => ({
+                        session_id: session.id,
+                        user_id: req.userId,
+                        platform: 'traxsource',
+                        genre: genre.toLowerCase(),
+                        position: t.position || idx + 1,
+                        title: t.title || '',
+                        artist: t.artist || '',
+                        remixer: t.mix || '',
+                        label: t.label || '',
+                        release_date: null,
+                        bpm: t.bpm ? String(t.bpm) : null,
+                        key: t.key || null,
+                        duration: t.duration || null,
+                    }));
+                    await db.from('tracks').insert(rows);
+                    supabaseSaved = true;
+                    sessionId = session.id;
+                    console.log(`☁️ Tracks guardados en Supabase (sesión ${session.id}, user ${req.userId})`);
+                }
+            } catch (e) {
+                console.warn('⚠️ No se pudieron guardar tracks en Supabase:', e.message);
+            }
+        }
+
         res.json({
             success: true,
             message: `Scraping de ${genre} completado exitosamente`,
@@ -324,6 +340,8 @@ router.post('/scrape', async (req, res) => {
             filePath: csvFilePath,
             genre: genre,
             platform: 'Traxsource',
+            supabaseSaved,
+            sessionId,
             tracks: tracks.slice(0, 10) // Mostrar solo los primeros 10 tracks en la respuesta
         });
 
@@ -341,25 +359,13 @@ router.get('/download/:genre/:filename', (req, res) => {
     const { genre, filename } = req.params;
     
     // Buscar en la estructura de carpetas correcta
-    const filePath = path.join(__dirname, '..', 'downloads', genre.toLowerCase(), filename);
+    const filePath = path.join(getDownloadsDir(genre), filename);
     
     console.log(`📥 Solicitud de descarga: ${genre}/${filename}`);
     console.log(`📂 Buscando en: ${filePath}`);
     
     if (!fs.existsSync(filePath)) {
         console.log(`❌ Archivo no encontrado: ${filePath}`);
-        
-        // Buscar también en la carpeta con mayúscula como fallback
-        const oldFilePath = path.join(__dirname, '..', 'Downloads', genre.toLowerCase(), filename);
-        if (fs.existsSync(oldFilePath)) {
-            console.log(`✅ Encontrado en ubicación alternativa: ${oldFilePath}`);
-            return res.download(oldFilePath, filename, (err) => {
-                if (err) {
-                    console.error('Error descargando archivo:', err);
-                    res.status(500).json({ error: 'Error al descargar el archivo' });
-                }
-            });
-        }
         
         return res.status(404).json({ 
             error: 'Archivo no encontrado', 

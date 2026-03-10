@@ -1,5 +1,9 @@
 // Configuración y utilidades para el scraper de Beatport
 
+const path = require('path');
+
+const IS_VERCEL = !!process.env.VERCEL;
+
 const CONFIG = {
     // Configuración de Puppeteer
     PUPPETEER: {
@@ -65,10 +69,15 @@ function getRandomUserAgent() {
     return CONFIG.USER_AGENTS[Math.floor(Math.random() * CONFIG.USER_AGENTS.length)];
 }
 
+// Función para esperar un tiempo fijo (reemplazo de page.waitForTimeout)
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // Función para esperar un tiempo aleatorio
 function randomDelay(min = 1000, max = 3000) {
-    const delay = Math.floor(Math.random() * (max - min + 1)) + min;
-    return new Promise(resolve => setTimeout(resolve, delay));
+    const d = Math.floor(Math.random() * (max - min + 1)) + min;
+    return new Promise(resolve => setTimeout(resolve, d));
 }
 
 // Función para limpiar texto extraído
@@ -169,7 +178,7 @@ async function handleCookieConsent(page) {
         const cookieButton = await page.$('button[data-testid="uc-accept-all-button"], .cookie-accept, #accept-cookies');
         if (cookieButton) {
             await cookieButton.click();
-            await page.waitForTimeout(1000);
+            await delay(1000);
         }
     } catch (error) {
         console.log('No se encontró banner de cookies o ya fue aceptado');
@@ -191,8 +200,44 @@ async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
     }
 }
 
+// Crea una página con timeouts seguros pre-configurados para evitar browsers colgados
+async function createPage(browser) {
+    const page = await browser.newPage();
+    page.setDefaultNavigationTimeout(45000);
+    page.setDefaultTimeout(30000);
+    return page;
+}
+
+// Función para lanzar el navegador según el entorno
+async function launchBrowser() {
+    if (IS_VERCEL) {
+        const chromium = require('@sparticuz/chromium');
+        const puppeteerCore = require('puppeteer-core');
+        return puppeteerCore.launch({
+            args: chromium.args,
+            defaultViewport: chromium.defaultViewport,
+            executablePath: await chromium.executablePath(),
+            headless: chromium.headless,
+        });
+    } else {
+        const puppeteer = require('puppeteer');
+        return puppeteer.launch({
+            headless: true,
+            args: CONFIG.PUPPETEER.args,
+        });
+    }
+}
+
+// Devuelve el directorio de descargas según el entorno
+function getDownloadsDir(genre = '') {
+    const base = IS_VERCEL ? '/tmp' : path.join(__dirname, '..', 'downloads');
+    return genre ? path.join(base, genre.toLowerCase()) : base;
+}
+
 module.exports = {
     CONFIG,
+    IS_VERCEL,
+    delay,
     getRandomUserAgent,
     randomDelay,
     cleanText,
@@ -205,5 +250,8 @@ module.exports = {
     detectPageStructure,
     smoothScroll,
     handleCookieConsent,
-    retryWithBackoff
+    retryWithBackoff,
+    createPage,
+    launchBrowser,
+    getDownloadsDir,
 };

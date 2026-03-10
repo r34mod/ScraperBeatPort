@@ -1,0 +1,132 @@
+.header {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  text-align: center; position: relative;
+}
+
+.brand-section { margin-bottom: 120px; }
+.brand-title {
+  font-size: clamp(2.5rem, 8vw, 6rem); font-weight: 900;
+  letter-spacing: -0.02em; margin-bottom: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #888888 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.brand-subtitle {
+  font-size: clamp(1.2rem, 4vw, 2.5rem); font-weight: 100;
+  letter-spacing: 0.1em; text-transform: uppercase; color: #666;
+  margin-bottom: 60px;
+}
+
+.main-title {
+  font-size: clamp(4rem, 12vw, 10rem); font-weight: 900;
+  letter-spacing: -0.05em; margin-bottom: 40px;
+  background: linear-gradient(45deg, #ff4444, #44ff44, #4444ff, #ffff44);
+  background-size: 400% 400%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  animation: gradientFlow 6s ease-in-out infinite;
+  text-transform: uppercase;
+}
+
+.subtitle {
+  font-size: clamp(1.5rem, 5vw, 3rem); font-weight: 100;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #999; margin-bottom: 80px;
+}
+
+.description {
+  font-size: 1.1rem; color: #ccc; max-width: 600px;
+  margin: 0 auto 100px; font-weight: 300; line-height: 1.8;
+}
+
+.platforms-section { padding: 100px 0; text-align: center; }
+.section-title {
+  font-size: clamp(2rem, 6vw, 4rem); font-weight: 700;
+  margin-bottom: 20px; color: #fff;
+  text-transform: uppercase; letter-spacing: -0.02em;
+}
+.section-subtitle { font-size: 1.2rem; color: #888; margin-bottom: 80px; font-weight: 300; }
+
+.platforms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 60px; margin-top: 80px;
+}
+.platform-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 60px 40px; text-align: center;
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative; overflow: hidden;
+}
+.platform-card::before {
+  content: ''; position: absolute; top: 0; left: -100%;
+  width: 100%; height: 1px;
+  background: linear-gradient(90deg, transparent, #ffffff, transparent);
+  transition: left 0.8s ease;
+}
+.platform-card:hover::before { left: 100%; }
+.platform-card:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.2);
+  transform: translateY(-10px);
+}
+
+.platform-icon {
+  width: 80px; height: 80px; margin: 0 auto 40px;
+  border: 2px solid rgba(255,255,255,0.2); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; font-weight: 900; color: #fff;
+  transition: all 0.4s ease;
+}
+.platform-card:hover .platform-icon {
+  border-color: #fff; background: rgba(255,255,255,0.1);
+}
+
+.platform-name {
+  font-size: 1.8rem; font-weight: 700; margin-bottom: 20px;
+  color: #fff; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.platform-description {
+  color: #aaa; margin-bottom: 40px; line-height: 1.7; font-weight: 300;
+}
+
+.platform-button {
+  background: transparent; color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 15px 40px; font-size: 0.9rem; font-weight: 500;
+  cursor: pointer; transition: all 0.4s ease;
+  display: inline-block; text-transform: uppercase;
+  letter-spacing: 0.1em; position: relative; overflow: hidden;
+}
+.platform-button:hover { color: #000; border-color: #fff; background: #fff; }
+
+.upcoming-section {
+  padding: 100px 0; text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.08); margin-top: 100px;
+}
+.countdown-timer {
+  font-size: clamp(2rem, 8vw, 4rem); font-weight: 100;
+  color: #fff; margin: 40px 0;
+  font-family: 'Courier New', monospace;
+}
+
+.footer {
+  text-align: center; padding: 80px 0 40px;
+  border-top: 1px solid rgba(255,255,255,0.08); margin-top: 120px;
+}
+.footer-text {
+  color: #666; font-size: 0.8rem;
+  text-transform: uppercase; letter-spacing: 0.1em; font-weight: 300;
+}
+
+@keyframes gradientFlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@media (max-width: 768px) {
+  .platforms-grid { grid-template-columns: 1fr; gap: 40px; }
+  .platform-card { padding: 40px 30px; }
+  .brand-section { margin-bottom: 80px; }
+}

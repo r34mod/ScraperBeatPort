@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Listas - Music Scraper Hub</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="images/icon.PNG">
+    <link rel="icon" type="image/png" sizes="16x16" href="images/icon.PNG">
+    <link rel="shortcut icon" href="images/icon.PNG">
+    <link rel="apple-touch-icon" href="images/icon.PNG">
+
+    <!-- PWA-friendly -->
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* ─── Reset & Base ─────────────────────────────────────────────────── */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ─── Background ───────────────────────────────────────────────────── */
+        .background-orbs {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 1; overflow: hidden;
+        }
+        .orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.25; }
+        .orb-1 { width: 600px; height: 600px; background: radial-gradient(circle, #e94560 0%, transparent 70%); top: -200px; left: -200px; animation: drift1 25s ease-in-out infinite; }
+        .orb-2 { width: 500px; height: 500px; background: radial-gradient(circle, #0f3460 0%, transparent 70%); bottom: -150px; right: -200px; animation: drift2 30s ease-in-out infinite; }
+        .orb-3 { width: 400px; height: 400px; background: radial-gradient(circle, #533483 0%, transparent 70%); top: 40%; left: 60%; animation: drift3 35s ease-in-out infinite; }
+        @keyframes drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(120px,180px)} }
+        @keyframes drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-100px,-120px)} }
+        @keyframes drift3 { 0%,100%{transform:translate(-50%,-50%)} 50%{transform:translate(-40%,-60%)} }
+
+        /* ─── Navigation ───────────────────────────────────────────────────── */
+        .nav-header {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            z-index: 100;
+            background: linear-gradient(90deg, #181818 80%, #3ad6ff 100%);
+            backdrop-filter: blur(20px);
+            padding: 0.7rem 0; border-radius: 2.5rem; margin-top: 1.2rem;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            max-width: 900px; width: 90vw;
+        }
+        .nav-container {
+            max-width: 900px; margin: 0 auto; padding: 0 32px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .nav-logo { display: flex; align-items: center; gap: 20px; }
+        .nav-logo-icon {
+            width: 54px; height: 54px; border-radius: 50%; object-fit: cover;
+            border: 2px solid #222; box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+        }
+        .nav-menu { display: flex; align-items: center; gap: 1.7rem; list-style: none; }
+        .nav-item { position: relative; }
+        .nav-link {
+            color: #ffffff; text-decoration: none; font-size: 0.9rem; font-weight: 400;
+            text-transform: capitalize; letter-spacing: 0.02em; transition: all 0.3s ease; position: relative;
+        }
+        .nav-link:hover { color: #ff4444; }
+        .nav-link::after {
+            content: ''; position: absolute; bottom: -5px; left: 0; width: 0; height: 2px;
+            background: linear-gradient(90deg, #ff4444, #ff0000); transition: width 0.3s ease;
+        }
+        .nav-link.active { color: #e94560; }
+        .nav-link.active::after { width: 100%; background: linear-gradient(90deg, #e94560, #533483); }
+        .nav-link:hover::after { width: 100%; }
+        .nav-actions { display: flex; align-items: center; gap: 1.2rem; }
+        .nav-listen-btn {
+            background: #ff1744; color: #fff; border: none; border-radius: 2rem;
+            padding: 0.85rem 2.5rem; font-size: 1.15rem; font-weight: 600; cursor: pointer;
+            box-shadow: 0 4px 16px rgba(255,23,68,0.13); display: flex; align-items: center; gap: 0.7rem;
+            transition: background 0.2s, box-shadow 0.2s; text-decoration: none;
+        }
+        .nav-listen-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255,68,68,0.4); }
+        .nav-listen-btn::after {
+            content: ''; display: inline-block; width: 24px; height: 24px;
+            background: url('https://cdn.prod.website-files.com/650d9b67d864656415c17b80/651e8871e761a2b4e19fa248_audio-active.svg') no-repeat center center;
+            background-size: contain; margin-left: 8px; vertical-align: middle;
+        }
+        .nav-mobile-toggle { display: none; background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; z-index: 100000; }
+        .nav-mobile-menu {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: rgba(24,24,24,0.98); backdrop-filter: blur(20px); z-index: 99999;
+            padding-top: 120px; text-align: center;
+        }
+        .nav-mobile-menu.open { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 2rem; }
+        .nav-mobile-menu .nav-link { font-size: 1.5rem; font-weight: 500; padding: 1rem 0; width: 100%; text-decoration: none; color: #e5e5e5; }
+        .nav-mobile-menu .nav-link:hover, .nav-mobile-menu .nav-link.active { color: #e94560; transform: translateX(10px); }
+        .nav-mobile-menu .nav-listen-btn { background: linear-gradient(135deg, #e94560, #533483); color: white; padding: 1rem 2rem; border-radius: 50px; margin-top: 1rem; }
+
+        @media (max-width: 768px) {
+            .nav-header { padding: 0.4rem 0; margin-top: 0.7rem; border-radius: 1.2rem; max-width: 98vw; }
+            .nav-container { padding: 0 10px; }
+            .nav-logo-icon { width: 44px; height: 44px; }
+            .nav-menu { display: none; }
+            .nav-mobile-toggle { display: block; }
+            .nav-actions { gap: 10px; }
+            .nav-listen-btn { padding: 0.5rem 1.2rem; font-size: 1rem; }
+        }
+
+        /* ─── Main Layout ──────────────────────────────────────────────────── */
+        .container {
+            max-width: 960px; margin: 0 auto; padding: 110px 16px 40px;
+            position: relative; z-index: 3;
+        }
+
+        .page-header { text-align: center; margin-bottom: 32px; }
+        .page-header h1 {
+            font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 900; margin-bottom: 8px;
+            background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .page-header p { font-size: 1rem; color: #999; font-weight: 300; }
+
+        /* ─── Status Banner ────────────────────────────────────────────────── */
+        .status-banner {
+            padding: 14px 20px; border-radius: 12px; margin-bottom: 24px;
+            font-size: 0.9rem; text-align: center; display: none;
+        }
+        .status-banner.error { display: block; background: rgba(233,69,96,0.15); border: 1px solid rgba(233,69,96,0.3); color: #ff6b8a; }
+        .status-banner.info { display: block; background: rgba(58,214,255,0.1); border: 1px solid rgba(58,214,255,0.2); color: #3ad6ff; }
+        .status-banner.loading { display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ccc; }
+
+        .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #e94560; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── Platform Tabs ────────────────────────────────────────────────── */
+        .platform-tabs {
+            display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto;
+            -webkit-overflow-scrolling: touch; padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+        .platform-tabs::-webkit-scrollbar { display: none; }
+
+        .platform-tab {
+            flex-shrink: 0; padding: 10px 22px; border-radius: 24px; cursor: pointer;
+            font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+            color: #bbb; transition: all 0.3s ease; white-space: nowrap;
+        }
+        .platform-tab:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.2); }
+        .platform-tab.active { background: linear-gradient(135deg, #e94560, #533483); color: #fff; border-color: transparent; box-shadow: 0 4px 15px rgba(233,69,96,0.3); }
+
+        /* ─── Genre Chips ──────────────────────────────────────────────────── */
+        .genre-section { margin-bottom: 20px; }
+        .genre-chips {
+            display: flex; flex-wrap: wrap; gap: 8px;
+        }
+        .genre-chip {
+            padding: 7px 16px; border-radius: 20px; cursor: pointer;
+            font-size: 0.78rem; font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+            color: #aaa; transition: all 0.3s ease;
+        }
+        .genre-chip:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .genre-chip.active { background: rgba(233,69,96,0.2); color: #e94560; border-color: rgba(233,69,96,0.4); }
+        .genre-chip .count { font-size: 0.7rem; opacity: 0.6; margin-left: 4px; }
+
+        /* ─── Session Selector ─────────────────────────────────────────────── */
+        .session-selector {
+            margin-bottom: 20px; display: none;
+        }
+        .session-selector.visible { display: block; }
+        .session-selector label { font-size: 0.8rem; color: #888; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.08em; }
+        .session-select {
+            width: 100%; padding: 12px 16px; border-radius: 10px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            color: #fff; font-size: 0.9rem; font-family: inherit;
+            appearance: none; cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center;
+        }
+        .session-select:focus { outline: none; border-color: #e94560; }
+        .session-select option { background: #1a1a2e; color: #fff; }
+
+        /* ─── Action Bar ───────────────────────────────────────────────────── */
+        .action-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+        }
+        .track-count { font-size: 0.85rem; color: #888; }
+        .track-count span { color: #e94560; font-weight: 700; }
+
+        .btn-export {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 24px; border-radius: 24px; border: none;
+            background: linear-gradient(135deg, #e94560, #533483); color: #fff;
+            font-size: 0.85rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .btn-export:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(233,69,96,0.4); }
+        .btn-export:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-export svg { width: 16px; height: 16px; }
+
+        .btn-delete {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 18px; border-radius: 24px; border: 1px solid rgba(233,69,96,0.3);
+            background: transparent; color: #e94560;
+            font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.3s ease;
+        }
+        .btn-delete:hover { background: rgba(233,69,96,0.15); border-color: #e94560; }
+        .btn-delete:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ─── Track List ───────────────────────────────────────────────────── */
+        .track-list { display: flex; flex-direction: column; gap: 2px; }
+
+        .track-item {
+            display: grid; grid-template-columns: 40px 1fr auto;
+            align-items: center; gap: 12px;
+            padding: 14px 16px; border-radius: 10px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.04);
+            transition: all 0.25s ease;
+        }
+        .track-item:hover { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.1); }
+
+        .track-position {
+            font-size: 0.85rem; font-weight: 700; color: #e94560; text-align: center;
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(233,69,96,0.1);
+        }
+        .track-info { overflow: hidden; }
+        .track-title {
+            font-size: 0.9rem; font-weight: 600; color: #eee;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .track-artist {
+            font-size: 0.78rem; color: #888; margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .track-meta {
+            font-size: 0.7rem; color: #666; text-align: right; white-space: nowrap;
+        }
+
+        /* ─── Empty State ──────────────────────────────────────────────────── */
+        .empty-state {
+            text-align: center; padding: 60px 20px; color: #666;
+        }
+        .empty-state svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.3; }
+        .empty-state h3 { font-size: 1.1rem; font-weight: 600; color: #888; margin-bottom: 8px; }
+        .empty-state p { font-size: 0.85rem; max-width: 360px; margin: 0 auto; }
+
+        /* ─── Responsive tweaks ────────────────────────────────────────────── */
+        @media (max-width: 600px) {
+            .container { padding: 90px 10px 30px; }
+            .track-item { grid-template-columns: 32px 1fr; gap: 10px; padding: 12px; }
+            .track-meta { display: none; }
+            .action-bar { flex-direction: column; align-items: stretch; }
+            .btn-export, .btn-delete { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background -->
+    <div class="background-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="nav-header">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html">
+                    <img src="./images/icon.PNG" alt="Logo" class="nav-logo-icon">
+                </a>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="beatport.html" class="nav-link">Beatport</a></li>
+                <li class="nav-item"><a href="traxsource.html" class="nav-link">Traxsource</a></li>
+                <li class="nav-item"><a href="1001tracklists.html" class="nav-link">1001Tracklists</a></li>
+                <li class="nav-item"><a href="visualiceList.html" class="nav-link">Visualice</a></li>
+                <li class="nav-item"><a href="mis-listas.html" class="nav-link active">Mis Listas</a></li>
+                <li class="nav-item"><a href="radio.html" class="nav-link">Radio</a></li>
+            </ul>
+            <div class="nav-actions">
+                <span class="user-email" id="navUserEmail" style="font-size:0.75rem;color:#888;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                <button class="btn-logout" id="navLogout" style="display:none;background:none;border:1px solid rgba(233,69,96,0.4);color:#e94560;padding:6px 14px;border-radius:20px;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.3s">Salir</button>
+                <a href="radio.html" class="nav-listen-btn"><span class="visually-hidden">Listen</span></a>
+            </div>
+            <button class="nav-mobile-toggle" id="mobileToggle">☰</button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="nav-mobile-menu" id="mobileMenu">
+        <a href="beatport.html" class="nav-link">Beatport</a>
+        <a href="traxsource.html" class="nav-link">Traxsource</a>
+        <a href="1001tracklists.html" class="nav-link">1001Tracklists</a>
+        <a href="visualiceList.html" class="nav-link">Visualice</a>
+        <a href="mis-listas.html" class="nav-link active">Mis Listas</a>
+        <a href="radio.html" class="nav-link">Radio</a>
+        <a href="radio.html" class="nav-listen-btn">♪ Listen</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="page-header">
+            <h1>Mis Listas</h1>
+            <p>Canciones extraídas guardadas en la nube — filtra por plataforma y género</p>
+        </div>
+
+        <!-- Status banner -->
+        <div id="statusBanner" class="status-banner"></div>
+
+        <!-- Platform tabs -->
+        <div class="platform-tabs" id="platformTabs"></div>
+
+        <!-- Genre chips -->
+        <div class="genre-section" id="genreSection" style="display:none">
+            <div class="genre-chips" id="genreChips"></div>
+        </div>
+
+        <!-- Session selector -->
+        <div class="session-selector" id="sessionSelector">
+            <label for="sessionSelect">Sesión de scrape</label>
+            <select class="session-select" id="sessionSelect">
+                <option value="">Última sesión</option>
+            </select>
+        </div>
+
+        <!-- Action bar -->
+        <div class="action-bar" id="actionBar" style="display:none">
+            <div class="track-count">
+                <span id="trackCountNum">0</span> tracks
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn-export" id="btnExport" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Descargar CSV
+                </button>
+                <button class="btn-delete" id="btnDelete" disabled>
+                    🗑 Eliminar sesión
+                </button>
+            </div>
+        </div>
+
+        <!-- Track list -->
+        <div class="track-list" id="trackList"></div>
+
+        <!-- Empty state -->
+        <div class="empty-state" id="emptyState">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 18V5l12-2v13"/>
+                <circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            </svg>
+            <h3>No hay listas guardadas</h3>
+            <p>Extrae tracks desde Beatport o Traxsource — se guardarán automáticamente aquí.</p>
+        </div>
+    </div>
+
+    <script>
+    (() => {
+        // ─── Auth helpers ─────────────────────────────────────────────────
+        const Auth = {
+            save(data) { localStorage.setItem('msh_session', JSON.stringify(data)); },
+            get() { try { return JSON.parse(localStorage.getItem('msh_session')); } catch { return null; } },
+            clear() { localStorage.removeItem('msh_session'); },
+            getToken() { const s = this.get(); return s?.session?.access_token || null; },
+            getEmail() { const s = this.get(); return s?.user?.email || ''; },
+            isLoggedIn() { return !!this.getToken(); },
+        };
+
+        // Guard: redirect to login if not authenticated
+        if (!Auth.isLoggedIn()) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // Show user email & logout button in nav
+        const $navEmail = document.getElementById('navUserEmail');
+        const $navLogout = document.getElementById('navLogout');
+        if ($navEmail) $navEmail.textContent = Auth.getEmail();
+        if ($navLogout) {
+            $navLogout.style.display = 'inline-block';
+            $navLogout.addEventListener('click', () => { Auth.clear(); window.location.href = 'login.html'; });
+        }
+
+        // Helper: build headers with auth token
+        function authHeaders(extra = {}) {
+            return { 'Authorization': `Bearer ${Auth.getToken()}`, ...extra };
+        }
+
+        // ─── State ────────────────────────────────────────────────────────
+        let platformsData = {};
+        let selectedPlatform = null;
+        let selectedGenre = null;
+        let selectedSessionId = null;
+        let currentTracks = [];
+
+        // ─── DOM refs ─────────────────────────────────────────────────────
+        const $status = document.getElementById('statusBanner');
+        const $platformTabs = document.getElementById('platformTabs');
+        const $genreSection = document.getElementById('genreSection');
+        const $genreChips = document.getElementById('genreChips');
+        const $sessionSelector = document.getElementById('sessionSelector');
+        const $sessionSelect = document.getElementById('sessionSelect');
+        const $actionBar = document.getElementById('actionBar');
+        const $trackCount = document.getElementById('trackCountNum');
+        const $trackList = document.getElementById('trackList');
+        const $emptyState = document.getElementById('emptyState');
+        const $btnExport = document.getElementById('btnExport');
+        const $btnDelete = document.getElementById('btnDelete');
+
+        const API = window.location.origin;
+
+        function showStatus(msg, type = 'info') {
+            $status.className = 'status-banner ' + type;
+            $status.innerHTML = type === 'loading' ? `<div class="spinner"></div>${msg}` : msg;
+        }
+        function hideStatus() { $status.className = 'status-banner'; $status.innerHTML = ''; }
+
+        function formatGenre(g) {
+            return g.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+        function formatDate(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Handle 401 (expired token)
+        function handleAuthError(res) {
+            if (res.status === 401) { Auth.clear(); window.location.href = 'login.html'; return true; }
+            return false;
+        }
+
+        // ─── Fetch platforms ──────────────────────────────────────────────
+        async function loadPlatforms() {
+            showStatus('Cargando listas...', 'loading');
+            try {
+                const res = await fetch(`${API}/api/tracks/platforms`, { headers: authHeaders() });
+                if (handleAuthError(res)) return;
+                if (!res.ok) throw new Error(await res.text());
+                const { platforms } = await res.json();
+                platformsData = platforms || {};
+                hideStatus();
+                renderPlatformTabs();
+            } catch (err) {
+                console.error(err);
+                showStatus('No se pudieron cargar las listas. Verifica que Supabase esté configurado.', 'error');
+                $emptyState.style.display = 'block';
+            }
+        }
+
+        // ─── Platform tabs ────────────────────────────────────────────────
+        function renderPlatformTabs() {
+            const names = Object.keys(platformsData);
+            if (names.length === 0) { $emptyState.style.display = 'block'; return; }
+            $emptyState.style.display = 'none';
+
+            $platformTabs.innerHTML = names.map(p =>
+                `<div class="platform-tab${selectedPlatform === p ? ' active' : ''}" data-platform="${p}">
+                    ${p.charAt(0).toUpperCase() + p.slice(1)}
+                </div>`
+            ).join('');
+
+            $platformTabs.querySelectorAll('.platform-tab').forEach(tab => {
+                tab.addEventListener('click', () => selectPlatform(tab.dataset.platform));
+            });
+
+            if (!selectedPlatform && names.length) selectPlatform(names[0]);
+        }
+
+        function selectPlatform(p) {
+            selectedPlatform = p; selectedGenre = null; selectedSessionId = null;
+            renderPlatformTabs(); renderGenreChips();
+        }
+
+        // ─── Genre chips ──────────────────────────────────────────────────
+        function renderGenreChips() {
+            const genres = platformsData[selectedPlatform] || {};
+            const genreNames = Object.keys(genres);
+            if (!genreNames.length) { $genreSection.style.display = 'none'; return; }
+
+            $genreSection.style.display = 'block';
+            $genreChips.innerHTML = genreNames.map(g => {
+                const total = genres[g].reduce((s, ses) => s + ses.tracks_count, 0);
+                return `<div class="genre-chip${selectedGenre === g ? ' active' : ''}" data-genre="${g}">
+                    ${formatGenre(g)}<span class="count">(${total})</span>
+                </div>`;
+            }).join('');
+
+            $genreChips.querySelectorAll('.genre-chip').forEach(chip => {
+                chip.addEventListener('click', () => selectGenre(chip.dataset.genre));
+            });
+
+            if (!selectedGenre && genreNames.length) selectGenre(genreNames[0]);
+        }
+
+        function selectGenre(g) {
+            selectedGenre = g; selectedSessionId = null;
+            renderGenreChips(); renderSessionSelector();
+        }
+
+        // ─── Session selector ─────────────────────────────────────────────
+        function renderSessionSelector() {
+            const sessions = (platformsData[selectedPlatform] || {})[selectedGenre] || [];
+            if (sessions.length <= 1) {
+                $sessionSelector.classList.remove('visible');
+                selectedSessionId = sessions.length ? sessions[0].session_id : null;
+                loadTracks(); return;
+            }
+
+            $sessionSelector.classList.add('visible');
+            $sessionSelect.innerHTML = sessions.map((s, i) =>
+                `<option value="${s.session_id}"${i === 0 ? ' selected' : ''}>
+                    ${formatDate(s.scraped_at)} — ${s.tracks_count} tracks
+                </option>`
+            ).join('');
+            selectedSessionId = sessions[0].session_id;
+
+            $sessionSelect.onchange = () => { selectedSessionId = $sessionSelect.value; loadTracks(); };
+            loadTracks();
+        }
+
+        // ─── Tracks ───────────────────────────────────────────────────────
+        async function loadTracks() {
+            if (!selectedPlatform || !selectedGenre) return;
+            showStatus('Cargando tracks...', 'loading');
+
+            const params = new URLSearchParams({ platform: selectedPlatform, genre: selectedGenre, limit: 200 });
+            if (selectedSessionId) params.set('session_id', selectedSessionId);
+
+            try {
+                const res = await fetch(`${API}/api/tracks?${params}`, { headers: authHeaders() });
+                if (handleAuthError(res)) return;
+                if (!res.ok) throw new Error(await res.text());
+                const { tracks, total } = await res.json();
+                currentTracks = tracks;
+                hideStatus();
+                renderTracks(tracks, total);
+            } catch (err) {
+                console.error(err);
+                showStatus('Error cargando tracks.', 'error');
+            }
+        }
+
+        function renderTracks(tracks, total) {
+            $actionBar.style.display = 'flex';
+            $trackCount.textContent = total || tracks.length;
+            $btnExport.disabled = !tracks.length;
+            $btnDelete.disabled = !selectedSessionId;
+
+            if (!tracks.length) { $trackList.innerHTML = ''; $emptyState.style.display = 'block'; return; }
+            $emptyState.style.display = 'none';
+
+            $trackList.innerHTML = tracks.map(t => `
+                <div class="track-item">
+                    <div class="track-position">${t.position}</div>
+                    <div class="track-info">
+                        <div class="track-title">${escapeHtml(t.title)}</div>
+                        <div class="track-artist">${escapeHtml(t.artist)}${t.label ? ' · ' + escapeHtml(t.label) : ''}</div>
+                    </div>
+                    <div class="track-meta">${t.bpm ? t.bpm + ' BPM' : ''}${t.key ? '<br>' + t.key : ''}</div>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // ─── Export CSV (fetch with auth, then trigger download) ──────────
+        $btnExport.addEventListener('click', async () => {
+            if (!selectedPlatform || !selectedGenre) return;
+            const params = new URLSearchParams({ platform: selectedPlatform, genre: selectedGenre });
+            if (selectedSessionId) params.set('session_id', selectedSessionId);
+
+            try {
+                const res = await fetch(`${API}/api/tracks/export/csv?${params}`, { headers: authHeaders() });
+                if (handleAuthError(res)) return;
+                if (!res.ok) throw new Error('Error exportando');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `tracks_${selectedPlatform}_${selectedGenre}_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a); a.click(); a.remove();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                showStatus('Error al descargar CSV.', 'error');
+            }
+        });
+
+        // ─── Delete session ───────────────────────────────────────────────
+        $btnDelete.addEventListener('click', async () => {
+            if (!selectedSessionId) return;
+            if (!confirm('¿Eliminar esta sesión y todos sus tracks?')) return;
+
+            showStatus('Eliminando...', 'loading');
+            try {
+                const res = await fetch(`${API}/api/tracks/session/${selectedSessionId}`, {
+                    method: 'DELETE', headers: authHeaders()
+                });
+                if (handleAuthError(res)) return;
+                if (!res.ok) throw new Error(await res.text());
+                hideStatus();
+                await loadPlatforms();
+            } catch (err) {
+                showStatus('Error eliminando la sesión.', 'error');
+            }
+        });
+
+        // ─── Mobile menu ──────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('mobileToggle');
+            const menu = document.getElementById('mobileMenu');
+            if (toggle && menu) {
+                toggle.addEventListener('click', () => {
+                    const open = menu.classList.toggle('open');
+                    toggle.innerHTML = open ? '✕' : '☰';
+                    document.body.style.overflow = open ? 'hidden' : '';
+                });
+                menu.querySelectorAll('.nav-link').forEach(l => l.addEventListener('click', () => {
+                    menu.classList.remove('open'); toggle.innerHTML = '☰'; document.body.style.overflow = '';
+                }));
+            }
+        });
+
+        // ─── Init ─────────────────────────────────────────────────────────
+        loadPlatforms();
+    })();
+    </script>
+</body>
+</html>

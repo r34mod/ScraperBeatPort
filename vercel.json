@@ -3,46 +3,16 @@
   "builds": [
     {
       "src": "api/server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": { "maxDuration": 60 }
     },
     {
-      "src": "api/genres.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/scrape.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/scrape-multiple.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/youtube-search-vercel.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "public/**",
-      "use": "@vercel/static"
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
     }
   ],
   "routes": [
-    {
-      "src": "/api/genres",
-      "dest": "/api/genres.js"
-    },
-    {
-      "src": "/api/scrape-multiple",
-      "dest": "/api/scrape-multiple.js"
-    },
-    {
-      "src": "/api/youtube/search",
-      "dest": "/api/youtube-search-vercel.js"
-    },
-    {
-      "src": "/api/scrape",
-      "dest": "/api/scrape.js"
-    },
     {
       "src": "/api/(.*)",
       "dest": "/api/server.js"
@@ -53,11 +23,11 @@
     },
     {
       "src": "/(.*\\.(css|js|html|png|jpg|gif|ico|svg|json|csv))",
-      "dest": "/public/$1"
+      "dest": "/dist/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/public/$1"
+      "dest": "/dist/index.html"
     }
   ]
 }

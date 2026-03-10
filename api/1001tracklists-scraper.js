@@ -3,6 +3,7 @@ const puppeteer = require('puppeteer');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs');
 const path = require('path');
+const { getRandomUserAgent, handleCookieConsent, delay } = require('./scraper-utils');
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ const TRACKLISTS_BASE_URLS = {
 async function scrapeTracklistTracks(tracklistUrl, browser) {
     try {
         const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        await page.setUserAgent(getRandomUserAgent());
         await page.setViewport({ width: 1200, height: 900 });
 
         console.log(`🎵 Extrayendo tracks de: ${tracklistUrl}`);
@@ -34,7 +35,8 @@ async function scrapeTracklistTracks(tracklistUrl, browser) {
             }
         });
         
-        await page.waitForTimeout(2000);
+        await page.waitForSelector('[class*="tlp"], tr[id*="tlpItem"], .crate-list', { timeout: 10000 }).catch(() => {});
+        await delay(2000);
 
         // Extraer tracks
         const tracks = await page.evaluate(() => {
@@ -106,7 +108,7 @@ async function scrape1001Tracklists(searchType, query, event) {
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         });
         const page = await browser.newPage();
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        await page.setUserAgent(getRandomUserAgent());
         await page.setViewport({ width: 1200, height: 900 });
 
         let targetUrl;
@@ -133,16 +135,7 @@ async function scrape1001Tracklists(searchType, query, event) {
         await page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 45000 });
 
         // Intentar cerrar posibles banners de cookies
-        try {
-            const cookieSelector = '.cookie-banner button, .gdpr-accept, button[data-cookie="accept"]';
-            const cookieBtn = await page.$(cookieSelector);
-            if (cookieBtn) { 
-                await cookieBtn.click(); 
-                await page.waitForTimeout(1000); 
-            }
-        } catch (e) {
-            console.log('No se encontraron banners de cookies');
-        }
+        await handleCookieConsent(page);
 
         // Esperar que la página cargue
         console.log('🔍 Buscando tracklists en la página...');
@@ -156,7 +149,7 @@ async function scrape1001Tracklists(searchType, query, event) {
                 await delay(500); 
             }
         });
-        await page.waitForTimeout(2000);
+        await delay(2000);
 
         // Extraer tracklists desde el DOM
         const tracklists = await page.evaluate(() => {
@@ -317,17 +310,17 @@ async function scrape1001Tracklists(searchType, query, event) {
 async function generateTracklistsCSV(tracklists, searchType, query) {
     try {
         // Crear estructura de carpetas
-        const downloadsDir = path.join(__dirname, '..', 'Downloads');
+        const downloadsDir = path.join(__dirname, '..', 'downloads');
         const tracklistsDir = path.join(downloadsDir, '1001tracklists');
         
         if (!fs.existsSync(downloadsDir)) {
             fs.mkdirSync(downloadsDir, { recursive: true });
-            console.log(`📁 Creado directorio: Downloads`);
+            console.log(`📁 Creado directorio: downloads`);
         }
         
         if (!fs.existsSync(tracklistsDir)) {
             fs.mkdirSync(tracklistsDir, { recursive: true });
-            console.log(`📁 Creado directorio: Downloads/1001tracklists`);
+            console.log(`📁 Creado directorio: downloads/1001tracklists`);
         }
 
         const timestamp = new Date().toISOString().split('T')[0];
@@ -340,13 +333,13 @@ async function generateTracklistsCSV(tracklists, searchType, query) {
         const csvWriter = createCsvWriter({
             path: filePath,
             header: [
-                { id: 'position', title: 'Posición' },
-                { id: 'title', title: 'Título del Tracklist' },
-                { id: 'artist', title: 'DJ / Artista' },
+                { id: 'position', title: 'Posicion' },
+                { id: 'title', title: 'Titulo' },
+                { id: 'artist', title: 'Artista' },
                 { id: 'event', title: 'Evento' },
                 { id: 'date', title: 'Fecha' },
-                { id: 'duration', title: 'Duración' },
-                { id: 'trackCount', title: 'Número de Tracks' },
+                { id: 'duration', title: 'Duracion' },
+                { id: 'trackCount', title: 'Numero de Tracks' },
                 { id: 'url', title: 'URL' },
                 { id: 'platform', title: 'Plataforma' }
             ]
@@ -469,7 +462,7 @@ router.post('/tracks', async (req, res) => {
 router.get('/download/:filename', (req, res) => {
     const { filename } = req.params;
     
-    const filePath = path.join(__dirname, '..', 'Downloads', '1001tracklists', filename);
+    const filePath = path.join(__dirname, '..', 'downloads', '1001tracklists', filename);
     
     console.log(`📥 Solicitud de descarga: ${filename}`);
     console.log(`📂 Buscando en: ${filePath}`);
@@ -495,7 +488,7 @@ router.get('/download/:filename', (req, res) => {
 // Listar archivos disponibles
 router.get('/files', (req, res) => {
     try {
-        const tracklistsDir = path.join(__dirname, '..', 'Downloads', '1001tracklists');
+        const tracklistsDir = path.join(__dirname, '..', 'downloads', '1001tracklists');
         
         if (!fs.existsSync(tracklistsDir)) {
             return res.json({ 
@@ -543,9 +536,9 @@ router.get('/test', (req, res) => {
             popular: 'Obtener tracklists más populares de la página principal'
         },
         folderStructure: {
-            downloads: 'Downloads/',
-            tracklists: 'Downloads/1001tracklists/',
-            csvFiles: 'Downloads/1001tracklists/1001tracklists_{searchType}_{query}_{date}.csv'
+            downloads: 'downloads/',
+            tracklists: 'downloads/1001tracklists/',
+            csvFiles: 'downloads/1001tracklists/1001tracklists_{searchType}_{query}_{date}.csv'
         },
         examples: {
             searchDJ: 'POST /api/1001tracklists/scrape {"searchType": "dj", "query": "Martin Garrix"}',
