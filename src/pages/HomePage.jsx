@@ -432,15 +432,15 @@ export default function HomePage() {
         {/* Live Radio Card — Ibiza Style */}
         <section className="hp-live-card">
           <div className="hp-live-bg">
-            <img src="/public/images/IbizaVibesRadio.png" alt="Ibiza Palms" aria-hidden="true" />
+            <img src="https://www.dropbox.com/scl/fi/bozhyqy2kss1fgqn2bqmk/IbizaVibesRadio.png?rlkey=cifib7q9pzd6ythh9s63qaa54&st=z55tcjbg&dl=1" alt="Ibiza Palms" aria-hidden="true" />
           </div>
           <div className="hp-live-content">
             <div className="hp-live-onair">ON AIR NOW</div>
-            <div className="hp-live-title">BEST OF IBIZA LIVE RADIO</div>
+            <div className="hp-live-title">BEST OF ELECTRONIC LIVE MUSIC</div>
             <div className="hp-live-artists">Various Artists</div>
             <div className="hp-live-btns">
-              <a href="https://www.ibizaliveradio.com/" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-main">Listen</a>
-              <a href="https://www.ibizaliveradio.com/shows" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-secondary">Radio Shows</a>
+              <a href="#" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-main">Listen</a>
+              <a href="#" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-secondary">Radio Shows</a>
             </div>
           </div>
         </section>

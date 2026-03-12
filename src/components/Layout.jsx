@@ -7,6 +7,7 @@ import {
   IconHeart,
   IconRadio,
   IconDownload,
+  IconUsers,
 } from '@tabler/icons-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -77,9 +78,9 @@ export default function Layout() {
     { to: '/traxsource',      label: 'Traxsource',     icon: <IconPlaylist size={22} stroke={1.7} /> },
     { to: '/1001tracklists',  label: '1001Tracklists', icon: <IconListCheck size={22} stroke={1.7} /> },
     { to: '/visualice',       label: 'Previsualizar Canciones', icon: <IconChartBar size={22} stroke={1.7} /> },
-    { to: '/mis-listas',      label: 'Mis Listas',     icon: <IconHeart size={22} stroke={1.7} color="#e05555" /> },
     { to: '/radio',           label: 'Radio',          icon: <IconRadio size={22} stroke={1.7} /> },
     { to: '/tidal',           label: 'Descarga Musica', icon: <IconDownload size={22} stroke={1.7} /> },
+    { to: '/community',       label: 'Comunidad',      icon: <IconUsers size={22} stroke={1.7} /> },
   ];
 
   const closeMobile = () => { setMobileOpen(false); document.body.style.overflow = ''; };

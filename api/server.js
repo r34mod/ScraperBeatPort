@@ -19,6 +19,7 @@ const authApi = require('./auth-api');
 const tidalDownloader = require('./tidal-downloader');
 const youtubeDownloader = require('./youtube-downloader');
 const spotifyApi = require('./spotify-api');
+const communityApi = require('./community-api');
 
 // --- CONFIGURACIÓN ---
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -35,7 +36,7 @@ const app = express();
 
 // --- MIDDLEWARE ---
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' })); // Aumentado para permitir subida de CSVs grandes
 
 // Middleware de logging para cada petición
 app.use((req, res, next) => {
@@ -56,6 +57,7 @@ app.use('/api/tracks', tracksApi);
 app.use('/api/tidal', tidalDownloader);
 app.use('/api/youtube-dl', youtubeDownloader);
 app.use('/api/spotify', spotifyApi);
+app.use('/api/community', communityApi);
 app.use('/api', beatportScraper);
 
 // Ruta de health check
