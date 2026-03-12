@@ -7,6 +7,7 @@ import {
   IconHeart,
   IconRadio,
   IconDownload,
+  IconUsers,
 } from '@tabler/icons-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -77,22 +78,20 @@ export default function Layout() {
     { to: '/traxsource',      label: 'Traxsource',     icon: <IconPlaylist size={22} stroke={1.7} /> },
     { to: '/1001tracklists',  label: '1001Tracklists', icon: <IconListCheck size={22} stroke={1.7} /> },
     { to: '/visualice',       label: 'Previsualizar Canciones', icon: <IconChartBar size={22} stroke={1.7} /> },
-    { to: '/mis-listas',      label: 'Mis Listas',     icon: <IconHeart size={22} stroke={1.7} color="#e05555" /> },
     { to: '/radio',           label: 'Radio',          icon: <IconRadio size={22} stroke={1.7} /> },
     { to: '/tidal',           label: 'Descarga Musica', icon: <IconDownload size={22} stroke={1.7} /> },
+    { to: '/community',       label: 'Comunidad',      icon: <IconUsers size={22} stroke={1.7} /> },
   ];
 
   const closeMobile = () => { setMobileOpen(false); document.body.style.overflow = ''; };
 
   return (
     <>
-      {/* Background */}
-      <div className="background-orbs">
+      {/* Background blobs */}
+      <div className="background-orbs" aria-hidden="true">
         <div className="orb orb-red" />
-        <div className="orb orb-blue" />
         <div className="orb orb-cyan" />
       </div>
-      <div className="noise-overlay" />
 
       {/* Nav Header */}
       <nav className="nav-header">

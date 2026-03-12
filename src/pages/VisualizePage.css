@@ -2,33 +2,32 @@
 .vz-title {
   font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 900;
   text-align: center; margin-bottom: 8px;
-  background: linear-gradient(180deg, #a855f7, #ec4899);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  color: #ffffff;
 }
-.vz-subtitle { text-align: center; color: #888; margin-bottom: 40px; }
+.vz-subtitle { text-align: center; color: rgba(255,255,255,0.4); margin-bottom: 40px; }
 
 .vz-upload {
-  border: 2px dashed rgba(255,255,255,0.15); border-radius: 16px;
+  border: 2px dashed rgba(255,255,255,0.1); border-radius: 16px;
   padding: 40px; text-align: center; cursor: pointer;
   transition: all 0.3s; margin-bottom: 30px;
 }
-.vz-upload:hover, .vz-upload.dragover { border-color: #a855f7; background: rgba(168,85,247,0.06); }
+.vz-upload:hover, .vz-upload.dragover { border-color: #ff1744; background: rgba(255,23,68,0.04); }
 .vz-upload-icon { font-size: 3rem; margin-bottom: 12px; }
-.vz-upload p { color: #888; }
+.vz-upload p { color: rgba(255,255,255,0.4); }
 
-.vz-loading { text-align: center; padding: 20px; color: #aaa; }
+.vz-loading { text-align: center; padding: 20px; color: rgba(255,255,255,0.5); }
 
 .vz-controls {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
 }
-.vz-count { color: #aaa; font-size: 0.9rem; margin-right: auto; }
+.vz-count { color: rgba(255,255,255,0.5); font-size: 0.9rem; margin-right: auto; }
 .vz-btn {
-  padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);
+  padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.06); color: #fff; font-size: 0.82rem;
   cursor: pointer; transition: all 0.2s;
 }
-.vz-btn:hover { background: rgba(255,255,255,0.12); }
-.vz-btn.primary { background: rgba(168,85,247,0.3); border-color: #a855f7; }
+.vz-btn:hover { background: rgba(255,255,255,0.1); }
+.vz-btn.primary { background: rgba(255,23,68,0.15); border-color: #ff1744; }
 .vz-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .vz-table-wrap { overflow-x: auto; margin-bottom: 30px; }
@@ -37,17 +36,17 @@
   padding: 10px 12px; text-align: left;
   border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.85rem;
 }
-.vz-table th { color: #888; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; position: sticky; top: 0; background: #1a1a1a; }
-.vz-table td { color: #ddd; }
-.vz-table tr.selected { background: rgba(168,85,247,0.1); }
+.vz-table th { color: rgba(255,255,255,0.4); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; position: sticky; top: 0; background: #000; }
+.vz-table td { color: rgba(255,255,255,0.75); }
+.vz-table tr.selected { background: rgba(255,23,68,0.08); }
 .vz-table tr:hover { background: rgba(255,255,255,0.03); }
 
-.vz-pos { font-weight: 700; color: #888; min-width: 30px; }
+.vz-pos { font-weight: 700; color: rgba(255,255,255,0.4); min-width: 30px; }
 .vz-track-title { font-weight: 600; }
-.vz-track-artist { font-size: 0.8rem; color: #888; }
+.vz-track-artist { font-size: 0.8rem; color: rgba(255,255,255,0.4); }
 .vz-genre-badge {
   display: inline-block; padding: 2px 8px; border-radius: 10px;
-  background: rgba(255,255,255,0.06); font-size: 0.75rem; color: #bbb;
+  background: rgba(255,255,255,0.06); font-size: 0.75rem; color: rgba(255,255,255,0.6);
 }
 
 .vz-actions-cell { display: flex; gap: 6px; }
@@ -56,10 +55,10 @@
   border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 0.85rem;
   color: #fff; text-decoration: none; transition: all 0.2s;
 }
-.vz-play-btn:hover { background: rgba(255,255,255,0.15); }
+.vz-play-btn:hover { background: rgba(255,255,255,0.12); }
 
-.vz-empty { text-align: center; padding: 80px 20px; color: #888; }
-.vz-empty h3 { margin: 12px 0 8px; color: #aaa; }
+.vz-empty { text-align: center; padding: 80px 20px; color: rgba(255,255,255,0.4); }
+.vz-empty h3 { margin: 12px 0 8px; color: rgba(255,255,255,0.6); }
 
 /* Player Overlay */
 .vz-player-overlay {
@@ -68,7 +67,7 @@
   display: flex; align-items: center; justify-content: center;
 }
 .vz-player-card {
-  background: #1e1e2e; border: 1px solid rgba(255,255,255,0.1);
+  background: #0a0a0a; border: 1px solid rgba(255,255,255,0.08);
   border-radius: 20px; padding: 32px; max-width: 640px; width: 90%;
   position: relative;
 }
@@ -85,6 +84,31 @@
   animation: toastIn 0.3s ease;
 }
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* Search */
+.vz-search {
+  width: 100%; padding: 10px 16px; border-radius: 10px; margin-bottom: 20px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: #fff; font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+.vz-search:focus { border-color: #ff1744; }
+.vz-search::placeholder { color: rgba(255,255,255,0.3); }
+
+/* Pagination */
+.vz-pagination {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 20px; padding: 12px;
+}
+.vz-page-btn {
+  padding: 6px 12px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.06); color: #fff;
+  cursor: pointer; font-size: 0.9rem; transition: all 0.2s;
+}
+.vz-page-btn:hover:not(:disabled) { background: rgba(255,23,68,0.15); border-color: #ff1744; }
+.vz-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.vz-page-info { color: rgba(255,255,255,0.4); font-size: 0.85rem; min-width: 120px; text-align: center; }
 
 @media (max-width: 768px) {
   .vz-controls { gap: 6px; }

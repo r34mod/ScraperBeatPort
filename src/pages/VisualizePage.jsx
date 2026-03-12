@@ -1,5 +1,8 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
+import { useDebounce } from '../hooks/useDebounce';
 import './VisualizePage.css';
+
+const PAGE_SIZE = 50;
 
 function parseCSVLine(line) {
   const result = [];
@@ -39,7 +42,11 @@ export default function VisualizePage() {
   const [playerTrack, setPlayerTrack] = useState(null);
   const [videoId, setVideoId] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const fileRef = useRef(null);
+
+  const debouncedSearch = useDebounce(search, 250);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -51,7 +58,7 @@ export default function VisualizePage() {
     reader.onload = (e) => {
       try {
         const parsed = parseCSV(e.target.result);
-        setTracks(parsed); setSelected(new Set());
+        setTracks(parsed); setSelected(new Set()); setPage(1); setSearch('');
         showToast(`"${file.name}" cargado — ${parsed.length} tracks`);
       } catch { showToast('Error procesando CSV'); }
       setLoading(false);
@@ -66,6 +73,30 @@ export default function VisualizePage() {
 
   const selectAll = () => setSelected(new Set(tracks.map(t => t.id)));
   const clearSelection = () => setSelected(new Set());
+  // ── Filtrado con debounce (evita recalcular en cada tecla) ──
+  const filteredTracks = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    if (!q) return tracks;
+    return tracks.filter(t => {
+      const title  = getField(t, 'Título', 'Title', 'Track Title', 'title');
+      const artist = getField(t, 'Artista', 'Artist', 'Artist Name', 'artist');
+      const label  = getField(t, 'Label', 'label', 'Record Label');
+      return (title + artist + label).toLowerCase().includes(q);
+    });
+  }, [tracks, debouncedSearch]);
+
+  // ── Paginación ──
+  const totalPages = Math.max(1, Math.ceil(filteredTracks.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageTracks = useMemo(
+    () => filteredTracks.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filteredTracks, currentPage]
+  );
+
+  const goPage = useCallback((p) => setPage(Math.max(1, Math.min(p, totalPages))), [totalPages]);
+
+  // Cuando cambia la búsqueda, volver a la primera página
+  const handleSearch = (e) => { setSearch(e.target.value); setPage(1); };
 
   const downloadSelected = () => {
     const sel = tracks.filter(t => selected.has(t.id));
@@ -132,12 +163,24 @@ export default function VisualizePage() {
 
       {tracks.length > 0 && (
         <>
+          {/* Search */}
+          <input
+            className="vz-search"
+            placeholder="🔍 Buscar por título, artista o sello..."
+            value={search}
+            onChange={handleSearch}
+          />
+
           {/* Controls */}
           <div className="vz-controls">
-            <span className="vz-count">{selected.size} de {tracks.length} seleccionados</span>
-            <button className="vz-btn" onClick={selectAll}>Seleccionar todo</button>
+            <span className="vz-count">
+              {selected.size} sel. · {filteredTracks.length} de {tracks.length} tracks
+            </span>
+            <button className="vz-btn" onClick={selectAll}>Sel. todo</button>
             <button className="vz-btn" onClick={clearSelection}>Limpiar</button>
-            <button className="vz-btn primary" disabled={selected.size === 0} onClick={downloadSelected}>💾 Descargar seleccionados</button>
+            <button className="vz-btn primary" disabled={selected.size === 0} onClick={downloadSelected}>
+              💾 Descargar ({selected.size})
+            </button>
           </div>
 
           {/* Table */}
@@ -145,22 +188,23 @@ export default function VisualizePage() {
             <table className="vz-table">
               <thead>
                 <tr>
-                  <th><input type="checkbox" checked={selected.size === tracks.length} onChange={() => selected.size === tracks.length ? clearSelection() : selectAll()} /></th>
+                  <th><input type="checkbox" checked={selected.size === tracks.length && tracks.length > 0} onChange={() => selected.size === tracks.length ? clearSelection() : selectAll()} /></th>
                   <th>#</th><th>Track</th><th>Género</th><th>BPM</th><th>Label</th><th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {tracks.map((t, i) => {
-                  const title = getField(t, 'Título', 'Title', 'Track Title', 'title') || 'Sin título';
+                {pageTracks.map((t, i) => {
+                  const title  = getField(t, 'Título', 'Title', 'Track Title', 'title') || 'Sin título';
                   const artist = getField(t, 'Artista', 'Artist', 'Artist Name', 'artist') || 'Desconocido';
-                  const genre = getField(t, 'Género', 'Genre', 'genre') || 'N/A';
-                  const bpm = getField(t, 'BPM', 'bpm') || 'N/A';
-                  const label = getField(t, 'Label', 'label', 'Record Label') || 'N/A';
+                  const genre  = getField(t, 'Género', 'Genre', 'genre') || 'N/A';
+                  const bpm    = getField(t, 'BPM', 'bpm') || 'N/A';
+                  const label  = getField(t, 'Label', 'label', 'Record Label') || 'N/A';
+                  const globalIdx = (currentPage - 1) * PAGE_SIZE + i + 1;
                   const q = encodeURIComponent(`${title} ${artist}`);
                   return (
                     <tr key={t.id} className={selected.has(t.id) ? 'selected' : ''}>
                       <td><input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} /></td>
-                      <td className="vz-pos">{i + 1}</td>
+                      <td className="vz-pos">{globalIdx}</td>
                       <td><div className="vz-track-title">{title}</div><div className="vz-track-artist">{artist}</div></td>
                       <td><span className="vz-genre-badge">{genre}</span></td>
                       <td>{bpm}</td>
@@ -176,6 +220,17 @@ export default function VisualizePage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="vz-pagination">
+              <button className="vz-page-btn" onClick={() => goPage(1)} disabled={currentPage === 1}>«</button>
+              <button className="vz-page-btn" onClick={() => goPage(currentPage - 1)} disabled={currentPage === 1}>‹</button>
+              <span className="vz-page-info">Página {currentPage} de {totalPages}</span>
+              <button className="vz-page-btn" onClick={() => goPage(currentPage + 1)} disabled={currentPage === totalPages}>›</button>
+              <button className="vz-page-btn" onClick={() => goPage(totalPages)} disabled={currentPage === totalPages}>»</button>
+            </div>
+          )}
         </>
       )}
 

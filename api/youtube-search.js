@@ -1,6 +1,6 @@
 const express = require('express');
 const { google } = require('googleapis');
-const puppeteer = require('puppeteer');
+const axios = require('axios');
 
 // Configuración de YouTube API
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || 'YOUR_API_KEY_HERE';
@@ -73,19 +73,10 @@ router.post('/search', async (req, res) => {
  * Limpiar query de búsqueda para mejorar resultados
  */
 function cleanSearchQuery(query) {
-    // Eliminar caracteres especiales y normalizar
-    let cleaned = query
-        .replace(/[^\w\s-]/g, '')
+    return query
         .replace(/\s+/g, ' ')
-        .trim();
-    
-    // Agregar palabras clave para mejorar búsqueda musical
-    const musicKeywords = ['music', 'official', 'video'];
-    if (!musicKeywords.some(keyword => cleaned.toLowerCase().includes(keyword))) {
-        cleaned += ' music';
-    }
-    
-    return cleaned;
+        .trim()
+        .substring(0, 150);
 }
 
 /**
@@ -128,59 +119,62 @@ async function searchWithYouTubeAPI(query, maxResults) {
 }
 
 /**
- * Búsqueda usando web scraping como alternativa
+ * Búsqueda parseando ytInitialData de YouTube sin API key
  */
 async function searchWithScraping(query, maxResults) {
-    let browser;
-    
     try {
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&hl=en`;
+        const response = await axios.get(searchUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+            },
+            timeout: 10000
         });
-        
-        const page = await browser.newPage();
-        
-        // Configurar User-Agent para evitar bloqueos
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-        
-        // Ir a YouTube y buscar
-        const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
-        await page.goto(searchUrl, { waitUntil: 'networkidle0' });
-        
-        // Extraer información de videos
-        const videos = await page.evaluate((maxResults) => {
-            const videoElements = document.querySelectorAll('a#video-title');
-            const results = [];
-            
-            for (let i = 0; i < Math.min(videoElements.length, maxResults); i++) {
-                const element = videoElements[i];
-                const href = element.getAttribute('href');
-                
-                if (href && href.includes('/watch?v=')) {
-                    const videoId = href.split('v=')[1].split('&')[0];
-                    results.push({
-                        videoId: videoId,
-                        title: element.textContent.trim(),
-                        channelTitle: '',
-                        thumbnail: '',
-                        source: 'scraping'
-                    });
-                }
-            }
-            
-            return results;
-        }, maxResults);
 
-        return videos;
+        const html = response.data;
+
+        // Extraer ytInitialData del HTML
+        const match = html.match(/var ytInitialData = (\{.+?\});\s*<\/script>/);
+        if (!match) {
+            console.log('ytInitialData not found in YouTube response');
+            return null;
+        }
+
+        const ytData = JSON.parse(match[1]);
+
+        // Navegar al path de resultados de búsqueda
+        const contents =
+            ytData?.contents?.twoColumnSearchResultsRenderer
+                ?.primaryContents?.sectionListRenderer?.contents;
+
+        if (!contents) return null;
+
+        const videos = [];
+        for (const section of contents) {
+            const items = section?.itemSectionRenderer?.contents;
+            if (!items) continue;
+            for (const item of items) {
+                const vr = item?.videoRenderer;
+                if (!vr || !vr.videoId) continue;
+                videos.push({
+                    videoId: vr.videoId,
+                    title: vr.title?.runs?.[0]?.text || '',
+                    channelTitle: vr.ownerText?.runs?.[0]?.text || '',
+                    thumbnail: `https://img.youtube.com/vi/${vr.videoId}/mqdefault.jpg`,
+                    source: 'ytInitialData'
+                });
+                if (videos.length >= maxResults) break;
+            }
+            if (videos.length >= maxResults) break;
+        }
+
+        return videos.length > 0 ? videos : null;
 
     } catch (error) {
-        console.error('Scraping search failed:', error);
+        console.error('ytInitialData search failed:', error.message);
         return null;
-    } finally {
-        if (browser) {
-            await browser.close();
-        }
     }
 }
 

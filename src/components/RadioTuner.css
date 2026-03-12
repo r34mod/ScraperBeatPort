@@ -1,0 +1,507 @@
+/* ── Liquid Glass Radio Tuner ──────────────────────────────────── */
+.vr-body {
+  width: 100%;
+  max-width: 420px;
+  margin: 32px auto 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(0,212,255,0.07) 100%);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-radius: 2.4rem;
+  padding: 22px 26px 30px;
+  box-shadow:
+    0 24px 60px rgba(0,0,0,0.45),
+    inset 0 2px 3px rgba(255,255,255,0.35),
+    inset 0 -2px 6px rgba(0,212,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  user-select: none;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-top: 1px solid rgba(255,255,255,0.5);
+  border-bottom: 1px solid rgba(0,212,255,0.08);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* Speaker grille */
+.vr-grille {
+  display: flex;
+  gap: 5px;
+  padding: 4px 0 0;
+}
+.vr-grille-bar {
+  flex: 1;
+  height: 18px;
+  border-radius: 30px;
+  background: rgba(255,255,255,0.06);
+  border-top: 1px solid rgba(255,255,255,0.18);
+  border-bottom: 1px solid rgba(0,0,0,0.18);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Frequency dial strip */
+.vr-dial-wrap {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(0,212,255,0.06) 100%);
+  border-radius: 8px;
+  padding: 6px 0 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-top: 1px solid rgba(255,255,255,0.4);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.1);
+}
+.vr-dial-strip {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4%;
+}
+.vr-tick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.vr-tick-line {
+  width: 1.5px;
+  height: 8px;
+  background: rgba(255,255,255,0.35);
+  border-radius: 1px;
+}
+.vr-tick span {
+  font-size: 0.52rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.4);
+  letter-spacing: -0.03em;
+}
+.vr-needle {
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  height: 100%;
+  background: #00d4ff;
+  box-shadow: 0 0 6px rgba(0,212,255,0.9), 0 0 12px rgba(0,212,255,0.4);
+  transform: translateX(-50%);
+  transition: left 0.3s cubic-bezier(0.25,0.8,0.25,1);
+  border-radius: 1px;
+}
+
+/* Glass screen */
+.vr-screen {
+  background: linear-gradient(135deg, rgba(0,0,0,0.45) 0%, rgba(0,20,35,0.55) 100%);
+  border-radius: 14px;
+  padding: 16px 20px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid rgba(255,255,255,0.3);
+  box-shadow:
+    inset 0 4px 16px rgba(0,0,0,0.4),
+    0 0 18px rgba(0,212,255,0.07);
+  color: #00d4ff;
+  text-shadow: 0 0 10px rgba(0,212,255,0.5);
+  backdrop-filter: blur(8px);
+}
+.vr-screen-status {
+  font-size: 0.65rem;
+  letter-spacing: 2.5px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  color: rgba(0,212,255,0.6);
+  text-transform: uppercase;
+}
+.vr-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: all 0.3s;
+}
+.vr-dot.on {
+  background: #ff3a3a;
+  box-shadow: 0 0 10px #ff3a3a;
+}
+.vr-screen-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vr-screen-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: rgba(0,212,255,0.45);
+  margin-top: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Controls row: ◀  KNOB  ▶ */
+.vr-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 2px;
+}
+
+/* Prev / Next — Liquid Glass */
+.vr-nav-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.03) 100%);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-top: 1px solid rgba(255,255,255,0.5);
+  border-bottom: 1px solid rgba(0,212,255,0.08);
+  box-shadow:
+    0 6px 20px rgba(0,212,255,0.12),
+    inset 0 1px 2px rgba(255,255,255,0.35),
+    inset 0 -2px 4px rgba(0,212,255,0.08);
+  backdrop-filter: blur(8px);
+  transition: all 0.25s cubic-bezier(0.25,0.8,0.25,1);
+  position: relative;
+  overflow: hidden;
+}
+.vr-nav-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.vr-nav-btn:hover {
+  transform: translateY(-2px) scale(1.06);
+  border-top-color: rgba(255,255,255,0.8);
+  box-shadow:
+    0 10px 28px rgba(0,212,255,0.25),
+    inset 0 2px 4px rgba(255,255,255,0.5),
+    inset 0 -2px 6px rgba(0,212,255,0.15);
+}
+.vr-nav-btn:hover::before { opacity: 1; }
+.vr-nav-btn:active {
+  transform: scale(0.94);
+  box-shadow: 0 2px 8px rgba(0,212,255,0.1), inset 0 3px 6px rgba(0,0,0,0.15);
+}
+
+/* Tuning knob */
+.vr-knob-wrap {
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(0,212,255,0.07) 100%);
+  box-shadow:
+    0 12px 32px rgba(0,0,0,0.35),
+    inset 0 2px 3px rgba(255,255,255,0.25),
+    inset 0 -2px 6px rgba(0,212,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-top: 1px solid rgba(255,255,255,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  backdrop-filter: blur(6px);
+}
+.vr-knob {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%,
+    rgba(255,255,255,0.18) 0%,
+    rgba(0,212,255,0.10) 40%,
+    rgba(0,0,0,0.3) 100%
+  );
+  border: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid rgba(255,255,255,0.4);
+  box-shadow:
+    inset 0 3px 6px rgba(255,255,255,0.18),
+    inset 0 -4px 10px rgba(0,0,0,0.25),
+    0 4px 16px rgba(0,212,255,0.1);
+  position: relative;
+  cursor: grab;
+  transition: transform 0.08s linear;
+  backdrop-filter: blur(4px);
+}
+.vr-knob:active { cursor: grabbing; }
+.vr-knob-mark {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 20px;
+  background: #00d4ff;
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0,212,255,0.9), 0 0 20px rgba(0,212,255,0.4);
+}
+
+/* Play button — Liquid Glass */
+.vr-play-btn {
+  width: 100%;
+  padding: 13px 0;
+  border-radius: 2rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 100%);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-top: 1px solid rgba(255,255,255,0.5);
+  border-bottom: 1px solid rgba(0,212,255,0.08);
+  box-shadow:
+    0 8px 32px rgba(0,212,255,0.15),
+    inset 0 2px 3px rgba(255,255,255,0.4),
+    inset 0 -3px 6px rgba(0,212,255,0.1);
+  transition: all 0.4s cubic-bezier(0.25,0.8,0.25,1);
+}
+.vr-play-btn::before {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  transform: skewX(-25deg);
+  transition: left 0.6s ease-in-out;
+  z-index: 0;
+}
+.vr-play-btn:hover {
+  transform: translateY(-2px) scale(1.015);
+  background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 100%);
+  border-top-color: rgba(255,255,255,0.8);
+  box-shadow:
+    0 12px 40px rgba(0,212,255,0.3),
+    inset 0 3px 4px rgba(255,255,255,0.6),
+    inset 0 -3px 8px rgba(0,212,255,0.2);
+}
+.vr-play-btn:hover::before { left: 200%; }
+.vr-play-btn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 4px 15px rgba(0,212,255,0.1), inset 0 3px 6px rgba(0,0,0,0.1);
+}
+.vr-play-btn.active {
+  background: rgba(0,212,255,0.22);
+  border-color: #00d4ff;
+  border-top-color: #fff;
+  box-shadow:
+    0 0 28px rgba(0,212,255,0.45),
+    inset 0 2px 4px rgba(255,255,255,0.6);
+  color: #fff;
+}
+.vr-btn-icon {
+  font-size: 0.85rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .vr-body {
+    max-width: 100%;
+    margin: 20px 0 0;
+    padding: 16px 16px 22px;
+    border-radius: 1.6rem;
+    gap: 12px;
+  }
+  .vr-screen { padding: 12px 14px; border-radius: 10px; }
+  .vr-screen-name { font-size: 1.35rem; }
+  .vr-screen-meta { font-size: 0.65rem; }
+  .vr-dial-wrap { border-radius: 6px; }
+  .vr-tick span { font-size: 0.45rem; }
+  .vr-knob-wrap { width: 110px; height: 110px; padding: 7px; }
+  .vr-nav-btn { width: 42px; height: 42px; font-size: 0.9rem; }
+  .vr-play-btn { padding: 11px 0; font-size: 0.85rem; letter-spacing: 1.5px; }
+  .vr-grille-bar { height: 14px; }
+}
+
+
+/* Pantalla Digital LED */
+.radio-display {
+  width: 100%;
+  background: #0f1015;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: inset 0 5px 15px rgba(0,0,0,0.8);
+  border: 1px solid #2a2c35;
+  color: #00d4ff;
+}
+
+.radio-status {
+  font-size: 0.75rem;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 0.5rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #444;
+}
+.status-dot.active {
+  background: #ff3366;
+  box-shadow: 0 0 10px #ff3366;
+}
+
+.station-name {
+  font-size: 2rem;
+  margin: 0;
+  font-weight: 700;
+  text-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+}
+
+.station-info {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #8892b0;
+}
+
+/* Barra de frecuencia visual */
+.frequency-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  margin-top: 1.5rem;
+  position: relative;
+}
+
+.frequency-indicator {
+  position: absolute;
+  top: -4px;
+  width: 4px;
+  height: 12px;
+  background: #00d4ff;
+  border-radius: 2px;
+  box-shadow: 0 0 8px #00d4ff;
+  transition: left 0.3s ease-out;
+}
+
+/* La Rueda Gigante */
+.knob-container {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #1f2129, #15161c);
+  box-shadow: 20px 20px 60px #121318, -20px -20px 60px #22252e;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+}
+
+.radio-knob {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2a2d38, #1a1c23);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.1), inset 0 -4px 8px rgba(0,0,0,0.5);
+  position: relative;
+  cursor: grab;
+  transition: transform 0.1s linear;
+}
+
+.radio-knob:active {
+  cursor: grabbing;
+}
+
+.knob-mark {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 20px;
+  background: #00d4ff;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+}
+
+/* Botón Liquid Glass para el tuner */
+.radio-tune-btn {
+  padding: 0.7rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  border-radius: 2rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.02) 100%);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-top: 1px solid rgba(255,255,255,0.5);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 212, 255, 0.15),
+    inset 0 2px 3px 0 rgba(255,255,255,0.4),
+    inset 0 -3px 6px 0 rgba(0, 212, 255, 0.1);
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  z-index: 1;
+}
+.radio-tune-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+  transform: skewX(-25deg);
+  transition: left 0.6s ease-in-out;
+  z-index: -1;
+}
+.radio-tune-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  background: linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.05) 100%);
+  box-shadow:
+    0 12px 40px 0 rgba(0, 212, 255, 0.35),
+    inset 0 3px 4px 0 rgba(255,255,255,0.6),
+    inset 0 -3px 8px 0 rgba(0, 212, 255, 0.2);
+  border-top: 1px solid rgba(255,255,255,0.8);
+}
+.radio-tune-btn:hover::before {
+  left: 200%;
+}
+.radio-tune-btn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow:
+    0 4px 15px 0 rgba(0, 212, 255, 0.1),
+    inset 0 3px 6px 0 rgba(0,0,0,0.1);
+}
+.radio-tune-btn.active {
+  background: rgba(0, 212, 255, 0.25);
+  border-color: #00d4ff;
+  border-top: 1px solid #ffffff;
+  box-shadow:
+    0 0 24px 0 rgba(0, 212, 255, 0.5),
+    inset 0 2px 4px 0 rgba(255,255,255,0.6);
+  color: #fff;
+}

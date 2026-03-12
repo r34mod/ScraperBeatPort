@@ -23,10 +23,11 @@ export function AuthProvider({ children }) {
 
   const token = session?.session?.access_token || null;
   const email = session?.user?.email || '';
+  const userId = session?.user?.id || null;
   const isLoggedIn = !!token;
 
   return (
-    <AuthContext.Provider value={{ session, token, email, isLoggedIn, save, clear }}>
+    <AuthContext.Provider value={{ session, token, email, userId, isLoggedIn, save, clear }}>
       {children}
     </AuthContext.Provider>
   );

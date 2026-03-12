@@ -11,27 +11,26 @@
 .td-logo {
   display: inline-flex; align-items: center; justify-content: center;
   width: 64px; height: 64px; font-size: 32px;
-  background: linear-gradient(135deg, #00e5ff, #7b2ff7);
+  background: rgba(255,23,68,0.15);
+  border: 1px solid rgba(255,23,68,0.3);
   border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 229, 255, 0.3);
+  box-shadow: none;
   margin-bottom: 14px;
 }
 
 .td-title {
   font-size: clamp(1.8rem, 4vw, 2.4rem);
   font-weight: 800;
-  background: linear-gradient(90deg, #00e5ff, #a855f7, #ff6b9d);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff;
   margin-bottom: 8px;
 }
 
-.td-subtitle { color: rgba(255,255,255,0.5); font-size: 0.92rem; }
+.td-subtitle { color: rgba(255,255,255,0.4); font-size: 0.92rem; }
 
 /* ── Card ───────────────────────────────────────────────────────────────────── */
 .td-card {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 20px;
   padding: 26px 28px;
   backdrop-filter: blur(20px);
@@ -68,8 +67,8 @@
 }
 .td-field input::placeholder { color: rgba(255,255,255,0.28); }
 .td-field input:focus {
-  border-color: rgba(0, 229, 255, 0.55);
-  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.1);
+  border-color: #ff1744;
+  box-shadow: 0 0 0 3px rgba(255,23,68,0.1);
 }
 
 /* ── Quality row ────────────────────────────────────────────────────────────── */
@@ -92,9 +91,9 @@
   transition: all 0.2s;
 }
 .td-quality-btn.active {
-  background: rgba(0, 229, 255, 0.13);
-  border-color: rgba(0, 229, 255, 0.45);
-  color: #00e5ff;
+  background: rgba(255,23,68,0.12);
+  border-color: rgba(255,23,68,0.4);
+  color: #ff1744;
 }
 .td-quality-btn:hover:not(.active) {
   background: rgba(255,255,255,0.1); color: #fff;
@@ -105,10 +104,11 @@
   width: 100%; padding: 13px;
   border: none; border-radius: 12px; cursor: pointer;
   font-size: 0.98rem; font-weight: 700; font-family: inherit;
-  background: linear-gradient(135deg, #7b2ff7, #00e5ff);
+  background: #ff1744;
   color: #fff;
-  box-shadow: 0 4px 22px rgba(123, 47, 247, 0.3);
+  box-shadow: none;
   transition: opacity 0.2s, transform 0.1s;
+  text-transform: uppercase; letter-spacing: 0.04em;
 }
 .td-btn-search:hover:not(:disabled) { opacity: 0.87; transform: translateY(-1px); }
 .td-btn-search:active:not(:disabled) { transform: translateY(0); }
@@ -121,9 +121,9 @@
   font-size: 0.88rem; margin-top: 14px;
 }
 .td-status--loading {
-  background: rgba(0, 229, 255, 0.07);
-  border: 1px solid rgba(0, 229, 255, 0.18);
-  color: #00e5ff;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
 }
 .td-status--error {
   background: rgba(255, 80, 80, 0.08);
@@ -139,8 +139,8 @@
 .td-spinner {
   display: inline-block;
   width: 16px; height: 16px; flex-shrink: 0;
-  border: 2px solid rgba(0,229,255,0.25);
-  border-top-color: #00e5ff;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
   border-radius: 50%;
   animation: td-spin 0.7s linear infinite;
 }
@@ -195,9 +195,9 @@
   padding: 11px 22px;
   border: none; border-radius: 12px; cursor: pointer;
   font-size: 0.93rem; font-weight: 700; font-family: inherit;
-  background: linear-gradient(135deg, #00c853, #00e5ff);
-  color: #0a0a0a;
-  box-shadow: 0 4px 18px rgba(0,200,83,0.28);
+  background: #ff1744;
+  color: #fff;
+  box-shadow: none;
   transition: opacity 0.2s, transform 0.1s;
 }
 .td-btn-download:hover:not(:disabled) { opacity: 0.87; transform: translateY(-1px); }
@@ -270,9 +270,9 @@
 }
 .td-csv-count {
   font-size: 0.78rem; font-weight: 600;
-  background: rgba(0,229,255,0.12);
-  border: 1px solid rgba(0,229,255,0.3);
-  color: #00e5ff;
+  background: rgba(255,23,68,0.1);
+  border: 1px solid rgba(255,23,68,0.25);
+  color: #ff1744;
   padding: 2px 10px; border-radius: 20px;
 }
 
@@ -285,7 +285,7 @@
   flex: 1; padding: 12px;
   border: none; border-radius: 12px; cursor: pointer;
   font-size: 0.95rem; font-weight: 700; font-family: inherit;
-  background: linear-gradient(135deg, #ff4d4d, #ff9800);
+  background: #ff1744;
   color: #fff;
   transition: opacity 0.2s;
 }
@@ -311,7 +311,7 @@
 }
 .td-batch-bar-fill {
   height: 100%; border-radius: 3px;
-  background: linear-gradient(90deg, #7b2ff7, #00e5ff);
+  background: #ff1744;
   transition: width 0.4s ease;
 }
 .td-batch-bar-label {
@@ -340,7 +340,7 @@
 .td-batch-row--error       { border-color: rgba(255,80,80,0.2); background: rgba(255,80,80,0.04); }
 .td-batch-row--skipped     { opacity: 0.5; }
 .td-batch-row--searching,
-.td-batch-row--downloading { border-color: rgba(0,229,255,0.2); background: rgba(0,229,255,0.05); }
+.td-batch-row--downloading { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); }
 
 .td-batch-num {
   font-size: 0.72rem; color: rgba(255,255,255,0.3);
@@ -363,7 +363,7 @@
 }
 .td-mini-bar-fill {
   height: 100%; border-radius: 2px;
-  background: linear-gradient(90deg, #7b2ff7, #00e5ff);
+  background: #ff1744;
   transition: width 0.3s ease;
 }
 .td-batch-status-label {
@@ -376,9 +376,47 @@
 
 .td-spinner--sm {
   display: inline-block; width: 12px; height: 12px;
-  border: 2px solid rgba(0,229,255,0.25);
-  border-top-color: #00e5ff;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
   border-radius: 50%;
   animation: td-spin 0.7s linear infinite;
   flex-shrink: 0;
+}
+
+/* ── Provider (source) selector ───────────────────────────────────────────────── */
+.td-source-tabs {
+  display: flex; gap: 6px;
+  margin-bottom: 14px;
+}
+.td-source-tab {
+  flex: 1; padding: 10px 18px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; cursor: pointer;
+  font-size: 0.9rem; font-weight: 700; font-family: inherit;
+  background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.45);
+  transition: all 0.2s;
+}
+.td-source-tab:hover:not(.active) {
+  background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.75);
+}
+.td-source-tab.active {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.25);
+  color: #fff;
+}
+
+/* YouTube-tinted variants (unified with main accent) */
+.td-btn-search--yt {
+  background: #ff1744;
+  box-shadow: none;
+}
+.td-btn-download--yt {
+  background: #ff1744;
+  box-shadow: none;
+}
+.td-batch-bar-fill--yt {
+  background: #ff1744;
+}
+.td-mini-bar-fill--yt {
+  background: #ff1744;
 }

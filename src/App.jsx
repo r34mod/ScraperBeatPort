@@ -10,6 +10,7 @@ import VisualizePage from './pages/VisualizePage';
 import MisListasPage from './pages/MisListasPage';
 import RadioPage from './pages/RadioPage';
 import TidalDownloadPage from './pages/TidalDownloadPage';
+import CommunityPage from './pages/CommunityPage';
 
 export default function App() {
   const { isLoggedIn } = useAuth();
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="mis-listas" element={<MisListasPage />} />
         <Route path="radio" element={<RadioPage />} />
         <Route path="tidal" element={<TidalDownloadPage />} />
+        <Route path="community" element={<CommunityPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

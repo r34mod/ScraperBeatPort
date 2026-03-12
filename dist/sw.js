@@ -97,7 +97,7 @@ define(['./workbox-21a80088'], (function (workbox) { 'use strict';
     "revision": "49daa2c6a87dae15a8f278e1a7e22a62"
   }, {
     "url": "index.html",
-    "revision": "d95a8a56ffdc9d678c77dd103e0b110b"
+    "revision": "186b98bd0c54c74c1ad81d0e60255508"
   }, {
     "url": "beatport.html",
     "revision": "9c9b58cb4a32928d63a6dc064c3516f9"
@@ -114,6 +114,9 @@ define(['./workbox-21a80088'], (function (workbox) { 'use strict';
     "url": "images/icon.PNG",
     "revision": "928390d751c233075d46585121da6370"
   }, {
+    "url": "images/IbizaVibesRadio.png",
+    "revision": "3c462718dcd528e077a767ad9381d01b"
+  }, {
     "url": "icons/icon-512x512.png",
     "revision": "44308c7ab6abe1d2355eab2e3eae4198"
   }, {
@@ -123,10 +126,10 @@ define(['./workbox-21a80088'], (function (workbox) { 'use strict';
     "url": "assets/workbox-window.prod.es5-BIl4cyR9.js",
     "revision": null
   }, {
-    "url": "assets/index-Cow4d0XX.js",
+    "url": "assets/index-DF4kou43.css",
     "revision": null
   }, {
-    "url": "assets/index-BrhMYvdV.css",
+    "url": "assets/index-DEiACULX.js",
     "revision": null
   }, {
     "url": "icons/icon-192x192.png",
