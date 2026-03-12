@@ -17,6 +17,8 @@ const youtubeSearch = require('./youtube-search');
 const tracksApi = require('./tracks-api');
 const authApi = require('./auth-api');
 const tidalDownloader = require('./tidal-downloader');
+const youtubeDownloader = require('./youtube-downloader');
+const spotifyApi = require('./spotify-api');
 
 // --- CONFIGURACIÓN ---
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -52,6 +54,8 @@ app.use('/api/youtube', youtubeSearch);
 app.use('/api/auth', authApi);
 app.use('/api/tracks', tracksApi);
 app.use('/api/tidal', tidalDownloader);
+app.use('/api/youtube-dl', youtubeDownloader);
+app.use('/api/spotify', spotifyApi);
 app.use('/api', beatportScraper);
 
 // Ruta de health check

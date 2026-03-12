@@ -1,12 +1,33 @@
 .radio-page { padding-bottom: 120px; }
 
 .radio-title {
-  font-size: clamp(2rem, 6vw, 4rem); font-weight: 700;
-  margin-bottom: 20px; color: #fff; text-transform: uppercase;
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #fff;
+  text-transform: uppercase;
   letter-spacing: -0.02em;
+  text-align: center;
 }
 
-.radio-filters { margin-bottom: 30px; }
+.radio-filters {
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .radio-filters {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
 
 .radio-search {
   width: 100%; max-width: 400px; padding: 12px 18px;
@@ -14,30 +35,42 @@
   background: rgba(255,255,255,0.06); color: #fff; font-size: 0.95rem;
   margin-bottom: 14px; outline: none; transition: border-color 0.2s;
 }
-.radio-search:focus { border-color: #ff4444; }
-.radio-search::placeholder { color: #666; }
+.radio-search:focus { border-color: #ff1744; }
+.radio-search::placeholder { color: rgba(255,255,255,0.3); }
 
 /* Dropdown genre filter */
 .radio-genre-dropdown {
   margin-bottom: 12px;
 }
+/* Liquid Glass style for dropdown genre filter */
 .radio-genre-select {
-  width: 100%; max-width: 320px;
+  width: 100%;
+  max-width: 320px;
   padding: 10px 18px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.13);
-  background: rgba(255,255,255,0.07);
   color: #fff;
   font-size: 1rem;
   outline: none;
-  transition: border-color 0.2s;
   margin-bottom: 8px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(0,212,255,0.07) 100%);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-top: 1px solid rgba(255,255,255,0.5);
+  border-bottom: 1px solid rgba(0,212,255,0.08);
+  box-shadow:
+    0 4px 16px 0 rgba(0,212,255,0.13),
+    inset 0 1px 2px 0 rgba(255,255,255,0.18),
+    inset 0 -2px 4px 0 rgba(0,212,255,0.08);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .radio-genre-select:focus {
-  border-color: #ff4444;
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 2px rgba(0,212,255,0.18);
 }
 .radio-genre-select option {
-  background: #222; color: #fff;
+  background: rgba(10,10,20,0.95);
+  color: #fff;
 }
 
 .radio-grid {
@@ -46,22 +79,43 @@
   gap: 24px;
 }
 
+/* Liquid Glass style for radio cards */
 .radio-card {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 1.5rem; padding: 36px 28px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(0,212,255,0.07) 100%);
+  border-radius: 1.5rem;
+  padding: 36px 28px;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+  /* Bordes asimétricos para simular luz desde arriba */
+  border: 1px solid rgba(255,255,255,0.15);
+  border-top: 1px solid rgba(255,255,255,0.5);
+  border-bottom: 1px solid rgba(0,212,255,0.08);
+  /* Sombras Liquid Glass */
+  box-shadow:
+    0 8px 32px 0 rgba(0,212,255,0.13),
+    inset 0 2px 3px 0 rgba(255,255,255,0.25),
+    inset 0 -3px 6px 0 rgba(0,212,255,0.08);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
   transition: all 0.4s cubic-bezier(0.23,1,0.32,1);
-  position: relative; overflow: hidden;
+  z-index: 1;
 }
 .radio-card:hover {
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.2);
-  transform: translateY(-5px);
+  background: linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(0,212,255,0.13) 100%);
+  border-top: 1px solid rgba(255,255,255,0.8);
+  box-shadow:
+    0 12px 40px 0 rgba(0,212,255,0.22),
+    inset 0 3px 4px 0 rgba(255,255,255,0.35),
+    inset 0 -3px 8px 0 rgba(0,212,255,0.15);
+  transform: translateY(-5px) scale(1.02);
 }
 .radio-card.playing {
-  border-color: rgba(255,68,68,0.4);
-  background: rgba(255,68,68,0.06);
+  border-color: #00d4ff;
+  background: linear-gradient(135deg, rgba(0,212,255,0.18) 0%, rgba(255,255,255,0.13) 100%);
+  box-shadow:
+    0 0 24px 0 rgba(0,212,255,0.25),
+    inset 0 2px 4px 0 rgba(255,255,255,0.35);
 }
 
 .radio-logo {
@@ -72,28 +126,110 @@
 }
 
 .radio-name { font-size: 1.4rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
-.radio-description { color: #aaa; margin-bottom: 4px; font-weight: 300; }
-.radio-country { color: #666; font-size: 0.8rem; margin-bottom: 16px; }
+.radio-description { color: rgba(255,255,255,0.5); margin-bottom: 4px; font-weight: 300; }
+.radio-country { color: rgba(255,255,255,0.3); font-size: 0.8rem; margin-bottom: 16px; }
 
+/* Liquid Glass style for listen buttons */
+/* Liquid Glass style for listen buttons */
 .radio-listen-btn {
-  background: #ff1744; color: #fff; border: none;
-  border-radius: 2rem; padding: 0.7rem 2rem;
-  font-size: 1rem; font-weight: 600; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(255,23,68,0.13);
-  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+  /* Base y tipografía */
+  padding: 0.7rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  border-radius: 2rem;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  
+  /* El corazón del cristal: Degradado muy sutil y desenfoque */
+  background: linear-gradient(
+    135deg, 
+    rgba(255, 255, 255, 0.15) 0%, 
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  
+  /* Bordes asimétricos para simular luz desde arriba */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-top: 1px solid rgba(255, 255, 255, 0.5); /* Reflejo fuerte arriba */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Sombra abajo */
+  
+  /* El secreto del "Liquid": Sombras interiores (inset) + Resplandor exterior */
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 212, 255, 0.15), /* Resplandor exterior cyan */
+    inset 0 2px 3px 0 rgba(255, 255, 255, 0.4), /* Reflejo interior superior */
+    inset 0 -3px 6px 0 rgba(0, 212, 255, 0.1); /* Volumen interior inferior */
+  
+  /* Transición fluida para Desktop */
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  z-index: 1;
 }
+
+/* El destello de luz líquido (Shine Effect) */
+.radio-listen-btn::before {
+  content: "";
+  position: absolute;
+  top: 0; 
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.4) 50%, 
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  transition: left 0.6s ease-in-out;
+  z-index: -1;
+}
+
+/* Efecto Desktop (Hover) */
 .radio-listen-btn:hover {
-  background: #ff4444;
-  box-shadow: 0 4px 16px rgba(255,23,68,0.18);
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.02);
+  /* Hacemos el cristal más opaco al pasar el ratón */
+  background: linear-gradient(
+    135deg, 
+    rgba(255, 255, 255, 0.25) 0%, 
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  /* Aumentamos el resplandor exterior y los reflejos interiores */
+  box-shadow: 
+    0 12px 40px 0 rgba(0, 212, 255, 0.35),
+    inset 0 3px 4px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -3px 8px 0 rgba(0, 212, 255, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.8);
 }
+
+/* Disparamos la animación del destello líquido en hover */
+.radio-listen-btn:hover::before {
+  left: 200%;
+}
+
+/* Efecto de clic (Active): Hace que se sienta físico */
+.radio-listen-btn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 
+    0 4px 15px 0 rgba(0, 212, 255, 0.1),
+    inset 0 3px 6px 0 rgba(0, 0, 0, 0.1); /* Simulamos hundimiento */
+}
+
+/* Estado Activo permanente (si lo controlas por JS) */
 .radio-listen-btn.active {
-  background: #333; color: #ff4444;
+  background: rgba(0, 212, 255, 0.25);
+  border-color: #00d4ff;
+  border-top: 1px solid #ffffff;
+  box-shadow: 
+    0 0 24px 0 rgba(0, 212, 255, 0.5),
+    inset 0 2px 4px 0 rgba(255, 255, 255, 0.6);
+  color: #fff;
 }
 
 .radio-empty {
   grid-column: 1 / -1; text-align: center;
-  padding: 60px 20px; color: #888; font-size: 1.1rem;
+  padding: 60px 20px; color: rgba(255,255,255,0.4); font-size: 1.1rem;
 }
 
 @media (max-width: 768px) {

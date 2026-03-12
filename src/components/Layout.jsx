@@ -86,13 +86,11 @@ export default function Layout() {
 
   return (
     <>
-      {/* Background */}
-      <div className="background-orbs">
+      {/* Background blobs */}
+      <div className="background-orbs" aria-hidden="true">
         <div className="orb orb-red" />
-        <div className="orb orb-blue" />
         <div className="orb orb-cyan" />
       </div>
-      <div className="noise-overlay" />
 
       {/* Nav Header */}
       <nav className="nav-header">

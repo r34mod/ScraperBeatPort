@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useDuplicateGuard, DuplicateModal } from '../hooks/useDuplicateGuard';
+import { useDebounce } from '../hooks/useDebounce';
 import './BeatportPage.css';
 
 const genreCategories = {
@@ -33,6 +34,16 @@ export default function BeatportPage() {
   const [selected, setSelected] = useState(new Set());
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
+
+  const debouncedSearch = useDebounce(search, 250);
+
+  const filtered = useMemo(() => genres.filter(g => {
+    const matchSearch = g.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      g.id.toLowerCase().includes(debouncedSearch.toLowerCase());
+    const matchCat = category === 'all' || genreCategories[category]?.includes(g.id);
+    return matchSearch && matchCat;
+  }), [genres, debouncedSearch, category]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -44,12 +55,6 @@ export default function BeatportPage() {
       .then(d => setGenres(d.genres || []))
       .catch(e => setError('Error cargando géneros: ' + e.message));
   }, []);
-
-  const filtered = genres.filter(g => {
-    const matchSearch = g.name.toLowerCase().includes(search.toLowerCase()) || g.id.toLowerCase().includes(search.toLowerCase());
-    const matchCat = category === 'all' || genreCategories[category]?.includes(g.id);
-    return matchSearch && matchCat;
-  });
 
   const toggle = useCallback((id) => {
     setSelected(prev => {
@@ -111,8 +116,11 @@ export default function BeatportPage() {
 
   return (
     <div className="container bp-page">
-      <h1 className="bp-title">Beatport Top 100 Scraper</h1>
-      <p className="bp-subtitle">Selecciona géneros y extrae las listas Top 100</p>
+      <div className="bp-header">
+        <div className="bp-badge">Beatport</div>
+        <h1 className="bp-title">Top 100 Scraper</h1>
+        <p className="bp-subtitle">Selecciona géneros y extrae las listas Top 100</p>
+      </div>
 
       {/* Search & Filters */}
       <div className="bp-controls">
@@ -128,7 +136,7 @@ export default function BeatportPage() {
 
       {/* Selection controls */}
       <div className="bp-selection-bar">
-        <span className="bp-selection-info">Seleccionados: {selected.size} de {genres.length}</span>
+        <span className="bp-selection-info">Seleccionados: <strong>{selected.size}</strong> de {genres.length}</span>
         <button className="bp-btn-sm" onClick={selectVisible}>Seleccionar visibles</button>
         <button className="bp-btn-sm" onClick={deselectAll}>Limpiar</button>
       </div>
@@ -163,7 +171,7 @@ export default function BeatportPage() {
         <div className="bp-results">
           {results.map((r, i) => (
             <div key={i} className="bp-result-card">
-              <h4>📈 {r.genre?.replace('-', ' ').toUpperCase()} — {r.tracksCount} tracks</h4>
+              <h4>▸ {r.genre?.replace(/-/g, ' ').toUpperCase()} — {r.tracksCount} tracks</h4>
               {r.downloadUrl && <a href={r.downloadUrl} className="bp-btn-sm" download>💾 Descargar {r.fileName}</a>}
               {r.tracks?.length > 0 && (
                 <table className="bp-table">
