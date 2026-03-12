@@ -50,13 +50,16 @@ function formatDate(iso) {
 }
 
 export default function CommunityPage() {
-  const { token, userId, email } = useAuth();
+  const { token, userId, email, getValidToken } = useAuth();
   const navigate = useNavigate();
   const API = window.location.origin;
-  const authHeaders = useCallback(() => ({
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-  }), [token]);
+
+  // Returns headers with a fresh token, redirecting to /login if the session is gone
+  const authHeaders = useCallback(async () => {
+    const t = await getValidToken();
+    if (!t) { navigate('/login'); return null; }
+    return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}` };
+  }, [getValidToken, navigate]);
 
   // ── Upload state ─────────────────────────────────────────────────────────
   const [dragOver, setDragOver] = useState(false);
@@ -155,9 +158,11 @@ export default function CommunityPage() {
     } catch {}
 
     try {
+      const headers = await authHeaders();
+      if (!headers) return; // redirected to /login
       const res = await fetch(`${API}/api/community/upload`, {
         method: 'POST',
-        headers: authHeaders(),
+        headers,
         body: JSON.stringify({
           csvContent: uploadFile.csvContent,
           name: listName.trim(),
@@ -191,9 +196,11 @@ export default function CommunityPage() {
   const handleDelete = async (id) => {
     if (!confirm('¿Eliminar esta lista de la comunidad?')) return;
     try {
+      const headers = await authHeaders();
+      if (!headers) return; // redirected to /login
       const res = await fetch(`${API}/api/community/${id}`, {
         method: 'DELETE',
-        headers: authHeaders(),
+        headers,
       });
       if (res.status === 401) { navigate('/login'); return; }
       if (!res.ok) {
