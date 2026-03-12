@@ -1,6 +1,6 @@
 export const STATIONS = [
   // Radios originales
-  { url: 'https://ic2.smcdn.pl/3990-1.mp3', name: 'VOX FM', genre: 'Dance', country: 'PL' },
+  
   { url: 'http://stm1.emiteonline.com:8008/spektrafm', name: 'Spektra FM', genre: 'Dance', country: 'ESP' },
   { url: 'https://metromedia.live24.gr/republicthess', name: 'Republic FM', genre: 'Electronic', country: 'GR' },
   { url: 'https://pr1cen101.emisionlocal.com/proxy/rememberfm?mp=/LIVE', name: 'Remember FM', genre: 'Techno', country: 'ESP' },
@@ -36,6 +36,7 @@ export const STATIONS = [
   { url: 'https://n13.radiojar.com/9ndpdg3c0s8uv?rj-ttl=5&rj-tok=AAABkaOvYUsAAqQP5zVE3-F1SQ', name: 'Athens Up Radio', genre: 'Electronic and House', country: 'GR' },
   // Radios de live_streams.sii (sin duplicados)
   { url: 'http://radio.trucksim.fm:8000/stream', name: 'TruckSimFM', genre: 'Sim radio', country: 'EN' },
+  { url: 'https://ic2.smcdn.pl/3990-1.mp3', name: 'VOX FM', genre: 'Dance', country: 'PL' },
   { url: 'https://radio.truckers.fm/', name: 'TruckersFM', genre: 'Sim radio', country: 'EN' },
   { url: 'https://oreo.truckstopradio.co.uk/radio/8000/radio.mp3', name: 'TruckStopRadio', genre: 'Sim radio', country: 'EN' },
   { url: 'http://cast.streams.ovh:8008/stream', name: 'Trance Athena', genre: 'Trance', country: 'GR' },

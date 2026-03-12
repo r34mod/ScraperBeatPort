@@ -209,6 +209,7 @@ const UPCOMING_SHOWS = [
     color: '#3a1a3a',
     accent: '#c44dff',
     img: null,
+    url: 'https://soundcloud.com/search/sets?q=melodic%20house%20mix',
   },
   {
     id: 2,
@@ -221,6 +222,9 @@ const UPCOMING_SHOWS = [
     color: '#1a2a1a',
     accent: '#00e676',
     img: null,
+    url: 'https://soundcloud.com/magicmusicsquad/sets/afro-house-mix-2025',
+    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1972920441&color=%23401712&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
+    embedLabel: 'AFRO HOUSE MIX 2025 🔥 · Magic Music City',
   },
   {
     id: 3,
@@ -233,6 +237,7 @@ const UPCOMING_SHOWS = [
     color: '#1a1a2a',
     accent: '#536dfe',
     img: null,
+    url: 'https://soundcloud.com/search/sets?q=techno%20mix',
   },
   {
     id: 4,
@@ -245,6 +250,7 @@ const UPCOMING_SHOWS = [
     color: '#2a1a10',
     accent: '#ff9100',
     img: null,
+    url: 'https://soundcloud.com/search/sets?q=tech%20house%20mix',
   },
   {
     id: 5,
@@ -257,6 +263,7 @@ const UPCOMING_SHOWS = [
     color: '#1a2a2a',
     accent: '#00bcd4',
     img: null,
+    url: 'https://soundcloud.com/search/sets?q=house%20mix',
   },
   {
     id: 6,
@@ -269,6 +276,7 @@ const UPCOMING_SHOWS = [
     color: '#1a1a1a',
     accent: '#ff1744',
     img: null,
+    url: 'https://soundcloud.com/search/sets?q=melodic%20techno%20mix',
   },
 ];
 
@@ -278,6 +286,7 @@ function UpcomingShows() {
   const [current, setCurrent] = useState(0);
   const [showDrag, setShowDrag] = useState(false);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
+  const [activeEmbed, setActiveEmbed] = useState(null); // { embed, embedLabel, accent }
   const total = UPCOMING_SHOWS.length;
 
   const updateCurrent = () => {
@@ -329,9 +338,17 @@ function UpcomingShows() {
           <a
             key={s.id}
             className="hp-show-card"
-            href="/radio"
+            href={s.embed ? undefined : s.url}
+            target={s.embed ? undefined : '_blank'}
+            rel={s.embed ? undefined : 'noopener noreferrer'}
             style={{ '--card-color': s.color, '--card-accent': s.accent }}
-            onClick={e => { if (dragRef.current.moved) e.preventDefault(); }}
+            onClick={e => {
+              if (dragRef.current.moved) { e.preventDefault(); return; }
+              if (s.embed) {
+                e.preventDefault();
+                setActiveEmbed({ embed: s.embed, embedLabel: s.embedLabel, accent: s.accent });
+              }
+            }}
             draggable={false}
           >
             <div
@@ -339,8 +356,9 @@ function UpcomingShows() {
               style={{ background: `linear-gradient(160deg, ${s.color} 0%, color-mix(in srgb, ${s.accent} 40%, ${s.color}) 100%)` }}
             >
               <span className="hp-show-initials-lg">{s.dj.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>
-              <span className="hp-show-link-icon">↗</span>
+              <span className="hp-show-link-icon">{s.embed ? '▶' : '↗'}</span>
               {s.live && <span className="hp-show-live-badge">● LIVE</span>}
+              {s.embed && <span className="hp-show-sc-badge">SC</span>}
             </div>
             <div className="hp-show-overlay">
               <div className="hp-show-dj">{s.dj}</div>
@@ -353,6 +371,27 @@ function UpcomingShows() {
       {/* Drag cursor bubble */}
       {showDrag && (
         <div className="hp-shows-drag" style={{ left: dragPos.x, top: dragPos.y }}>DRAG</div>
+      )}
+
+      {/* SoundCloud embed modal */}
+      {activeEmbed && (
+        <div className="hp-sc-modal" onClick={() => setActiveEmbed(null)}>
+          <div className="hp-sc-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="hp-sc-modal-header" style={{ '--sc-accent': activeEmbed.accent }}>
+              <span className="hp-sc-modal-label">{activeEmbed.embedLabel}</span>
+              <button className="hp-sc-modal-close" onClick={() => setActiveEmbed(null)} aria-label="Cerrar">×</button>
+            </div>
+            <iframe
+              width="100%"
+              height="300"
+              scrolling="no"
+              frameBorder="no"
+              allow="autoplay"
+              src={activeEmbed.embed}
+              title={activeEmbed.embedLabel}
+            />
+          </div>
+        </div>
       )}
 
       {/* Footer: counter + arrows */}
@@ -439,10 +478,22 @@ export default function HomePage() {
             <div className="hp-live-title">BEST OF ELECTRONIC LIVE MUSIC</div>
             <div className="hp-live-artists">Various Artists</div>
             <div className="hp-live-btns">
-              <a href="#" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-main">Listen</a>
+              <a href="https://www.youtube.com/watch?v=zK5mjww6CFQ" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-main">Listen</a>
               <a href="#" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-secondary">Radio Shows</a>
             </div>
           </div>
+        </section>
+
+        {/* Events Near You */}
+        <section className="hp-events-card">
+          <div className="hp-events-header">
+    
+         
+          </div>
+          <iframe
+            className="hp-events-iframe"
+            src="https://velvetcake.soundcloud.com/banner/Madrid/This%20week"
+          />
         </section>
 
         {/* Radio Tuner */}
