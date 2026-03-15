@@ -8,13 +8,39 @@
  *   DELETE /api/community/:id           - Eliminar un CSV propio (requiere auth)
  */
 const express = require('express');
-const { supabase, isSupabaseEnabled } = require('./supabase');
+const { supabase, supabaseAdmin, isSupabaseEnabled } = require('./supabase');
 const { requireAuth } = require('./auth-middleware');
 const router = express.Router();
 
 const BUCKET = 'community-csvs';
 const MAX_CSV_BYTES = 5 * 1024 * 1024; // 5 MB
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Cliente de Storage: preferimos el admin (service_role) para evitar problemas de permisos/bucket
+const storageClient = () => supabaseAdmin || supabase;
+
+// Asegura que el bucket existe; lo crea si no (requiere service_role key)
+let _bucketEnsured = false;
+async function ensureBucket() {
+    if (_bucketEnsured) return;
+    const client = storageClient();
+    if (!client) return;
+    const { data: buckets, error } = await client.storage.listBuckets();
+    if (error) {
+        console.warn('⚠️  No se pudo listar los buckets de Storage:', error.message);
+        return;
+    }
+    const exists = (buckets || []).some(b => b.name === BUCKET);
+    if (!exists) {
+        const { error: createErr } = await client.storage.createBucket(BUCKET, { public: false });
+        if (createErr) {
+            console.error('❌ No se pudo crear el bucket', BUCKET, ':', createErr.message);
+            return;
+        }
+        console.log(`✅ Bucket "${BUCKET}" creado correctamente.`);
+    }
+    _bucketEnsured = true;
+}
 
 // ─── MODO MOCK (sin Supabase) ─────────────────────────────────────────────────
 if (!isSupabaseEnabled()) {
@@ -104,6 +130,8 @@ router.post('/upload', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'El CSV es demasiado grande (máx. 5 MB).' });
         }
 
+        await ensureBucket();
+
         const safeName = name.trim()
             .replace(/[^a-zA-Z0-9_\-\s]/g, '')
             .replace(/\s+/g, '_')
@@ -111,7 +139,7 @@ router.post('/upload', requireAuth, async (req, res) => {
         const filename = `${req.userId}/${Date.now()}_${safeName}.csv`;
 
         const csvBuffer = Buffer.from(csvContent, 'utf-8');
-        const { error: storageError } = await supabase.storage
+        const { error: storageError } = await storageClient().storage
             .from(BUCKET)
             .upload(filename, csvBuffer, { contentType: 'text/csv; charset=utf-8', upsert: false });
 
@@ -162,7 +190,7 @@ router.get('/download/:id', async (req, res) => {
 
         if (error || !file) return res.status(404).json({ error: 'Lista no encontrada.' });
 
-        const { data: csvBlob, error: dlError } = await supabase.storage
+        const { data: csvBlob, error: dlError } = await storageClient().storage
             .from(BUCKET)
             .download(file.filename);
 
@@ -196,7 +224,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
             return res.status(403).json({ error: 'Sin permiso para eliminar esta lista.' });
         }
 
-        await supabase.storage.from(BUCKET).remove([file.filename]);
+        await storageClient().storage.from(BUCKET).remove([file.filename]);
         await supabase.from('community_files').delete().eq('id', req.params.id);
 
         res.json({ success: true });
