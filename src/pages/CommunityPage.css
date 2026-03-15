@@ -469,6 +469,8 @@
   border: 1px solid rgba(255,255,255,0.12);
   color: rgba(255,255,255,0.6);
   width: 32px; height: 32px;
+  min-width: 32px;
+  aspect-ratio: 1;
   border-radius: 50%;
   cursor: pointer;
   font-size: 0.9rem;
@@ -518,6 +520,8 @@
 
 .comm-track-pos {
   width: 28px; height: 28px;
+  min-width: 28px;
+  aspect-ratio: 1;
   border-radius: 7px;
   background: rgba(255,23,68,0.1);
   color: #ff5577;
@@ -545,6 +549,8 @@
 
 .comm-track-play {
   width: 30px; height: 30px;
+  min-width: 30px;
+  aspect-ratio: 1;
   border-radius: 50%;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
