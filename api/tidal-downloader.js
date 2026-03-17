@@ -1,6 +1,8 @@
 const express = require('express');
 const axios = require('axios');
 
+const IS_VERCEL = !!process.env.VERCEL;
+
 const router = express.Router();
 
 // ─── Tidal public proxy APIs (same priority list as Go backend) ────────────────
@@ -23,6 +25,25 @@ const http = axios.create({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     },
 });
+
+// ─── SSRF allowlist: only Tidal CDN domains are accepted as proxy targets ─────
+const TIDAL_CDN_DOMAINS = [
+    'tidal.com',
+    'cf.tidal.com',
+    'listen.tidal.com',
+    'cdn.tidal.com',
+    'wdl.cdn.tidal.com',
+    'sp.binimum.org',
+];
+
+function isTidalCdnUrl(urlStr) {
+    try {
+        const host = new URL(urlStr).hostname;
+        return TIDAL_CDN_DOMAINS.some(d => host === d || host.endsWith('.' + d));
+    } catch {
+        return false;
+    }
+}
 
 // ─── Step 1: Search Deezer public API (no auth required) ─────────────────────
 async function searchDeezer(title, artist) {
@@ -81,16 +102,20 @@ async function getTidalIdViaSongLink(deezerId) {
 // ─── Step 3: Fetch download info from a single Tidal proxy API (with retry) ──
 async function fetchFromTidalAPI(apiUrl, trackId, quality) {
     const url = `${apiUrl}/track/?id=${trackId}&quality=${quality}`;
+    // On Vercel: use a tight timeout and skip retries so we don't exhaust the
+    // function execution limit waiting for cloud-IP-blocked APIs to time out.
+    const PER_ATTEMPT_MS = IS_VERCEL ? 6000 : 25000;
+    const MAX_ATTEMPTS   = IS_VERCEL ? 1    : 3;
     let delay = 500;
 
-    for (let attempt = 0; attempt <= 2; attempt++) {
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         if (attempt > 0) {
             await new Promise(r => setTimeout(r, delay));
             delay *= 2;
         }
 
         try {
-            const response = await http.get(url, { timeout: 25000 });
+            const response = await http.get(url, { timeout: PER_ATTEMPT_MS });
             const data = response.data;
 
             // V2 response format: { data: { manifest, manifestMimeType, bitDepth, sampleRate, ... } }
@@ -133,7 +158,7 @@ async function fetchFromTidalAPI(apiUrl, trackId, quality) {
                 msg.includes('econnrefused') ||
                 msg.includes('eof');
 
-            if (!isRetryable) return null;
+            if (!isRetryable || attempt === MAX_ATTEMPTS - 1) return null;
         }
     }
 
@@ -306,8 +331,108 @@ router.get('/download', async (req, res) => {
     } catch (err) {
         console.error('[Tidal] Download error:', err.message);
         if (!res.headersSent) {
+            // On Vercel the Tidal proxy IPs are often IP-blocked. Tell the frontend
+            // to resolve directly from the browser instead.
+            if (IS_VERCEL && err.message.includes('All Tidal APIs failed')) {
+                return res.status(503).json({
+                    error: err.message,
+                    needsClientResolve: true,
+                    tidalApis: TIDAL_APIS,
+                    trackId: parseInt(tidalId, 10),
+                    quality,
+                });
+            }
             res.status(500).json({ error: err.message });
         }
+    }
+});
+
+/**
+ * GET /api/tidal/apis
+ * Returns the list of Tidal proxy base URLs so the frontend can try them
+ * browser-side (browser IPs are not IP-blocked).
+ */
+router.get('/apis', (_req, res) => {
+    res.json({ apis: TIDAL_APIS });
+});
+
+/**
+ * POST /api/tidal/stream-from-manifest
+ * Body: { manifest: <base64>, filename?: string }
+ * Client calls a Tidal proxy API directly (no server-IP block), receives the
+ * manifest, then asks the server to decode it and stream the audio from Tidal
+ * CDN.  The CDN itself is NOT IP-blocked from Vercel.
+ */
+router.post('/stream-from-manifest', async (req, res) => {
+    const { manifest, filename = 'track' } = req.body;
+    if (!manifest || typeof manifest !== 'string') {
+        return res.status(400).json({ error: 'manifest is required' });
+    }
+
+    const safeFilename = filename.replace(/[^a-zA-Z0-9 _()-]/g, '').trim() || 'track';
+    const ext = '.m4a';
+    const contentType = 'audio/mp4';
+
+    try {
+        const parsed = parseManifest(manifest);
+
+        if (parsed.type === 'bts') {
+            if (!isTidalCdnUrl(parsed.directUrl)) {
+                return res.status(400).json({ error: 'URL not from an allowed Tidal CDN domain' });
+            }
+            res.setHeader('Cache-Control', 'no-store');
+            res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, Content-Length');
+            await proxyDirectUrl(parsed.directUrl, res, safeFilename, ext, contentType);
+        } else {
+            // DASH: stitch init + segments (all from Tidal CDN, not blocked)
+            if (!isTidalCdnUrl(parsed.initUrl)) {
+                return res.status(400).json({ error: 'URL not from an allowed Tidal CDN domain' });
+            }
+            res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}${ext}"`);
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Cache-Control', 'no-store');
+            await pipeUrlToRes(parsed.initUrl, res);
+            for (const segUrl of parsed.segmentUrls) {
+                await pipeUrlToRes(segUrl, res);
+            }
+        }
+        res.end();
+    } catch (err) {
+        console.error('[Tidal] stream-from-manifest error:', err.message);
+        if (!res.headersSent) res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * GET /api/tidal/stream-direct?url=<encoded>&filename=...
+ * Proxy a V1 direct audio URL from an allowed Tidal CDN domain.
+ * SSRF is prevented by isTidalCdnUrl().
+ */
+router.get('/stream-direct', async (req, res) => {
+    const { url, filename = 'track' } = req.query;
+    if (!url) return res.status(400).json({ error: 'url is required' });
+
+    let decoded;
+    try { decoded = decodeURIComponent(url); } catch {
+        return res.status(400).json({ error: 'Invalid url encoding' });
+    }
+
+    if (!isTidalCdnUrl(decoded)) {
+        return res.status(403).json({ error: 'URL not from an allowed Tidal CDN domain' });
+    }
+
+    const safeFilename = filename.replace(/[^a-zA-Z0-9 _()-]/g, '').trim() || 'track';
+
+    try {
+        const resp = await http.get(decoded, { responseType: 'stream', timeout: 60000 });
+        res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.m4a"`);
+        res.setHeader('Content-Type', resp.headers['content-type'] || 'audio/mp4');
+        res.setHeader('Cache-Control', 'no-store');
+        const cl = resp.headers['content-length'];
+        if (cl) res.setHeader('Content-Length', cl);
+        resp.data.pipe(res);
+    } catch (err) {
+        if (!res.headersSent) res.status(500).json({ error: err.message });
     }
 });
 
