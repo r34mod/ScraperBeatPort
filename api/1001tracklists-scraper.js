@@ -1,9 +1,9 @@
 const express = require('express');
 const puppeteer = require('puppeteer');
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const { createObjectCsvStringifier } = require('csv-writer');
 const fs = require('fs');
 const path = require('path');
-const { getRandomUserAgent, handleCookieConsent, delay } = require('./scraper-utils');
+const { getRandomUserAgent, handleCookieConsent, delay, getDownloadsDir, uploadCsvToStorage } = require('./scraper-utils');
 
 const router = express.Router();
 
@@ -306,57 +306,51 @@ async function scrape1001Tracklists(searchType, query, event) {
     }
 }
 
-// Función para generar CSV con tracklists
+// Función para generar CSV — sube a Supabase Storage (o disco local como fallback)
 async function generateTracklistsCSV(tracklists, searchType, query) {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const searchTerm = query ? query.replace(/[^a-zA-Z0-9]/g, '_') : searchType;
+    const fileName = `1001tracklists_${searchType}_${searchTerm}_${timestamp}.csv`;
+
+    const stringifier = createObjectCsvStringifier({
+        header: [
+            { id: 'position', title: 'Posicion' },
+            { id: 'title', title: 'Titulo' },
+            { id: 'artist', title: 'Artista' },
+            { id: 'event', title: 'Evento' },
+            { id: 'date', title: 'Fecha' },
+            { id: 'duration', title: 'Duracion' },
+            { id: 'trackCount', title: 'Numero de Tracks' },
+            { id: 'url', title: 'URL' },
+            { id: 'platform', title: 'Plataforma' },
+        ],
+    });
+    const csvContent = stringifier.getHeaderString() + stringifier.stringifyRecords(tracklists);
+
+    // Intentar subir a Supabase Storage
+    let downloadUrl = null;
     try {
-        // Crear estructura de carpetas
-        const downloadsDir = path.join(__dirname, '..', 'downloads');
-        const tracklistsDir = path.join(downloadsDir, '1001tracklists');
-        
-        if (!fs.existsSync(downloadsDir)) {
-            fs.mkdirSync(downloadsDir, { recursive: true });
-            console.log(`📁 Creado directorio: downloads`);
-        }
-        
-        if (!fs.existsSync(tracklistsDir)) {
-            fs.mkdirSync(tracklistsDir, { recursive: true });
-            console.log(`📁 Creado directorio: downloads/1001tracklists`);
-        }
-
-        const timestamp = new Date().toISOString().split('T')[0];
-        const searchTerm = query ? query.replace(/[^a-zA-Z0-9]/g, '_') : searchType;
-        const fileName = `1001tracklists_${searchType}_${searchTerm}_${timestamp}.csv`;
-        const filePath = path.join(tracklistsDir, fileName);
-
-        console.log(`💾 Generando CSV: ${fileName}`);
-
-        const csvWriter = createCsvWriter({
-            path: filePath,
-            header: [
-                { id: 'position', title: 'Posicion' },
-                { id: 'title', title: 'Titulo' },
-                { id: 'artist', title: 'Artista' },
-                { id: 'event', title: 'Evento' },
-                { id: 'date', title: 'Fecha' },
-                { id: 'duration', title: 'Duracion' },
-                { id: 'trackCount', title: 'Numero de Tracks' },
-                { id: 'url', title: 'URL' },
-                { id: 'platform', title: 'Plataforma' }
-            ]
-        });
-
-        await csvWriter.writeRecords(tracklists);
-        console.log(`✅ CSV generado exitosamente: ${fileName} con ${tracklists.length} tracklists`);
-        
-        return { 
-            filePath, 
-            fileName,
-            fullPath: filePath
-        };
-    } catch (error) {
-        console.error('Error generando CSV:', error);
-        throw new Error('Error al generar archivo CSV');
+        const storagePath = `1001tracklists/${searchType}/${fileName}`;
+        downloadUrl = await uploadCsvToStorage(csvContent, storagePath);
+        if (downloadUrl) console.log(`☁️  CSV subido a Supabase Storage: ${storagePath}`);
+    } catch (e) {
+        console.warn('⚠️  No se pudo subir CSV a Supabase Storage:', e.message);
     }
+
+    // Fallback: escribir en disco (desarrollo local / sin Supabase)
+    if (!downloadUrl) {
+        const downloadsDir = getDownloadsDir();
+        const tracklistsDir = path.join(downloadsDir, '1001tracklists');
+        if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir, { recursive: true });
+        if (!fs.existsSync(tracklistsDir)) fs.mkdirSync(tracklistsDir, { recursive: true });
+        const filePath = path.join(tracklistsDir, fileName);
+        fs.writeFileSync(filePath, csvContent, 'utf-8');
+        downloadUrl = `/api/1001tracklists/download/${fileName}`;
+        console.log(`💾 CSV guardado localmente: ${filePath}`);
+    }
+
+    console.log(`✅ CSV listo: ${fileName} — ${tracklists.length} tracklists`);
+    return { fileName, downloadUrl };
 }
 
 // Rutas API
@@ -381,7 +375,7 @@ router.post('/scrape', async (req, res) => {
         }
 
         // Generar CSV
-        const { fileName } = await generateTracklistsCSV(tracklists, searchType, query);
+        const { fileName, downloadUrl } = await generateTracklistsCSV(tracklists, searchType, query);
         
         console.log(`✅ Proceso completado: ${tracklists.length} tracklists`);
         
@@ -391,7 +385,7 @@ router.post('/scrape', async (req, res) => {
             query,
             tracklistsCount: tracklists.length,
             filename: fileName,
-            downloadUrl: `/api/1001tracklists/download/${fileName}`,
+            downloadUrl,
             tracklists: tracklists.slice(0, 10), // Mostrar solo los primeros 10 como preview
             platform: '1001Tracklists'
         });
@@ -483,39 +477,6 @@ router.get('/download/:filename', (req, res) => {
             res.status(500).json({ error: 'Error al descargar el archivo' });
         }
     });
-});
-
-// Listar archivos disponibles
-router.get('/files', (req, res) => {
-    try {
-        const tracklistsDir = path.join(__dirname, '..', 'downloads', '1001tracklists');
-        
-        if (!fs.existsSync(tracklistsDir)) {
-            return res.json({ 
-                message: 'No hay archivos de 1001Tracklists aún',
-                files: []
-            });
-        }
-        
-        const files = fs.readdirSync(tracklistsDir)
-            .filter(file => file.endsWith('.csv'))
-            .map(file => ({
-                filename: file,
-                downloadUrl: `/api/1001tracklists/download/${file}`,
-                created: fs.statSync(path.join(tracklistsDir, file)).mtime
-            }))
-            .sort((a, b) => new Date(b.created) - new Date(a.created));
-        
-        res.json({
-            platform: '1001Tracklists',
-            filesCount: files.length,
-            files: files
-        });
-        
-    } catch (error) {
-        console.error('Error listando archivos:', error);
-        res.status(500).json({ error: 'Error al listar archivos' });
-    }
 });
 
 // Ruta de prueba

@@ -1,10 +1,10 @@
 const express = require('express');
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const { createObjectCsvStringifier } = require('csv-writer');
 const fs = require('fs');
 const path = require('path');
 const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
-const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, smoothScroll, validateTrackData, delay, launchBrowser, createPage, getDownloadsDir } = require('./scraper-utils');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, smoothScroll, validateTrackData, delay, launchBrowser, createPage, getDownloadsDir, uploadCsvToStorage } = require('./scraper-utils');
 const scrapeCache = require('./scrape-cache');
 
 const router = express.Router();
@@ -292,62 +292,51 @@ async function scrapeBeatportGenre(genreUrl, genreName) {
     }
 }
 
-// Función para generar CSV con carpetas organizadas por género
+// Función para generar CSV — sube a Supabase Storage (o disco local como fallback)
 async function generateCSV(tracks, genreName) {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const fileName = `beatport_${genreName.replace('-', '_')}_top100_${timestamp}.csv`;
+
+    const stringifier = createObjectCsvStringifier({
+        header: [
+            { id: 'position', title: 'Posicion' },
+            { id: 'title', title: 'Titulo' },
+            { id: 'artist', title: 'Artista' },
+            { id: 'remixer', title: 'Remixer' },
+            { id: 'label', title: 'Sello' },
+            { id: 'releaseDate', title: 'Fecha de Lanzamiento' },
+            { id: 'genre', title: 'Genero' },
+            { id: 'bpm', title: 'BPM' },
+            { id: 'key', title: 'Clave Musical' },
+            { id: 'length', title: 'Duracion' },
+        ],
+    });
+    const csvContent = stringifier.getHeaderString() + stringifier.stringifyRecords(tracks);
+
+    // Intentar subir a Supabase Storage
+    let downloadUrl = null;
     try {
-        // Crear estructura de carpetas: downloads/genero/
+        const storagePath = `beatport/${genreName.toLowerCase()}/${fileName}`;
+        downloadUrl = await uploadCsvToStorage(csvContent, storagePath);
+        if (downloadUrl) console.log(`☁️  CSV subido a Supabase Storage: ${storagePath}`);
+    } catch (e) {
+        console.warn('⚠️  No se pudo subir CSV a Supabase Storage:', e.message);
+    }
+
+    // Fallback: escribir en disco (desarrollo local / sin Supabase)
+    if (!downloadUrl) {
         const downloadsDir = getDownloadsDir();
         const genreDir = getDownloadsDir(genreName);
-        
-        // Crear directorio principal downloads si no existe
-        if (!fs.existsSync(downloadsDir)) {
-            fs.mkdirSync(downloadsDir, { recursive: true });
-            console.log(`📁 Creado directorio: downloads`);
-        }
-        
-        // Crear subdirectorio del género si no existe
-        if (!fs.existsSync(genreDir)) {
-            fs.mkdirSync(genreDir, { recursive: true });
-            console.log(`📁 Creado directorio para género: downloads/${genreName.toLowerCase()}`);
-        }
-
-        const timestamp = new Date().toISOString().split('T')[0];
-        const fileName = `beatport_${genreName.replace('-', '_')}_top100_${timestamp}.csv`;
+        if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir, { recursive: true });
+        if (!fs.existsSync(genreDir)) fs.mkdirSync(genreDir, { recursive: true });
         const filePath = path.join(genreDir, fileName);
-        const relativePath = path.join('downloads', genreName.toLowerCase(), fileName);
-
-        console.log(`💾 Generando CSV en: ${relativePath}`);
-
-        const csvWriter = createCsvWriter({
-            path: filePath,
-            header: [
-                { id: 'position', title: 'Posicion' },
-                { id: 'title', title: 'Titulo' },
-                { id: 'artist', title: 'Artista' },
-                { id: 'remixer', title: 'Remixer' },
-                { id: 'label', title: 'Sello' },
-                { id: 'releaseDate', title: 'Fecha de Lanzamiento' },
-                { id: 'genre', title: 'Genero' },
-                { id: 'bpm', title: 'BPM' },
-                { id: 'key', title: 'Clave Musical' },
-                { id: 'length', title: 'Duracion' }
-            ]
-        });
-
-        await csvWriter.writeRecords(tracks);
-        console.log(`✅ CSV generado exitosamente: ${fileName} con ${tracks.length} tracks`);
-        
-        return { 
-            filePath, 
-            fileName, 
-            relativePath,
-            genreFolder: genreName.toLowerCase(),
-            fullPath: filePath
-        };
-    } catch (error) {
-        console.error('Error generando CSV:', error);
-        throw new Error('Error al generar archivo CSV');
+        fs.writeFileSync(filePath, csvContent, 'utf-8');
+        downloadUrl = `/api/download/${genreName}/${fileName}`;
+        console.log(`💾 CSV guardado localmente: ${filePath}`);
     }
+
+    console.log(`✅ CSV listo: ${fileName} — ${tracks.length} tracks`);
+    return { fileName, downloadUrl };
 }
 
 // Rutas API
@@ -389,13 +378,13 @@ router.get('/scrape', optionalAuth, async (req, res) => {
         if (cached) {
             console.log(`⚡ Devolviendo resultados cacheados para ${genre}`);
             const cacheExpiresIn = Math.round((cached.expiresAt - Date.now()) / 60000);
-            const { fileName } = await generateCSV(cached.tracks, genre).catch(() => ({ fileName: null }));
+            const { fileName, downloadUrl: cachedDownloadUrl } = await generateCSV(cached.tracks, genre).catch(() => ({ fileName: null, downloadUrl: null }));
             return res.json({
                 success: true, genre, fromCache: true,
                 cachedAt: cached.cachedAt, cacheExpiresIn: `${cacheExpiresIn} min`,
                 tracksCount: cached.tracks.length,
                 fileName,
-                downloadUrl: fileName ? `/api/download/${genre}/${fileName}` : null,
+                downloadUrl: cachedDownloadUrl,
                 tracks: cached.tracks.slice(0, 10),
             });
         }
@@ -421,7 +410,7 @@ router.get('/scrape', optionalAuth, async (req, res) => {
         scrapeCache.set('beatport', genre, tracks);
 
         // Generar CSV
-        const { filePath, fileName } = await generateCSV(tracks, genre);
+        const { fileName, downloadUrl } = await generateCSV(tracks, genre);
 
         // Guardar en Supabase si está configurado y el usuario está autenticado
         let supabaseSaved = false;
@@ -468,7 +457,7 @@ router.get('/scrape', optionalAuth, async (req, res) => {
             genre,
             tracksCount: tracks.length,
             fileName,
-            downloadUrl: `/api/download/${genre}/${fileName}`,
+            downloadUrl,
             supabaseSaved,
             sessionId,
             tracks: tracks.slice(0, 10) // Mostrar solo los primeros 10 como preview
@@ -476,9 +465,13 @@ router.get('/scrape', optionalAuth, async (req, res) => {
 
     } catch (error) {
         console.error(`❌ Error procesando género ${genre}:`, error.message);
+        const errorDetails = process.env.NODE_ENV === 'production'
+            ? 'Ocurrió un error durante el scraping.'
+            : error.message;
+
         res.status(500).json({ 
             error: 'Error interno del servidor al procesar la solicitud',
-            details: error.message,
+            details: errorDetails,
             genre
         });
     }
@@ -514,88 +507,6 @@ router.get('/download/:genre/:filename', (req, res) => {
     });
 });
 
-// Listar archivos disponibles por género
-router.get('/files/:genre?', (req, res) => {
-    const { genre } = req.params;
-    
-    try {
-        const downloadsDir = getDownloadsDir();
-        
-        if (!fs.existsSync(downloadsDir)) {
-            return res.json({ 
-                message: 'No hay archivos descargados aún',
-                genres: [],
-                files: []
-            });
-        }
-        
-        if (genre) {
-            // Listar archivos de un género específico
-            const genreDir = path.join(downloadsDir, genre.toLowerCase());
-            
-            if (!fs.existsSync(genreDir)) {
-                return res.json({
-                    message: `No hay archivos para el género ${genre}`,
-                    genre: genre,
-                    files: []
-                });
-            }
-            
-            const files = fs.readdirSync(genreDir)
-                .filter(file => file.endsWith('.csv'))
-                .map(file => ({
-                    filename: file,
-                    genre: genre,
-                    downloadUrl: `/api/download/${genre}/${file}`,
-                    created: fs.statSync(path.join(genreDir, file)).mtime
-                }))
-                .sort((a, b) => new Date(b.created) - new Date(a.created));
-            
-            res.json({
-                genre: genre,
-                filesCount: files.length,
-                files: files
-            });
-        } else {
-            // Listar todos los géneros y sus archivos
-            const genres = fs.readdirSync(downloadsDir)
-                .filter(item => {
-                    const itemPath = path.join(downloadsDir, item);
-                    return fs.statSync(itemPath).isDirectory();
-                });
-            
-            const allFiles = [];
-            
-            genres.forEach(genreFolder => {
-                const genreDir = path.join(downloadsDir, genreFolder);
-                const files = fs.readdirSync(genreDir)
-                    .filter(file => file.endsWith('.csv'))
-                    .map(file => ({
-                        filename: file,
-                        genre: genreFolder,
-                        downloadUrl: `/api/download/${genreFolder}/${file}`,
-                        created: fs.statSync(path.join(genreDir, file)).mtime
-                    }));
-                
-                allFiles.push(...files);
-            });
-            
-            allFiles.sort((a, b) => new Date(b.created) - new Date(a.created));
-            
-            res.json({
-                message: 'Archivos disponibles por género',
-                genresCount: genres.length,
-                totalFiles: allFiles.length,
-                genres: genres,
-                files: allFiles
-            });
-        }
-    } catch (error) {
-        console.error('Error listando archivos:', error);
-        res.status(500).json({ error: 'Error al listar archivos' });
-    }
-});
-
 // Obtener múltiples géneros (browser único compartido + caché por género)
 router.post('/scrape-multiple', async (req, res) => {
     const { genres } = req.body;
@@ -624,11 +535,11 @@ router.post('/scrape-multiple', async (req, res) => {
             if (cached) {
                 console.log(`⚡ Usando caché para ${genre}`);
                 try {
-                    const { fileName } = await generateCSV(cached.tracks, genre);
+                    const { fileName, downloadUrl } = await generateCSV(cached.tracks, genre);
                     results.push({
                         genre, success: true, fromCache: true, cachedAt: cached.cachedAt,
                         tracksCount: cached.tracks.length, tracks: cached.tracks,
-                        fileName, downloadUrl: `/api/download/${genre}/${fileName}`,
+                        fileName, downloadUrl,
                     });
                 } catch (e) {
                     results.push({
@@ -646,11 +557,11 @@ router.post('/scrape-multiple', async (req, res) => {
                 const rawTracks = await _doScrapeBeatportPage(page, BEATPORT_GENRES[genre], genre);
                 const tracks = rawTracks.map(t => validateTrackData(t));
                 scrapeCache.set('beatport', genre, tracks);
-                const { fileName } = await generateCSV(tracks, genre);
+                const { fileName, downloadUrl } = await generateCSV(tracks, genre);
                 results.push({
                     genre, success: true, fromCache: false,
                     tracksCount: tracks.length, tracks,
-                    fileName, downloadUrl: `/api/download/${genre}/${fileName}`,
+                    fileName, downloadUrl,
                 });
                 console.log(`✅ Completado: ${genre} (${tracks.length} tracks)`);
             } catch (error) {

@@ -1,10 +1,10 @@
 const express = require('express');
-const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const { createObjectCsvStringifier } = require('csv-writer');
 const fs = require('fs');
 const path = require('path');
 const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
-const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay, launchBrowser, createPage, getDownloadsDir } = require('./scraper-utils');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay, launchBrowser, createPage, getDownloadsDir, uploadCsvToStorage } = require('./scraper-utils');
 const scrapeCache = require('./scrape-cache');
 
 const router = express.Router();
@@ -254,24 +254,9 @@ router.post('/scrape', optionalAuth, async (req, res) => {
         // Crear nombre de archivo con fecha y género
         const today = new Date().toISOString().split('T')[0];
         const filename = `traxsource_${genre.replace('-', '_')}_top100_${today}.csv`;
-        const downloadsDir = getDownloadsDir();
-        const genreDir = getDownloadsDir(genre);
-        
-        // Crear directorios si no existen
-        if (!fs.existsSync(downloadsDir)) {
-            fs.mkdirSync(downloadsDir, { recursive: true });
-            console.log(`📁 Creado directorio: downloads`);
-        }
-        if (!fs.existsSync(genreDir)) {
-            fs.mkdirSync(genreDir, { recursive: true });
-            console.log(`📁 Creado directorio para género: downloads/${genre.toLowerCase()}`);
-        }
 
-        const csvFilePath = path.join(genreDir, filename);
-
-        // Configurar el escritor CSV
-        const csvWriter = createCsvWriter({
-            path: csvFilePath,
+        // Generar CSV en memoria
+        const stringifier = createObjectCsvStringifier({
             header: [
                 { id: 'position', title: 'Position' },
                 { id: 'title', title: 'Title' },
@@ -283,16 +268,34 @@ router.post('/scrape', optionalAuth, async (req, res) => {
                 { id: 'bpm', title: 'BPM' },
                 { id: 'key', title: 'Key' },
                 { id: 'price', title: 'Price' },
-                { id: 'platform', title: 'Platform' }
-            ]
+                { id: 'platform', title: 'Platform' },
+            ],
         });
+        const csvContent = stringifier.getHeaderString() + stringifier.stringifyRecords(tracks);
 
-        // Escribir datos al CSV
-        await csvWriter.writeRecords(tracks);
+        // Intentar subir a Supabase Storage
+        let downloadUrl = null;
+        try {
+            const storagePath = `traxsource/${genre.toLowerCase()}/${filename}`;
+            downloadUrl = await uploadCsvToStorage(csvContent, storagePath);
+            if (downloadUrl) console.log(`☁️  CSV subido a Supabase Storage: ${storagePath}`);
+        } catch (e) {
+            console.warn('⚠️  No se pudo subir CSV a Supabase Storage:', e.message);
+        }
 
-        console.log(`✅ Scraping completado. Archivo guardado: ${filename}`);
-        console.log(`📁 Ruta: ${csvFilePath}`);
-        console.log(`📊 Total de tracks: ${tracks.length}`);
+        // Fallback: escribir en disco (desarrollo local / sin Supabase)
+        if (!downloadUrl) {
+            const downloadsDir = getDownloadsDir();
+            const genreDir = getDownloadsDir(genre);
+            if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir, { recursive: true });
+            if (!fs.existsSync(genreDir)) fs.mkdirSync(genreDir, { recursive: true });
+            const csvFilePath = path.join(genreDir, filename);
+            fs.writeFileSync(csvFilePath, csvContent, 'utf-8');
+            downloadUrl = `/api/traxsource/download/${genre}/${filename}`;
+            console.log(`💾 CSV guardado localmente: ${csvFilePath}`);
+        }
+
+        console.log(`✅ Scraping completado: ${filename} — ${tracks.length} tracks`);
 
         // Guardar en Supabase si está configurado y el usuario está autenticado
         let supabaseSaved = false;
@@ -337,7 +340,7 @@ router.post('/scrape', optionalAuth, async (req, res) => {
             message: `Scraping de ${genre} completado exitosamente`,
             filename: filename,
             tracksCount: tracks.length,
-            filePath: csvFilePath,
+            downloadUrl,
             genre: genre,
             platform: 'Traxsource',
             supabaseSaved,

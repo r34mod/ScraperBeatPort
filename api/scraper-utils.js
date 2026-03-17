@@ -234,6 +234,52 @@ function getDownloadsDir(genre = '') {
     return genre ? path.join(base, genre.toLowerCase()) : base;
 }
 
+// ─── Supabase Storage helper ──────────────────────────────────────────────────
+const SCRAPED_CSVS_BUCKET = 'scraped-csvs';
+let _scraperBucketEnsured = false;
+
+async function _ensureScraperBucket(client) {
+    if (_scraperBucketEnsured) return;
+    const { data: buckets, error } = await client.storage.listBuckets();
+    if (error) { console.warn('⚠️ No se pudo listar buckets:', error.message); return; }
+    const exists = (buckets || []).some(b => b.name === SCRAPED_CSVS_BUCKET);
+    if (!exists) {
+        const { error: createErr } = await client.storage.createBucket(SCRAPED_CSVS_BUCKET, { public: false });
+        if (createErr) { console.error('❌ No se pudo crear bucket', SCRAPED_CSVS_BUCKET, ':', createErr.message); return; }
+        console.log(`✅ Bucket "${SCRAPED_CSVS_BUCKET}" creado.`);
+    }
+    _scraperBucketEnsured = true;
+}
+
+/**
+ * Sube contenido CSV a Supabase Storage y devuelve una URL firmada (válida 1 hora).
+ * Devuelve null si Supabase no está configurado (modo local).
+ * @param {string|Buffer} csvContent
+ * @param {string} storagePath  Ruta dentro del bucket (ej. 'beatport/house/file.csv')
+ * @returns {Promise<string|null>}
+ */
+async function uploadCsvToStorage(csvContent, storagePath) {
+    const { supabaseAdmin, supabase: supabaseClient } = require('./supabase');
+    const client = supabaseAdmin || supabaseClient;
+    if (!client) return null;
+
+    await _ensureScraperBucket(client);
+
+    const buffer = Buffer.isBuffer(csvContent) ? csvContent : Buffer.from(csvContent, 'utf-8');
+    const { error: uploadErr } = await client.storage
+        .from(SCRAPED_CSVS_BUCKET)
+        .upload(storagePath, buffer, { contentType: 'text/csv; charset=utf-8', upsert: true });
+
+    if (uploadErr) throw new Error(`Storage upload error: ${uploadErr.message}`);
+
+    const { data, error: signedErr } = await client.storage
+        .from(SCRAPED_CSVS_BUCKET)
+        .createSignedUrl(storagePath, 3600);
+
+    if (signedErr) throw new Error(`Signed URL error: ${signedErr.message}`);
+    return data.signedUrl;
+}
+
 module.exports = {
     CONFIG,
     IS_VERCEL,
@@ -254,4 +300,5 @@ module.exports = {
     createPage,
     launchBrowser,
     getDownloadsDir,
+    uploadCsvToStorage,
 };
