@@ -6,6 +6,7 @@ const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
 const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, smoothScroll, validateTrackData, delay, launchBrowser, createPage, getDownloadsDir, uploadCsvToStorage } = require('./scraper-utils');
 const scrapeCache = require('./scrape-cache');
+const { validate, schemas } = require('./validation');
 
 const router = express.Router();
 
@@ -508,7 +509,7 @@ router.get('/download/:genre/:filename', (req, res) => {
 });
 
 // Obtener múltiples géneros (browser único compartido + caché por género)
-router.post('/scrape-multiple', async (req, res) => {
+router.post('/scrape-multiple', validate(schemas.beatportScrapeMultiple), async (req, res) => {
     const { genres } = req.body;
     console.log(`🎯 Procesando múltiples géneros:`, genres);
 

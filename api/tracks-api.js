@@ -17,6 +17,7 @@ const express = require('express');
 const router = express.Router();
 const { isSupabaseEnabled } = require('./supabase');
 const { requireAuth } = require('./auth-middleware');
+const { validate, schemas } = require('./validation');
 
 // ─── MODO MOCK (desarrollo local sin Supabase) ──────────────────────────────
 if (!isSupabaseEnabled()) {
@@ -180,7 +181,7 @@ router.use(requireSupabase);
 router.use(requireAuth); // Todas las rutas requieren usuario autenticado
 
 // ─── POST /save ─── Guardar tracks de un scrape ──────────────────────────────
-router.post('/save', async (req, res) => {
+router.post('/save', validate(schemas.tracksSave), async (req, res) => {
     try {
         const { tracks, platform, genre, replaceExisting } = req.body;
         const db = req.userClient;

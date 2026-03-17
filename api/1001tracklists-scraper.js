@@ -4,6 +4,7 @@ const { createObjectCsvStringifier } = require('csv-writer');
 const fs = require('fs');
 const path = require('path');
 const { getRandomUserAgent, handleCookieConsent, delay, getDownloadsDir, uploadCsvToStorage } = require('./scraper-utils');
+const { validate, schemas } = require('./validation');
 
 const router = express.Router();
 
@@ -356,7 +357,7 @@ async function generateTracklistsCSV(tracklists, searchType, query) {
 // Rutas API
 
 // Ruta principal de scraping
-router.post('/scrape', async (req, res) => {
+router.post('/scrape', validate(schemas.tracklistsScrape), async (req, res) => {
     const { searchType, query, event } = req.body;
     
     console.log(`🚀 Iniciando scraping de 1001Tracklists: ${searchType} - ${query || 'sin query'}`);
@@ -402,14 +403,8 @@ router.post('/scrape', async (req, res) => {
 });
 
 // Ruta para obtener tracks de una tracklist específica
-router.post('/tracks', async (req, res) => {
+router.post('/tracks', validate(schemas.tracklistsGetTracks), async (req, res) => {
     const { tracklistUrl } = req.body;
-    
-    if (!tracklistUrl) {
-        return res.status(400).json({ 
-            error: 'Se requiere la URL del tracklist' 
-        });
-    }
     
     console.log(`🎵 Iniciando extracción de tracks de: ${tracklistUrl}`);
     

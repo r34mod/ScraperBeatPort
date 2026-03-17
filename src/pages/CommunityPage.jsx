@@ -1,37 +1,16 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Papa from 'papaparse';
 import './CommunityPage.css';
 
 const GENRES = ['Afro House', 'Dance Pop', 'Deep House', 'Drum & Bass', 'Electro', 'Electro House', 'House', 'Latin House', 'Melodic House & Techno', 'Minimal', 'Nu Disco', 'Organic House', 'Progressive House', 'Tech House', 'Techno', 'Trance', 'Tribal House', 'Other'];
 const PLATFORMS = ['Beatport', 'Traxsource', '1001Tracklists', 'Manual'];
 
 // ── CSV helpers ──────────────────────────────────────────────────────────────
-function parseCsvLine(line) {
-  const result = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') inQuotes = !inQuotes;
-    else if (c === ',' && !inQuotes) { result.push(current.trim().replace(/^"(.*)"$/, '$1')); current = ''; }
-    else current += c;
-  }
-  result.push(current.trim().replace(/^"(.*)"$/, '$1'));
-  return result;
-}
-
 function parseCsv(text) {
-  const lines = text.trim().split('\n').filter(l => l.trim());
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-  return lines.slice(1).map((line, idx) => {
-    const vals = parseCsvLine(line);
-    const row = { _id: `r_${idx}` };
-    headers.forEach((h, i) => { row[h] = vals[i] || ''; });
-    return row;
-  // Include any row that has at least one non-empty field (handles all header name variants)
-  }).filter(r => Object.entries(r).some(([k, v]) => k !== '_id' && v.trim()));
+  const { data } = Papa.parse(text, { header: true, skipEmptyLines: true });
+  return data.map((row, idx) => ({ _id: `r_${idx}`, ...row }));
 }
 
 function getField(row, ...keys) {

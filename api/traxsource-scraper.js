@@ -6,6 +6,7 @@ const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
 const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay, launchBrowser, createPage, getDownloadsDir, uploadCsvToStorage } = require('./scraper-utils');
 const scrapeCache = require('./scrape-cache');
+const { validate, schemas } = require('./validation');
 
 const router = express.Router();
 
@@ -213,7 +214,7 @@ router.get('/genres', (req, res) => {
 });
 
 // Ruta para hacer scraping de un género específico
-router.post('/scrape', optionalAuth, async (req, res) => {
+router.post('/scrape', optionalAuth, validate(schemas.traxsourceScrape), async (req, res) => {
     const { genre } = req.body;
 
     if (!genre || !TRAXSOURCE_GENRES[genre]) {

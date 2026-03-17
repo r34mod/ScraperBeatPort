@@ -76,7 +76,8 @@ export default function BeatportPage() {
 
   const startScraping = async () => {
     if (selected.size === 0) { setError('Selecciona al menos un género'); return; }
-    setLoading(true); setError(''); setSuccess(''); setResults([]);
+    setError(''); setSuccess(''); setResults([]);
+    setLoading(true);
     const arr = Array.from(selected);
     try {
       if (arr.length === 1) {

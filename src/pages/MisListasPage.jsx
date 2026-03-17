@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { usePagination } from '../hooks/usePagination';
+import Pagination from '../components/Pagination';
 import './MisListasPage.css';
 
 const PAGE_SIZE = 50;
@@ -22,7 +24,6 @@ export default function MisListasPage() {
   const [sessionId, setSessionId] = useState(null);
   const [tracks, setTracks] = useState([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [status, setStatus] = useState({ msg: '', type: '' });
 
   const API = window.location.origin;
@@ -80,7 +81,6 @@ export default function MisListasPage() {
         const data = await res.json();
         setTracks(data.tracks || []);
         setTotal(data.total || data.tracks?.length || 0);
-        setPage(1);
         setStatus({ msg: '', type: '' });
       } catch {
         setStatus({ msg: 'Error cargando tracks.', type: 'error' });
@@ -121,11 +121,7 @@ export default function MisListasPage() {
     }
   };
 
-  const pagedTracks = useMemo(
-    () => tracks.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [tracks, page]
-  );
-  const totalPages = Math.max(1, Math.ceil(tracks.length / PAGE_SIZE));
+  const { pagedItems: pagedTracks, page, totalPages, goPage } = usePagination(tracks, PAGE_SIZE, [tracks]);
 
   const platformNames = Object.keys(platformsData);
   const genres = platform ? Object.keys(platformsData[platform] || {}) : [];
@@ -210,13 +206,7 @@ export default function MisListasPage() {
       </div>
 
       {totalPages > 1 && (
-        <div className="ml-pagination">
-          <button className="ml-page-btn" onClick={() => setPage(1)} disabled={page === 1}>«</button>
-          <button className="ml-page-btn" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹</button>
-          <span className="ml-page-info">Página {page} de {totalPages}</span>
-          <button className="ml-page-btn" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>›</button>
-          <button className="ml-page-btn" onClick={() => setPage(totalPages)} disabled={page === totalPages}>»</button>
-        </div>
+        <Pagination page={page} totalPages={totalPages} onPageChange={goPage} classPrefix="ml" />
       )}
 
       {tracks.length === 0 && !status.msg && (

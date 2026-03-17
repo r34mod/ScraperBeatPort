@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useDuplicateGuard, DuplicateModal } from '../hooks/useDuplicateGuard';
+import { useRequest } from '../hooks/useRequest';
 import './TracklistsPage.css';
 
 const searchTypes = [
@@ -12,11 +13,10 @@ const searchTypes = [
 export default function TracklistsPage() {
   const { token } = useAuth();
   const { saveTracks, duplicateInfo, confirmReplace, dismissDuplicate } = useDuplicateGuard();
+  const { loading, error, setError, run } = useRequest();
   const [searchType, setSearchType] = useState('dj');
   const [query, setQuery] = useState('');
   const [eventQuery, setEventQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [results, setResults] = useState(null);
 
   const current = searchTypes.find(t => t.id === searchType);
@@ -24,30 +24,24 @@ export default function TracklistsPage() {
   const scrape = async () => {
     if (loading) return;
     if (searchType !== 'popular' && !query.trim()) { setError('Introduce una búsqueda'); return; }
-    setLoading(true); setError(''); setResults(null);
-    try {
+    setResults(null);
+    await run(async () => {
       const res = await fetch('/api/1001tracklists/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ searchType, query: query.trim(), event: eventQuery.trim() }),
       });
       const data = await res.json();
-      if (data.success) {
-        setResults(data);
-        if (data.tracklists?.length) {
-          const tracks = data.tracklists.map((tl, i) => ({
-            position: i + 1, title: tl.title, artist: tl.artist,
-            label: tl.event || '', duration: tl.duration || '',
-          }));
-          saveTracks({ tracks, platform: '1001tracklists', genre: query.trim() || 'popular', token });
-        }
+      if (!data.success) throw new Error((data.error || 'Error en el scraping') + '\n\nNota: 1001Tracklists está actualmente en desarrollo.');
+      setResults(data);
+      if (data.tracklists?.length) {
+        const tracks = data.tracklists.map((tl, i) => ({
+          position: i + 1, title: tl.title, artist: tl.artist,
+          label: tl.event || '', duration: tl.duration || '',
+        }));
+        saveTracks({ tracks, platform: '1001tracklists', genre: query.trim() || 'popular', token });
       }
-      else throw new Error(data.error || 'Error en el scraping');
-    } catch (e) {
-      setError(e.message + '\n\nNota: 1001Tracklists está actualmente en desarrollo.');
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (

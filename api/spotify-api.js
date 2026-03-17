@@ -15,6 +15,7 @@
 
 const express = require('express');
 const axios   = require('axios');
+const { validate, schemas } = require('./validation');
 
 const router = express.Router();
 
@@ -441,7 +442,7 @@ function parseSpotifyURI(input) {
  * Body: { url: "https://open.spotify.com/track/..." }
  * Resuelve cualquier URL/URI de Spotify: track, album, playlist o artist.
  */
-router.post('/resolve', async (req, res) => {
+router.post('/resolve', validate(schemas.spotifyResolve), async (req, res) => {
     try {
         const { url } = req.body;
         if (!url) return res.status(400).json({ success: false, error: 'url is required' });
