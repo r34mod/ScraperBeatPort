@@ -2,6 +2,12 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "build": {
+    "env": {
+      "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true",
+      "PUPPETEER_SKIP_DOWNLOAD": "true"
+    }
+  },
   "functions": {
     "api/server.js": {
       "maxDuration": 60

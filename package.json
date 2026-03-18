@@ -38,6 +38,9 @@
     "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.2.0"
   },
+  "puppeteer": {
+    "skipDownload": true
+  },
   "keywords": [
     "beatport",
     "scraping",
