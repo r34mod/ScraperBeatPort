@@ -1,10 +1,10 @@
 const express = require('express');
-const { createObjectCsvStringifier } = require('csv-writer');
 const fs = require('fs');
 const path = require('path');
-const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
-const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay, launchBrowser, createPage, getDownloadsDir, uploadCsvToStorage } = require('./scraper-utils');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, cleanText, delay, launchBrowser, createPage, getDownloadsDir } = require('./scraper-utils');
+const { generateAndStoreCsv } = require('./services/csv-service');
+const { saveSessionToSupabase } = require('./services/supabase-tracks-service');
 const scrapeCache = require('./scrape-cache');
 const { validate, schemas } = require('./validation');
 
@@ -256,9 +256,10 @@ router.post('/scrape', optionalAuth, validate(schemas.traxsourceScrape), async (
         const today = new Date().toISOString().split('T')[0];
         const filename = `traxsource_${genre.replace('-', '_')}_top100_${today}.csv`;
 
-        // Generar CSV en memoria
-        const stringifier = createObjectCsvStringifier({
-            header: [
+        // Generar CSV y almacenar (Supabase Storage o disco local como fallback)
+        const { downloadUrl } = await generateAndStoreCsv({
+            records: tracks,
+            headers: [
                 { id: 'position', title: 'Position' },
                 { id: 'title', title: 'Title' },
                 { id: 'mix', title: 'Mix' },
@@ -271,70 +272,36 @@ router.post('/scrape', optionalAuth, validate(schemas.traxsourceScrape), async (
                 { id: 'price', title: 'Price' },
                 { id: 'platform', title: 'Platform' },
             ],
+            storagePath: `traxsource/${genre.toLowerCase()}/${filename}`,
+            localDir: getDownloadsDir(genre),
+            fileName: filename,
+            fallbackUrl: `/api/traxsource/download/${genre}/${filename}`,
         });
-        const csvContent = stringifier.getHeaderString() + stringifier.stringifyRecords(tracks);
-
-        // Intentar subir a Supabase Storage
-        let downloadUrl = null;
-        try {
-            const storagePath = `traxsource/${genre.toLowerCase()}/${filename}`;
-            downloadUrl = await uploadCsvToStorage(csvContent, storagePath);
-            if (downloadUrl) console.log(`☁️  CSV subido a Supabase Storage: ${storagePath}`);
-        } catch (e) {
-            console.warn('⚠️  No se pudo subir CSV a Supabase Storage:', e.message);
-        }
-
-        // Fallback: escribir en disco (desarrollo local / sin Supabase)
-        if (!downloadUrl) {
-            const downloadsDir = getDownloadsDir();
-            const genreDir = getDownloadsDir(genre);
-            if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir, { recursive: true });
-            if (!fs.existsSync(genreDir)) fs.mkdirSync(genreDir, { recursive: true });
-            const csvFilePath = path.join(genreDir, filename);
-            fs.writeFileSync(csvFilePath, csvContent, 'utf-8');
-            downloadUrl = `/api/traxsource/download/${genre}/${filename}`;
-            console.log(`💾 CSV guardado localmente: ${csvFilePath}`);
-        }
 
         console.log(`✅ Scraping completado: ${filename} — ${tracks.length} tracks`);
 
         // Guardar en Supabase si está configurado y el usuario está autenticado
-        let supabaseSaved = false;
-        let sessionId = null;
-        if (isSupabaseEnabled() && req.userId && req.userClient) {
-            try {
-                const db = req.userClient;
-                const { data: session, error: sessionError } = await db
-                    .from('scrape_sessions')
-                    .insert({ user_id: req.userId, platform: 'traxsource', genre: genre.toLowerCase(), tracks_count: tracks.length })
-                    .select()
-                    .single();
-
-                if (!sessionError && session) {
-                    const rows = tracks.map((t, idx) => ({
-                        session_id: session.id,
-                        user_id: req.userId,
-                        platform: 'traxsource',
-                        genre: genre.toLowerCase(),
-                        position: t.position || idx + 1,
-                        title: t.title || '',
-                        artist: t.artist || '',
-                        remixer: t.mix || '',
-                        label: t.label || '',
-                        release_date: null,
-                        bpm: t.bpm ? String(t.bpm) : null,
-                        key: t.key || null,
-                        duration: t.duration || null,
-                    }));
-                    await db.from('tracks').insert(rows);
-                    supabaseSaved = true;
-                    sessionId = session.id;
-                    console.log(`☁️ Tracks guardados en Supabase (sesión ${session.id}, user ${req.userId})`);
-                }
-            } catch (e) {
-                console.warn('⚠️ No se pudieron guardar tracks en Supabase:', e.message);
-            }
-        }
+        const { supabaseSaved, sessionId } = await saveSessionToSupabase(req.userClient, {
+            userId: req.userId,
+            platform: 'traxsource',
+            genre,
+            tracks,
+            trackMapper: (t, idx, sid, uid) => ({
+                session_id: sid,
+                user_id: uid,
+                platform: 'traxsource',
+                genre: genre.toLowerCase(),
+                position: t.position || idx + 1,
+                title: t.title || '',
+                artist: t.artist || '',
+                remixer: t.mix || '',
+                label: t.label || '',
+                release_date: null,
+                bpm: t.bpm ? String(t.bpm) : null,
+                key: t.key || null,
+                duration: t.duration || null,
+            }),
+        });
 
         res.json({
             success: true,

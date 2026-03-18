@@ -1,10 +1,10 @@
 const express = require('express');
-const { createObjectCsvStringifier } = require('csv-writer');
 const fs = require('fs');
 const path = require('path');
-const { supabase, isSupabaseEnabled } = require('./supabase');
 const { optionalAuth } = require('./auth-middleware');
-const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, smoothScroll, validateTrackData, delay, launchBrowser, createPage, getDownloadsDir, uploadCsvToStorage } = require('./scraper-utils');
+const { getRandomUserAgent, handleCookieConsent, retryWithBackoff, smoothScroll, validateTrackData, delay, launchBrowser, createPage, getDownloadsDir } = require('./scraper-utils');
+const { generateAndStoreCsv } = require('./services/csv-service');
+const { saveSessionToSupabase } = require('./services/supabase-tracks-service');
 const scrapeCache = require('./scrape-cache');
 const { validate, schemas } = require('./validation');
 const { BEATPORT_GENRES } = require('./constants/beatport-genres');
@@ -222,13 +222,13 @@ async function scrapeBeatportGenre(genreUrl, genreName) {
     }
 }
 
-// Función para generar CSV — sube a Supabase Storage (o disco local como fallback)
+// Función para generar CSV — delega a csv-service (Supabase Storage o disco local como fallback)
 async function generateCSV(tracks, genreName) {
     const timestamp = new Date().toISOString().split('T')[0];
     const fileName = `beatport_${genreName.replace('-', '_')}_top100_${timestamp}.csv`;
-
-    const stringifier = createObjectCsvStringifier({
-        header: [
+    return generateAndStoreCsv({
+        records: tracks,
+        headers: [
             { id: 'position', title: 'Posicion' },
             { id: 'title', title: 'Titulo' },
             { id: 'artist', title: 'Artista' },
@@ -240,33 +240,11 @@ async function generateCSV(tracks, genreName) {
             { id: 'key', title: 'Clave Musical' },
             { id: 'length', title: 'Duracion' },
         ],
+        storagePath: `beatport/${genreName.toLowerCase()}/${fileName}`,
+        localDir: getDownloadsDir(genreName),
+        fileName,
+        fallbackUrl: `/api/download/${genreName}/${fileName}`,
     });
-    const csvContent = stringifier.getHeaderString() + stringifier.stringifyRecords(tracks);
-
-    // Intentar subir a Supabase Storage
-    let downloadUrl = null;
-    try {
-        const storagePath = `beatport/${genreName.toLowerCase()}/${fileName}`;
-        downloadUrl = await uploadCsvToStorage(csvContent, storagePath);
-        if (downloadUrl) console.log(`☁️  CSV subido a Supabase Storage: ${storagePath}`);
-    } catch (e) {
-        console.warn('⚠️  No se pudo subir CSV a Supabase Storage:', e.message);
-    }
-
-    // Fallback: escribir en disco (desarrollo local / sin Supabase)
-    if (!downloadUrl) {
-        const downloadsDir = getDownloadsDir();
-        const genreDir = getDownloadsDir(genreName);
-        if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir, { recursive: true });
-        if (!fs.existsSync(genreDir)) fs.mkdirSync(genreDir, { recursive: true });
-        const filePath = path.join(genreDir, fileName);
-        fs.writeFileSync(filePath, csvContent, 'utf-8');
-        downloadUrl = `/api/download/${genreName}/${fileName}`;
-        console.log(`💾 CSV guardado localmente: ${filePath}`);
-    }
-
-    console.log(`✅ CSV listo: ${fileName} — ${tracks.length} tracks`);
-    return { fileName, downloadUrl };
 }
 
 // Rutas API
@@ -343,42 +321,27 @@ router.get('/scrape', optionalAuth, async (req, res) => {
         const { fileName, downloadUrl } = await generateCSV(tracks, genre);
 
         // Guardar en Supabase si está configurado y el usuario está autenticado
-        let supabaseSaved = false;
-        let sessionId = null;
-        if (isSupabaseEnabled() && req.userId && req.userClient) {
-            try {
-                const db = req.userClient;
-                const { data: session, error: sessionError } = await db
-                    .from('scrape_sessions')
-                    .insert({ user_id: req.userId, platform: 'beatport', genre: genre.toLowerCase(), tracks_count: tracks.length })
-                    .select()
-                    .single();
-
-                if (!sessionError && session) {
-                    const rows = tracks.map((t, idx) => ({
-                        session_id: session.id,
-                        user_id: req.userId,
-                        platform: 'beatport',
-                        genre: genre.toLowerCase(),
-                        position: t.position || idx + 1,
-                        title: t.title || '',
-                        artist: t.artist || '',
-                        remixer: t.remixer || '',
-                        label: t.label || '',
-                        release_date: t.releaseDate || null,
-                        bpm: t.bpm || null,
-                        key: t.key || null,
-                        duration: t.length || null,
-                    }));
-                    await db.from('tracks').insert(rows);
-                    supabaseSaved = true;
-                    sessionId = session.id;
-                    console.log(`☁️ Tracks guardados en Supabase (sesión ${session.id}, user ${req.userId})`);
-                }
-            } catch (e) {
-                console.warn('⚠️ No se pudieron guardar tracks en Supabase:', e.message);
-            }
-        }
+        const { supabaseSaved, sessionId } = await saveSessionToSupabase(req.userClient, {
+            userId: req.userId,
+            platform: 'beatport',
+            genre,
+            tracks,
+            trackMapper: (t, idx, sid, uid) => ({
+                session_id: sid,
+                user_id: uid,
+                platform: 'beatport',
+                genre: genre.toLowerCase(),
+                position: t.position || idx + 1,
+                title: t.title || '',
+                artist: t.artist || '',
+                remixer: t.remixer || '',
+                label: t.label || '',
+                release_date: t.releaseDate || null,
+                bpm: t.bpm || null,
+                key: t.key || null,
+                duration: t.length || null,
+            }),
+        });
         
         console.log(`✅ Proceso completado para ${genre}: ${tracks.length} tracks`);
         
