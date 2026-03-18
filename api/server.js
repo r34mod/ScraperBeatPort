@@ -9,18 +9,18 @@ const path = require('path');
 const pino = require('pino');
 
 // Importar rutas de los scrapers
-const beatportScraper = require('./beatport-scraper-fixed');
-const beatportScraperLegacy = require('./beatport-scraper');
-const traxsourceScraper = require('./traxsource-scraper');
-const tracklistsScraper = require('./1001tracklists-scraper');
-const youtubeSearch = require('./youtube-search');
-const tracksApi = require('./tracks-api');
-const authApi = require('./auth-api');
-const tidalDownloader = require('./tidal-downloader');
-const youtubeDownloader = require('./youtube-downloader');
-const spotifyApi = require('./spotify-api');
-const communityApi = require('./community-api');
-const scrapeJobs = require('./scrape-jobs');
+const beatportScraper = require('./_lib/beatport-scraper-fixed');
+const beatportScraperLegacy = require('./_lib/beatport-scraper');
+const traxsourceScraper = require('./_lib/traxsource-scraper');
+const tracklistsScraper = require('./_lib/1001tracklists-scraper');
+const youtubeSearch = require('./_lib/youtube-search');
+const tracksApi = require('./_lib/tracks-api');
+const authApi = require('./_lib/auth-api');
+const tidalDownloader = require('./_lib/tidal-downloader');
+const youtubeDownloader = require('./_lib/youtube-downloader');
+const spotifyApi = require('./_lib/spotify-api');
+const communityApi = require('./_lib/community-api');
+const scrapeJobs = require('./_lib/scrape-jobs');
 
 // --- CONFIGURACIÓN ---
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
