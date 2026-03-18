@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer');
+const { launchBrowser, createPage, delay } = require('./scraper-utils');
 const { BEATPORT_GENRES } = require('./constants/beatport-genres');
 
 async function scrapeBeatportGenre(genre) {
@@ -11,21 +11,8 @@ async function scrapeBeatportGenre(genre) {
 
     let browser;
     try {
-        browser = await puppeteer.launch({
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu',
-                '--window-size=1920x1080',
-                '--disable-web-security',
-                '--disable-features=VizDisplayCompositor'
-            ]
-        });
-
-        const page = await browser.newPage();
+        browser = await launchBrowser();
+        const page = await createPage(browser);
         
         await page.setViewport({ width: 1920, height: 1080 });
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
@@ -41,7 +28,7 @@ async function scrapeBeatportGenre(genre) {
             await page.waitForSelector('[data-ec-name], .playable-track, .track', { timeout: 10000 });
         }
         
-        await page.waitForTimeout(3000);
+        await delay(3000);
         
         const tracks = await page.evaluate(() => {
             const trackElements = Array.from(document.querySelectorAll('.track-grid-item, .bucket-item, [data-ec-name], .playable-track'));

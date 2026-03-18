@@ -356,3 +356,5 @@ router.get('/download/:genre/:filename', (req, res) => {
 });
 
 module.exports = router;
+module.exports.scrapeTraxsourceGenre = scrapeTraxsourceGenre;
+module.exports.TRAXSOURCE_GENRES = TRAXSOURCE_GENRES;

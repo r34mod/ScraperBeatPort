@@ -20,6 +20,7 @@ const tidalDownloader = require('./tidal-downloader');
 const youtubeDownloader = require('./youtube-downloader');
 const spotifyApi = require('./spotify-api');
 const communityApi = require('./community-api');
+const scrapeJobs = require('./scrape-jobs');
 
 // --- CONFIGURACIÓN ---
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -58,6 +59,7 @@ app.use('/api/tidal', tidalDownloader);
 app.use('/api/youtube-dl', youtubeDownloader);
 app.use('/api/spotify', spotifyApi);
 app.use('/api/community', communityApi);
+app.use('/api/jobs', scrapeJobs);
 app.use('/api', beatportScraper);
 
 // Ruta de health check
