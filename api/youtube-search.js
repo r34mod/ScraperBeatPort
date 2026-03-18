@@ -1,6 +1,7 @@
 const express = require('express');
 const { google } = require('googleapis');
 const axios = require('axios');
+const { validate, schemas } = require('./validation');
 
 // Configuración de YouTube API
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || 'YOUR_API_KEY_HERE';
@@ -15,13 +16,9 @@ const router = express.Router();
 /**
  * Buscar videos de música en YouTube usando la API oficial
  */
-router.post('/search', async (req, res) => {
+router.post('/search', validate(schemas.youtubeSearch), async (req, res) => {
     try {
         const { query, maxResults = 5 } = req.body;
-        
-        if (!query) {
-            return res.status(400).json({ error: 'Query is required' });
-        }
 
         // Limpiar y mejorar el query de búsqueda
         const cleanQuery = cleanSearchQuery(query);

@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useDuplicateGuard, DuplicateModal } from '../hooks/useDuplicateGuard';
+import { useRequest } from '../hooks/useRequest';
+import { usePagination } from '../hooks/usePagination';
+import Pagination from '../components/Pagination';
 import './TraxsourcePage.css';
 
 const PAGE_SIZE = 25;
@@ -8,20 +11,18 @@ const PAGE_SIZE = 25;
 export default function TraxsourcePage() {
   const { token } = useAuth();
   const { saveTracks, duplicateInfo, confirmReplace, dismissDuplicate } = useDuplicateGuard();
+  const { loading, error, setError, run } = useRequest();
   const [genres, setGenres] = useState([]);
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [results, setResults] = useState(null);
-  const [resultsPage, setResultsPage] = useState(1);
 
   useEffect(() => {
     fetch('/api/traxsource/genres')
       .then(r => r.json())
       .then(d => setGenres(d))
       .catch(e => setError('Error cargando géneros: ' + e.message));
-  }, []);
+  }, [setError]);
 
   const filtered = genres.filter(g =>
     g.name.toLowerCase().includes(search.toLowerCase()) || g.id.toLowerCase().includes(search.toLowerCase())
@@ -29,32 +30,22 @@ export default function TraxsourcePage() {
 
   const scrape = async () => {
     if (!selected || loading) return;
-    setLoading(true); setError(''); setResults(null);
-    try {
+    setResults(null);
+    await run(async () => {
       const res = await fetch('/api/traxsource/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ genre: selected }),
       });
       const data = await res.json();
-      if (data.success) {
-        setResults(data);
-        setResultsPage(1);
-        saveTracks({ tracks: data.tracks, platform: 'traxsource', genre: selected, token });
-      }
-      else throw new Error(data.error || 'Error en el scraping');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+      if (!data.success) throw new Error(data.error || 'Error en el scraping');
+      setResults(data);
+      saveTracks({ tracks: data.tracks, platform: 'traxsource', genre: selected, token });
+    });
   };
 
-  const pagedResultTracks = useMemo(() => {
-    if (!results?.tracks) return [];
-    return results.tracks.slice((resultsPage - 1) * PAGE_SIZE, resultsPage * PAGE_SIZE);
-  }, [results, resultsPage]);
-  const resultsTotalPages = Math.max(1, Math.ceil((results?.tracks?.length || 0) / PAGE_SIZE));
+  const resultTracks = useMemo(() => results?.tracks || [], [results]);
+  const { pagedItems: pagedResultTracks, page: resultsPage, totalPages: resultsTotalPages, goPage: goResultsPage } = usePagination(resultTracks, PAGE_SIZE, [results]);
 
   return (
     <div className="container tx-page">
@@ -107,15 +98,7 @@ export default function TraxsourcePage() {
                   ))}
                 </tbody>
               </table>
-              {resultsTotalPages > 1 && (
-                <div className="tx-pagination">
-                  <button className="tx-page-btn" onClick={() => setResultsPage(1)} disabled={resultsPage === 1}>«</button>
-                  <button className="tx-page-btn" onClick={() => setResultsPage(p => Math.max(1, p - 1))} disabled={resultsPage === 1}>‹</button>
-                  <span className="tx-page-info">Página {resultsPage} de {resultsTotalPages}</span>
-                  <button className="tx-page-btn" onClick={() => setResultsPage(p => Math.min(resultsTotalPages, p + 1))} disabled={resultsPage === resultsTotalPages}>›</button>
-                  <button className="tx-page-btn" onClick={() => setResultsPage(resultsTotalPages)} disabled={resultsPage === resultsTotalPages}>»</button>
-                </div>
-              )}
+              <Pagination page={resultsPage} totalPages={resultsTotalPages} onPageChange={goResultsPage} classPrefix="tx" />
             </>
           )}
         </div>

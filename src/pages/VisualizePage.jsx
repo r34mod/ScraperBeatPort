@@ -1,32 +1,17 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
+import Papa from 'papaparse';
 import { useDebounce } from '../hooks/useDebounce';
+import { usePagination } from '../hooks/usePagination';
+import Pagination from '../components/Pagination';
 import './VisualizePage.css';
 
 const PAGE_SIZE = 50;
 
-function parseCSVLine(line) {
-  const result = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') inQuotes = !inQuotes;
-    else if (c === ',' && !inQuotes) { result.push(current.trim().replace(/^"(.*)"$/, '$1')); current = ''; }
-    else current += c;
-  }
-  result.push(current.trim().replace(/^"(.*)"$/, '$1'));
-  return result;
-}
-
 function parseCSV(csvText) {
-  const lines = csvText.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-  return lines.slice(1).map((line, index) => {
-    const values = parseCSVLine(line);
-    const track = { id: `track_${index}` };
-    headers.forEach((h, i) => { track[h] = values[i] || ''; });
-    return track;
-  }).filter(t => t['Título'] || t.Title || t['Track Title'] || t.title);
+  const { data } = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+  return data
+    .map((row, index) => ({ id: `track_${index}`, ...row }))
+    .filter(t => t['Título'] || t.Title || t['Track Title'] || t.title);
 }
 
 function getField(track, ...keys) {
@@ -43,7 +28,6 @@ export default function VisualizePage() {
   const [videoId, setVideoId] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
   const fileRef = useRef(null);
 
   const debouncedSearch = useDebounce(search, 250);
@@ -58,7 +42,7 @@ export default function VisualizePage() {
     reader.onload = (e) => {
       try {
         const parsed = parseCSV(e.target.result);
-        setTracks(parsed); setSelected(new Set()); setPage(1); setSearch('');
+        setTracks(parsed); setSelected(new Set()); setSearch('');
         showToast(`"${file.name}" cargado — ${parsed.length} tracks`);
       } catch { showToast('Error procesando CSV'); }
       setLoading(false);
@@ -86,17 +70,10 @@ export default function VisualizePage() {
   }, [tracks, debouncedSearch]);
 
   // ── Paginación ──
-  const totalPages = Math.max(1, Math.ceil(filteredTracks.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const pageTracks = useMemo(
-    () => filteredTracks.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
-    [filteredTracks, currentPage]
-  );
+  const { page: currentPage, totalPages, pagedItems: pageTracks, goPage } = usePagination(filteredTracks, PAGE_SIZE, [tracks, debouncedSearch]);
 
-  const goPage = useCallback((p) => setPage(Math.max(1, Math.min(p, totalPages))), [totalPages]);
-
-  // Cuando cambia la búsqueda, volver a la primera página
-  const handleSearch = (e) => { setSearch(e.target.value); setPage(1); };
+  // Cuando cambia la búsqueda, volver a la primera página (handled by usePagination resetDeps)
+  const handleSearch = (e) => { setSearch(e.target.value); };
 
   const downloadSelected = () => {
     const sel = tracks.filter(t => selected.has(t.id));
@@ -222,15 +199,7 @@ export default function VisualizePage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="vz-pagination">
-              <button className="vz-page-btn" onClick={() => goPage(1)} disabled={currentPage === 1}>«</button>
-              <button className="vz-page-btn" onClick={() => goPage(currentPage - 1)} disabled={currentPage === 1}>‹</button>
-              <span className="vz-page-info">Página {currentPage} de {totalPages}</span>
-              <button className="vz-page-btn" onClick={() => goPage(currentPage + 1)} disabled={currentPage === totalPages}>›</button>
-              <button className="vz-page-btn" onClick={() => goPage(totalPages)} disabled={currentPage === totalPages}>»</button>
-            </div>
-          )}
+          <Pagination page={currentPage} totalPages={totalPages} onPageChange={goPage} classPrefix="vz" />
         </>
       )}
 

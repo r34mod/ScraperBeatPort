@@ -543,33 +543,143 @@
         statusEl.classList.add('visible');
         statusText.textContent = 'Obteniendo enlace de descarga...';
 
+        const safeFilename = `${currentTrack.artist} - ${currentTrack.title}`
+            .replace(/[^\w\s-]/g, '').trim() || 'track';
+
         try {
-            const safeFilename = `${currentTrack.artist} - ${currentTrack.title}`
-                .replace(/[^\w\s-]/g, '').trim();
+            const serverUrl = `${API_BASE}/download?tidalId=${currentTrack.tidalId}&quality=${selectedQuality}&filename=${encodeURIComponent(safeFilename)}`;
 
-            const url = `${API_BASE}/download?tidalId=${currentTrack.tidalId}&quality=${selectedQuality}&filename=${encodeURIComponent(safeFilename)}`;
+            statusText.textContent = 'Conectando con el servidor...';
+            const resp = await fetch(serverUrl);
+            const contentType = resp.headers.get('content-type') || '';
 
-            statusText.textContent = 'Descargando... (esto puede tardar unos segundos)';
-
-            // Use a hidden <a> with the endpoint URL so the browser handles the download.
-            // The server streams the file (or redirects to CDN).
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = safeFilename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            // Give feedback after triggering
-            setTimeout(() => {
-                statusText.textContent = '✓ Descarga iniciada en tu navegador';
+            if (resp.ok && !contentType.includes('application/json')) {
+                // Server successfully streamed the audio – save via blob
+                statusText.textContent = 'Descargando... (esto puede tardar unos segundos)';
+                const blob = await resp.blob();
+                triggerBlobDownload(blob, safeFilename + '.m4a');
+                statusText.textContent = '✓ Descarga completada';
                 btnDownload.disabled = false;
-            }, 2000);
+                return;
+            }
+
+            // Server returned an error JSON
+            const data = await resp.json().catch(() => ({}));
+
+            if (data.needsClientResolve) {
+                // Vercel IPs are blocked by Tidal proxy APIs → resolve from the browser
+                statusText.textContent = 'Resolviendo directamente desde el navegador...';
+                await resolveClientSide(
+                    data.tidalApis || [],
+                    data.trackId   || currentTrack.tidalId,
+                    safeFilename
+                );
+                return;
+            }
+
+            throw new Error(data.error || `Error del servidor (${resp.status})`);
 
         } catch (err) {
-            statusText.textContent = `Error: ${err.message}`;
+            statusText.textContent = `❌ ${err.message}`;
             btnDownload.disabled = false;
         }
+    }
+
+    /**
+     * Browser-side Tidal proxy resolution.
+     * Called when Vercel's server IPs are blocked: the browser makes the Tidal
+     * proxy API request directly (residential IPs are not blocked), then asks
+     * the server to stream the audio from the Tidal CDN URL it obtained.
+     */
+    async function resolveClientSide(apis, trackId, filename) {
+        const statusText  = document.getElementById('downloadStatusText');
+        const btnDownload = document.getElementById('btnDownload');
+
+        for (const api of apis) {
+            try {
+                const apiHost = new URL(api).hostname;
+                statusText.textContent = `Probando ${apiHost}...`;
+
+                const resp = await fetch(
+                    `${api}/track/?id=${trackId}&quality=${selectedQuality}`,
+                    { signal: AbortSignal.timeout(8000) }
+                );
+                if (!resp.ok) continue;
+
+                const data = await resp.json();
+
+                // ── V1 format: [{ OriginalTrackUrl }] ────────────────────────
+                if (Array.isArray(data)) {
+                    const item = data.find(d => d.OriginalTrackUrl);
+                    if (item?.OriginalTrackUrl) {
+                        statusText.textContent = 'Descargando desde CDN...';
+                        await streamDirectFromServer(item.OriginalTrackUrl, filename);
+                        statusText.textContent = '✓ Descarga completada';
+                        btnDownload.disabled = false;
+                        return;
+                    }
+                }
+
+                // ── V2 format: { data: { manifest, assetPresentation } } ─────
+                if (data?.data?.manifest) {
+                    if (data.data.assetPresentation === 'PREVIEW') continue;
+                    statusText.textContent = 'Procesando y descargando...';
+                    await streamFromManifest(data.data.manifest, filename);
+                    statusText.textContent = '✓ Descarga completada';
+                    btnDownload.disabled = false;
+                    return;
+                }
+
+            } catch (err) {
+                // CORS or network error → silently try the next API
+                console.warn(`[Tidal] client-side ${api} failed:`, err.message);
+            }
+        }
+
+        throw new Error(
+            'No se pudo obtener el archivo desde ninguna fuente. ' +
+            'Es posible que el navegador bloquee las peticiones cross-origin (CORS). ' +
+            'Intenta desde un entorno local o consulta la documentación.'
+        );
+    }
+
+    /** POST manifest → server decodes + streams audio from Tidal CDN */
+    async function streamFromManifest(manifest, filename) {
+        const resp = await fetch(`${API_BASE}/stream-from-manifest`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ manifest, filename }),
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.error || `Error al procesar el manifiesto (${resp.status})`);
+        }
+        const blob = await resp.blob();
+        triggerBlobDownload(blob, filename + '.m4a');
+    }
+
+    /** GET stream-direct → server proxies CDN URL (CDN is not blocked from Vercel) */
+    async function streamDirectFromServer(url, filename) {
+        const resp = await fetch(
+            `${API_BASE}/stream-direct?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`
+        );
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.error || `Error al descargar (${resp.status})`);
+        }
+        const blob = await resp.blob();
+        triggerBlobDownload(blob, filename + '.m4a');
+    }
+
+    function triggerBlobDownload(blob, filename) {
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     }
 
     // ── UI helpers ─────────────────────────────────────────────────────────────

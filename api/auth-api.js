@@ -12,6 +12,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase, isSupabaseEnabled } = require('./supabase');
 const { requireAuth, MOCK_TOKEN } = require('./auth-middleware');
+const { validate, schemas } = require('./validation');
 
 // ─── MODO MOCK (desarrollo local sin Supabase) ──────────────────────────────
 if (!isSupabaseEnabled()) {
@@ -51,17 +52,9 @@ if (!isSupabaseEnabled()) {
 // ─── FIN MODO MOCK ───────────────────────────────────────────────────────────
 
 // ─── POST /register ──────────────────────────────────────────────────────────
-router.post('/register', async (req, res) => {
+router.post('/register', validate(schemas.authRegister), async (req, res) => {
     try {
         const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email y contraseña son requeridos.' });
-        }
-
-        if (password.length < 6) {
-            return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
-        }
 
         const { data, error } = await supabase.auth.signUp({
             email,
@@ -96,13 +89,9 @@ router.post('/register', async (req, res) => {
 });
 
 // ─── POST /login ─────────────────────────────────────────────────────────────
-router.post('/login', async (req, res) => {
+router.post('/login', validate(schemas.authLogin), async (req, res) => {
     try {
         const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email y contraseña son requeridos.' });
-        }
 
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
@@ -149,7 +138,7 @@ router.get('/me', requireAuth, (req, res) => {
 });
 
 // ─── POST /refresh ───────────────────────────────────────────────────────────
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', validate(schemas.authRefresh), async (req, res) => {
     try {
         const { refresh_token } = req.body;
         if (!refresh_token) {
