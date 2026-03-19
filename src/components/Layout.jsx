@@ -13,6 +13,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useRadio } from '../context/RadioContext';
 import { STATIONS } from '../data/stations';
+import { useSubscription } from '../hooks/useSubscription';
 
 const PREFS_KEY = 'msh_user_prefs';
 
@@ -22,9 +23,10 @@ function loadPrefs() {
 function savePrefs(p) { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
 
 export default function Layout() {
-  const { email, clear } = useAuth();
+  const { email, clear, isLoggedIn } = useAuth();
   const radio = useRadio();
   const navigate = useNavigate();
+  const { subscribed, downloadsLeft, loading: subLoading, startCheckout } = useSubscription();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -238,6 +240,26 @@ export default function Layout() {
             <div className="profile-panel-body">
               <div className="profile-avatar-big">{userName[0].toUpperCase()}</div>
               <div className="profile-email">{email}</div>
+
+              {/* Subscription status — only when logged in */}
+              {isLoggedIn && !subLoading && (
+                subscribed ? (
+                  <div className="profile-sub-status pro">
+                    <span className="profile-sub-badge">PRO</span>
+                    <span className="profile-sub-text">Descargas ilimitadas activas</span>
+                  </div>
+                ) : (
+                  <div className="profile-sub-status free">
+                    <div className="profile-sub-free-info">
+                      <span className="profile-sub-badge free">GRATIS</span>
+                      <span className="profile-sub-text">{downloadsLeft} / 5 descargas hoy</span>
+                    </div>
+                    <button className="profile-sub-upgrade-btn" onClick={startCheckout}>
+                      Upgrade to Pro — €1
+                    </button>
+                  </div>
+                )
+              )}
 
               <label className="profile-label">Nombre de usuario</label>
               <input

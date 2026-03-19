@@ -208,7 +208,7 @@ const UPCOMING_SHOWS = [
     live: true,
     color: '#1a0a2a',
     accent: '#6c346c',
-    img: null,
+    img: 'https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da841ffd4c3cee663cb1addbcd07',
     url: 'https://soundcloud.com/soundcloud-mainroom/sets/techno-new-techno-now',
     embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A801471273&color=%236c346c&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
     embedLabel: 'New Techno Now: Techno · Main Room: Dance',
@@ -223,7 +223,7 @@ const UPCOMING_SHOWS = [
     live: false,
     color: '#150505',
     accent: '#150505',
-    img: null,
+    img: 'https://i.scdn.co/image/ab67616d0000b273cb4a13c0fd144888cfdd652b',
     url: 'https://soundcloud.com/electropose/sets/afro-house-2024-mix',
     embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1901558159&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
     embedLabel: 'Afro House - 2026 Mix · Electro Posé',
@@ -238,7 +238,7 @@ const UPCOMING_SHOWS = [
     live: false,
     color: '#1a0a2a',
     accent: '#6c346c',
-    img: null,
+    img: 'https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da8477e7244d09f4be1eeee0cd62',
     url: 'https://soundcloud.com/soundcloud-the-peak/sets/level-up-edm-next',
     embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A728636178&color=%236c346c&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
     embedLabel: 'EDM Next: Level Up · The Peak: EDM',
@@ -253,7 +253,7 @@ const UPCOMING_SHOWS = [
     live: false,
     color: '#1a0a0a',
     accent: '#ff3d3d',
-    img: null,
+    img: 'https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da8404b9ea22e9e20df01d9cb211',
     url: 'https://soundcloud.com/tale-giorgione/sets/reggeton-2026-mix-reggaeton',
     embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A2178319835&color=%236c346c&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
     embedLabel: 'REGGETON 2026 🔥🔥🔥 MIX REGGAETON 2025 · Tale Giorgione',
@@ -268,7 +268,7 @@ const UPCOMING_SHOWS = [
     live: false,
     color: '#150505',
     accent: '#150505',
-    img: null,
+    img: 'https://i.scdn.co/image/ab67616d0000b273490d1c431adac91c24323867',
     url: 'https://soundcloud.com/isaac-sherwood/sets/hardwave-mega-mix',
     embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A2084131233&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
     embedLabel: 'HARDWAVE MEGA MIX · M3TAMORS!K',
@@ -283,7 +283,7 @@ const UPCOMING_SHOWS = [
     live: false,
     color: '#150505',
     accent: '#150505',
-    img: null,
+    img: 'https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da848ff66e50fdd009783e228967',
     url: 'https://soundcloud.com/martin-gecler-28718172/sets/rally-house-thicker-mix',
     embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1838734482&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
     embedLabel: 'Another Rally house mix · HKSRвиски',
@@ -298,7 +298,7 @@ const UPCOMING_SHOWS = [
     live: false,
     color: '#150505',
     accent: '#150505',
-    img: null,
+    img: 'https://i.scdn.co/image/ab67616d0000b2736ea5ee3eee7fb511ed77562f',
     url: 'https://soundcloud.com/user-972968419/sets/ibiza-summer-mix-2025-deep',
     embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1976326144&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
     embedLabel: 'IBIZA Summer Mix 2025 · Kevin Patrick',
@@ -378,9 +378,12 @@ function UpcomingShows() {
           >
             <div
               className="hp-show-artwork"
-              style={{ background: `linear-gradient(160deg, ${s.color} 0%, color-mix(in srgb, ${s.accent} 40%, ${s.color}) 100%)` }}
+              style={s.img
+                ? { backgroundImage: `url(${s.img})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                : { background: `linear-gradient(160deg, ${s.color} 0%, color-mix(in srgb, ${s.accent} 40%, ${s.color}) 100%)` }
+              }
             >
-              <span className="hp-show-initials-lg">{s.dj.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>
+              {!s.img && <span className="hp-show-initials-lg">{s.dj.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>}
               <span className="hp-show-link-icon">{s.embed ? '▶' : '↗'}</span>
               {s.live && <span className="hp-show-live-badge">● LIVE</span>}
               {s.embed && <span className="hp-show-sc-badge">SC</span>}

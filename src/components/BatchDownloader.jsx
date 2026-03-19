@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { parseCSV, downloadTrackBlob } from '../utils/downloadUtils';
 
-export default function BatchDownloader({ provider, quality }) {
+export default function BatchDownloader({ provider, quality, trackDownload, onNeedUpgrade }) {
   const [batchTracks, setBatchTracks] = useState([]);
   const [batchRunning, setBatchRunning] = useState(false);
   const [batchDone, setBatchDone] = useState(false);
@@ -88,6 +88,17 @@ export default function BatchDownloader({ provider, quality }) {
       }
 
       if (cancelRef.current) { updateRow(row.id, { status: 'pending', msg: 'Cancelado' }); continue; }
+
+      // Check download limit before downloading
+      if (trackDownload) {
+        const { allowed } = await trackDownload();
+        if (!allowed) {
+          updateRow(row.id, { status: 'error', msg: 'Límite diario alcanzado' });
+          cancelRef.current = true;
+          if (onNeedUpgrade) onNeedUpgrade();
+          continue;
+        }
+      }
 
       updateRow(row.id, { status: 'downloading', progress: 0, msg: 'Descargando…' });
       const safeFilename = `${foundTrack.artist} - ${foundTrack.title}`.replace(/[^\w\s()-]/g, '').trim();

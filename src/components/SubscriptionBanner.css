@@ -1,0 +1,171 @@
+/* ── Subscription Banner / Plan Card ─────────────────────────────────────────── */
+.sub-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s;
+}
+
+.sub-card--exhausted {
+  border-color: rgba(255, 80, 80, 0.25);
+  background: rgba(255, 60, 60, 0.04);
+}
+
+.sub-card--pro {
+  border-color: rgba(255, 200, 0, 0.2);
+  background: rgba(255, 200, 0, 0.03);
+}
+
+/* Header row */
+.sub-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.sub-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.sub-plan-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  margin: 0 0 1px;
+}
+
+.sub-plan-name {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.sub-badge {
+  margin-left: auto;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.sub-badge--free {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.45);
+}
+
+.sub-badge--pro {
+  background: rgba(255,200,0,0.12);
+  border: 1px solid rgba(255,200,0,0.3);
+  color: #ffd600;
+}
+
+/* Pro description */
+.sub-desc {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.42);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Progress bar */
+.sub-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.sub-progress-label {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.35);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sub-progress-count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+}
+
+.sub-progress-count--empty {
+  color: #ff6b6b;
+}
+
+.sub-bar-wrap {
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.sub-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e91e63, #ff1744);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.sub-bar-fill--full {
+  background: #ff4040;
+}
+
+/* Limit message */
+.sub-limit-msg {
+  font-size: 0.75rem;
+  color: #ff6b6b;
+  margin: -6px 0 10px;
+}
+
+/* Upgrade box */
+.sub-upgrade-box {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 16px 16px 14px;
+  margin-top: 14px;
+  text-align: center;
+}
+
+.sub-upgrade-tagline {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.65);
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+.sub-btn-upgrade {
+  width: 100%;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  background: linear-gradient(90deg, #e91e63 0%, #f5305a 50%, #ff5252 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(233,30,99,0.35);
+  transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.sub-btn-upgrade:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(233,30,99,0.45);
+}
+.sub-btn-upgrade:active { transform: translateY(0); box-shadow: 0 2px 12px rgba(233,30,99,0.3); }
