@@ -122,13 +122,15 @@ export default function RadioTuner() {
     if (isPlaying) audioRef.current.play().catch(() => {});
   }, [stationIndex]);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     buildGraph();
-    if (audioCtxRef.current?.state === 'suspended') audioCtxRef.current.resume();
+    if (audioCtxRef.current?.state === 'suspended') {
+      await audioCtxRef.current.resume();
+    }
     if (isPlaying) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play().catch(() => {});
+      await audioRef.current.play();
     }
     setIsPlaying(p => !p);
   };

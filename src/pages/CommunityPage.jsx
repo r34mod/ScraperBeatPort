@@ -298,7 +298,63 @@ export default function CommunityPage() {
     });
   }, [modalTracks, modalSearch]);
 
+  const SIDEBAR_NAV = [
+    {
+      id: 'feed', label: 'Feed', tab: 'all',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>,
+    },
+    {
+      id: 'trending', label: 'Trending', tab: 'all',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+    },
+    {
+      id: 'uploads', label: 'Uploads', tab: 'mine',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>,
+    },
+    {
+      id: 'vault', label: 'My Vault', tab: 'mine',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M12 9v0m0 6v0m-3-3h0m6 0h0"/></svg>,
+    },
+  ];
+  const [sidebarActive, setSidebarActive] = useState('trending');
+
   return (
+    <div className="comm-layout">
+
+      {/* ── Sidebar ── */}
+      <aside className="comm-sidebar">
+        <div className="comm-sidebar-brand">
+          <span className="comm-sidebar-logo">SETTINGS</span>
+          <span className="comm-sidebar-tagline">Djs Community</span>
+        </div>
+
+        <nav className="comm-sidebar-nav">
+          {SIDEBAR_NAV.map(item => (
+            <button
+              key={item.id}
+              className={`comm-sidebar-item${sidebarActive === item.id ? ' active' : ''}`}
+              onClick={() => {
+                setSidebarActive(item.id);
+                setActiveTab(item.tab);
+              }}
+            >
+              <span className="comm-sidebar-item-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="comm-sidebar-footer">
+          <button
+            className="comm-sidebar-new-btn"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Playlist
+          </button>
+        </div>
+      </aside>
+
     <div className="comm-page">
 
       {/* ── Header ── */}
@@ -525,6 +581,7 @@ export default function CommunityPage() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
