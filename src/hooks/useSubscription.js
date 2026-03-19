@@ -73,23 +73,12 @@ export function useSubscription() {
   }, [status.subscribed, status.downloadsLeft, getValidToken]);
 
   /**
-   * Abre Stripe Checkout. Redirige al usuario a la página de pago.
+   * Stripe Checkout — temporalmente deshabilitado.
    */
-  const startCheckout = useCallback(async () => {
-    try {
-      const token = await getValidToken();
-      if (!token) throw new Error('No autenticado');
-      const res = await fetch('/api/subscription/checkout', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error iniciando pago');
-      if (data.url) window.location.href = data.url;
-    } catch (err) {
-      alert(`Error: ${err.message}`);
-    }
-  }, [getValidToken]);
+  // eslint-disable-next-line no-unused-vars
+  const startCheckout = useCallback(() => {
+    // Payment disabled — coming soon
+  }, []);
 
   return { ...status, fetchStatus, trackDownload, startCheckout };
 }

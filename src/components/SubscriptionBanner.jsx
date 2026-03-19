@@ -54,8 +54,8 @@ export default function SubscriptionBanner({ subscribed, downloadsLeft, download
 
       <div className="sub-upgrade-box">
         <p className="sub-upgrade-tagline">Get unlimited hi-res downloads</p>
-        <button className="sub-btn-upgrade" onClick={onCheckout}>
-          Upgrade to Pro
+        <button className="sub-btn-upgrade" disabled title="Próximamente disponible">
+          Upgrade to Pro — Coming Soon
         </button>
       </div>
     </div>

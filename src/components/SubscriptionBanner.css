@@ -169,3 +169,11 @@
   box-shadow: 0 6px 24px rgba(233,30,99,0.45);
 }
 .sub-btn-upgrade:active { transform: translateY(0); box-shadow: 0 2px 12px rgba(233,30,99,0.3); }
+.sub-btn-upgrade:disabled {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.3);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
+  transform: none;
+}

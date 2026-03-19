@@ -8,6 +8,7 @@ export function RadioProvider({ children }) {
   const [stationName, setStationName] = useState('');
   const [streamUrl, setStreamUrl] = useState('');
   const [visible, setVisible] = useState(false);
+  const [volume, setVolumeSt] = useState(1);
 
   // Restore from localStorage on mount
   useEffect(() => {
@@ -53,6 +54,11 @@ export function RadioProvider({ children }) {
     }
   }, []);
 
+  const setVolume = useCallback((v) => {
+    setVolumeSt(v);
+    if (audioRef.current) audioRef.current.volume = v;
+  }, []);
+
   const stop = useCallback(() => {
     const audio = audioRef.current;
     if (audio) { audio.pause(); audio.src = ''; }
@@ -65,7 +71,7 @@ export function RadioProvider({ children }) {
   }, []);
 
   return (
-    <RadioContext.Provider value={{ playing, stationName, streamUrl, visible, play, togglePlay, stop }}>
+    <RadioContext.Provider value={{ playing, stationName, streamUrl, visible, play, togglePlay, stop, volume, setVolume }}>
       {children}
     </RadioContext.Provider>
   );

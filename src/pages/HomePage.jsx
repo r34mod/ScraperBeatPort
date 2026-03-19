@@ -489,25 +489,24 @@ export default function HomePage() {
 
       {/* Main content */}
       <main className="hp-main">
-        {/* Hero */}
-        <section className="hp-hero">
-          
-          <h1 className="hp-title">MUSIC SCRAPER</h1>
-          <p className="hp-subtitle">WORLDWIDE</p>
-        </section>
-
-        {/* Live Radio Card — Ibiza Style */}
+        {/* Featured Hero Banner */}
         <section className="hp-live-card">
           <div className="hp-live-bg">
             <img src="https://www.dropbox.com/scl/fi/bozhyqy2kss1fgqn2bqmk/IbizaVibesRadio.png?rlkey=cifib7q9pzd6ythh9s63qaa54&st=z55tcjbg&dl=1" alt="Ibiza Palms" aria-hidden="true" />
+            <div className="hp-live-gradient" />
           </div>
           <div className="hp-live-content">
-            <div className="hp-live-onair">ON AIR NOW</div>
-            <div className="hp-live-title">BEST OF ELECTRONIC LIVE MUSIC</div>
-            <div className="hp-live-artists">Various Artists</div>
+            <div className="hp-live-badges">
+              <span className="hp-badge-featured">FEATURED</span>
+              <span className="hp-badge-quality">HI-REC AUDIO</span>
+            </div>
+            <h2 className="hp-live-title">BEST OF ELECTRONIC<br />LIVE MUSIC</h2>
+            <p className="hp-live-subtitle">The definitive collection of underground electronic music,<br />streamed live from the world's top stages.</p>
             <div className="hp-live-btns">
-              <a href="https://www.youtube.com/watch?v=zK5mjww6CFQ" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-main">Listen</a>
-              <a href="#" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-secondary">Radio Shows</a>
+              <a href="https://www.youtube.com/watch?v=zK5mjww6CFQ" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-main">
+                <span>▶</span> PLAY NOW
+              </a>
+              <a href="#" className="hp-live-btn hp-live-btn-secondary">ADD TO LIBRARY</a>
             </div>
           </div>
         </section>
