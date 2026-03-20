@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   IconMusic,
   IconPlaylist,
@@ -49,6 +49,32 @@ export default function Layout() {
     if (dropdownOpen) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [dropdownOpen]);
+
+  // SoundCloud Widget API initialization
+  useEffect(() => {
+    if (!radio.scEmbed) {
+      radio.scWidgetRef.current = null;
+      return;
+    }
+    // Wait a tick for the iframe to render
+    const t = setTimeout(() => {
+      const iframe = radio.scIframeRef.current;
+      if (!iframe || !window.SC?.Widget) return;
+      const w = window.SC.Widget(iframe);
+      radio.scWidgetRef.current = w;
+      w.bind(window.SC.Widget.Events.READY, () => {
+        w.getCurrentSound((s) => {
+          if (s) radio.setScTrackTitle(s.title || '');
+        });
+      });
+      w.bind(window.SC.Widget.Events.PLAY, () => {
+        w.getCurrentSound((s) => {
+          if (s) radio.setScTrackTitle(s.title || '');
+        });
+      });
+    }, 600);
+    return () => clearTimeout(t);
+  }, [radio.scEmbed]);
 
   const handleLogout = () => {
     clear();
@@ -209,8 +235,63 @@ export default function Layout() {
         <Outlet />
       </div>
 
-      {/* Radio Footer Player */}
-      {radio.visible && (
+      {/* Radio / SoundCloud Footer Player */}
+      {radio.visible && radio.scEmbed ? (
+        <div className="radio-footer radio-footer--sc">
+          {/* Hidden SC iframe */}
+          <iframe
+            ref={radio.scIframeRef}
+            style={{ position: 'absolute', width: 0, height: 0, border: 'none', overflow: 'hidden' }}
+            scrolling="no"
+            frameBorder="no"
+            allow="autoplay"
+            src={radio.scEmbed}
+            title="SoundCloud Player"
+          />
+
+          {/* Left: artwork + label */}
+          <div className="radio-footer-info">
+            <div className="radio-footer-thumb radio-footer-thumb--sc">
+              {radio.scImg ? (
+                <img src={radio.scImg} alt="" className="radio-footer-sc-art" />
+              ) : (
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M11.56 3.45c.27-.16.6.03.6.34v16.42a.38.38 0 0 1-.6.34L6.04 17H2.5A1.5 1.5 0 0 1 1 15.5v-7A1.5 1.5 0 0 1 2.5 7h3.54l5.52-3.55ZM20.5 12a6.5 6.5 0 0 0-2.28-4.95.75.75 0 0 0-1.01 1.1A5 5 0 0 1 19 12a5 5 0 0 1-1.79 3.84.75.75 0 0 0 1.01 1.11A6.5 6.5 0 0 0 20.5 12Z"/></svg>
+              )}
+            </div>
+            <div className="radio-footer-meta">
+              <div className="radio-footer-name">{radio.scTrackTitle || radio.scLabel}</div>
+              <div className="radio-footer-status">
+                <span className="radio-footer-live-dot radio-footer-sc-dot" />
+                SoundCloud
+              </div>
+            </div>
+          </div>
+
+          {/* Center: prev / play|pause / next */}
+          <div className="radio-footer-controls">
+            <button className="radio-footer-skip" onClick={radio.scPrev} aria-label="Anterior">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="19,20 9,12 19,4"/><rect x="5" y="4" width="2" height="16"/></svg>
+            </button>
+            <button className="radio-footer-play" onClick={radio.toggleSC} aria-label={radio.scPlaying ? 'Pausar' : 'Reproducir'}>
+              {radio.scPlaying ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+              )}
+            </button>
+            <button className="radio-footer-skip" onClick={radio.scNext} aria-label="Siguiente">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,4 15,12 5,20"/><rect x="17" y="4" width="2" height="16"/></svg>
+            </button>
+          </div>
+
+          {/* Right: close */}
+          <div className="radio-footer-right">
+            <button className="radio-footer-close" onClick={radio.stopSC} title="Cerrar SoundCloud">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      ) : radio.visible && (
         <div className="radio-footer">
           {/* Left: station identity */}
           <div className="radio-footer-info">

@@ -97,7 +97,7 @@ define(['./workbox-21a80088'], (function (workbox) { 'use strict';
     "revision": "49daa2c6a87dae15a8f278e1a7e22a62"
   }, {
     "url": "index.html",
-    "revision": "c3fe488c2a64573e8a94ffba15d1f662"
+    "revision": "4c10d375695ae5a2d986c02e31d65f8d"
   }, {
     "url": "beatport.html",
     "revision": "9c9b58cb4a32928d63a6dc064c3516f9"
@@ -126,10 +126,10 @@ define(['./workbox-21a80088'], (function (workbox) { 'use strict';
     "url": "assets/workbox-window.prod.es5-BIl4cyR9.js",
     "revision": null
   }, {
-    "url": "assets/index-Di5e1tuo.js",
+    "url": "assets/index-CjYDE9KL.css",
     "revision": null
   }, {
-    "url": "assets/index-C4z_b1WC.css",
+    "url": "assets/index-B4ugCezV.js",
     "revision": null
   }, {
     "url": "icons/icon-192x192.png",

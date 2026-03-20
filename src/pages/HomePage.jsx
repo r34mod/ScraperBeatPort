@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { STATIONS } from '../data/stations';
+import { useRadio } from '../context/RadioContext';
 import RadioTuner from '../components/RadioTuner';
 import './HomePage.css';
 
@@ -306,12 +307,12 @@ const UPCOMING_SHOWS = [
 ];
 
 function UpcomingShows() {
+  const radio = useRadio();
   const trackRef = useRef(null);
   const dragRef = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false });
   const [current, setCurrent] = useState(0);
   const [showDrag, setShowDrag] = useState(false);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
-  const [activeEmbed, setActiveEmbed] = useState(null); // { embed, embedLabel, accent }
   const total = UPCOMING_SHOWS.length;
 
   const updateCurrent = () => {
@@ -371,7 +372,7 @@ function UpcomingShows() {
               if (dragRef.current.moved) { e.preventDefault(); return; }
               if (s.embed) {
                 e.preventDefault();
-                setActiveEmbed({ embed: s.embed, embedLabel: s.embedLabel, accent: s.accent });
+                radio.playSC(s.embed, s.embedLabel, s.img);
               }
             }}
             draggable={false}
@@ -401,27 +402,6 @@ function UpcomingShows() {
         <div className="hp-shows-drag" style={{ left: dragPos.x, top: dragPos.y }}>DRAG</div>
       )}
 
-      {/* SoundCloud embed modal */}
-      {activeEmbed && (
-        <div className="hp-sc-modal" onClick={() => setActiveEmbed(null)}>
-          <div className="hp-sc-modal-box" onClick={e => e.stopPropagation()}>
-            <div className="hp-sc-modal-header" style={{ '--sc-accent': activeEmbed.accent }}>
-              <span className="hp-sc-modal-label">{activeEmbed.embedLabel}</span>
-              <button className="hp-sc-modal-close" onClick={() => setActiveEmbed(null)} aria-label="Cerrar">×</button>
-            </div>
-            <iframe
-              width="100%"
-              height="300"
-              scrolling="no"
-              frameBorder="no"
-              allow="autoplay"
-              src={activeEmbed.embed}
-              title={activeEmbed.embedLabel}
-            />
-          </div>
-        </div>
-      )}
-
       {/* Footer: counter + arrows */}
       <div className="hp-shows-footer">
         <span className="hp-shows-counter">
@@ -442,6 +422,7 @@ function UpcomingShows() {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const radio = useRadio();
   const [platformIdx, setPlatformIdx] = useState(0);
   const [trackCount, setTrackCount] = useState(22);
   const [trackCountR, setTrackCountR] = useState(151);
@@ -522,6 +503,9 @@ export default function HomePage() {
             src="https://velvetcake.soundcloud.com/banner/Madrid/This%20week"
           />
         </section>
+
+        {/* Now Playing indicator */}
+
 
         {/* Radio Tuner */}
         <RadioTuner />

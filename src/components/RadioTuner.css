@@ -236,6 +236,22 @@
   color: rgba(255,255,255,0.3);
   font-style: italic;
 }
+.rt-eq-enable {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #00d4ff;
+  background: rgba(0,212,255,0.1);
+  border: 1px solid rgba(0,212,255,0.25);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.rt-eq-enable:hover {
+  background: rgba(0,212,255,0.2);
+}
 
 /* Band sliders row */
 .rt-eq-bands {

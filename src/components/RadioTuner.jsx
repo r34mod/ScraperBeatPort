@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { STATIONS } from '../data/stations';
+import { useRadio } from '../context/RadioContext';
 import './RadioTuner.css';
 
 const EQ_BANDS = [
@@ -21,54 +22,50 @@ const PRESETS = {
 };
 
 export default function RadioTuner() {
-  const [stationIndex, setStationIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const radio = useRadio();
+  const [stationIndex, setStationIndex] = useState(() => {
+    if (radio.streamUrl) {
+      const idx = STATIONS.findIndex(s => s.url === radio.streamUrl);
+      if (idx >= 0) return idx;
+    }
+    return 0;
+  });
   const [knobDeg, setKnobDeg] = useState(0);
-  const [gains, setGains] = useState(PRESETS['Studio Monitor'].slice());
+  const [gains, setGains] = useState(radio.eqGains.slice());
   const [activePreset, setActivePreset] = useState('Studio Monitor');
 
-  const audioRef = useRef(null);
   const knobRef = useRef(null);
   const isDragging = useRef(false);
-  const audioCtxRef = useRef(null);
-  const filtersRef = useRef([]);
-  const sourceRef = useRef(null);
 
-  // Build audio graph once
-  const buildGraph = useCallback(() => {
-    if (audioCtxRef.current || !audioRef.current) return;
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    audioCtxRef.current = ctx;
-    const src = ctx.createMediaElementSource(audioRef.current);
-    sourceRef.current = src;
-    const filters = EQ_BANDS.map(({ freq, type }) => {
-      const f = ctx.createBiquadFilter();
-      f.type = type;
-      f.frequency.value = freq;
-      f.Q.value = 1.4;
-      f.gain.value = 0;
-      return f;
-    });
-    filtersRef.current = filters;
-    // Chain: src → f0 → f1 → … → destination
-    src.connect(filters[0]);
-    for (let i = 0; i < filters.length - 1; i++) filters[i].connect(filters[i + 1]);
-    filters[filters.length - 1].connect(ctx.destination);
-    // Apply initial preset
-    PRESETS['Studio Monitor'].forEach((g, i) => { filters[i].gain.value = g; });
-  }, []);
+  const isPlaying = radio.playing && radio.streamUrl === STATIONS[stationIndex]?.url;
 
-  // Sync filter gains whenever gains state changes
+  // Sync filter gains to context whenever local gains change
   useEffect(() => {
-    filtersRef.current.forEach((f, i) => { f.gain.value = gains[i]; });
+    radio.setEqGains(gains);
   }, [gains]);
 
+  // Sync local gains from context (e.g. if changed elsewhere)
+  useEffect(() => {
+    const contextGains = radio.eqGains;
+    setGains(prev => {
+      if (prev.every((g, i) => g === contextGains[i])) return prev;
+      return contextGains.slice();
+    });
+  }, [radio.eqGains]);
+
+  // Enable EQ through context (sets crossOrigin + builds Web Audio graph)
+  const handleEnableEQ = () => {
+    if (!radio.eqEnabled) radio.enableEQ();
+  };
+
   const applyPreset = (name) => {
+    handleEnableEQ();
     setActivePreset(name);
     setGains(PRESETS[name].slice());
   };
 
   const setBand = (idx, val) => {
+    handleEnableEQ();
     setActivePreset('');
     setGains(prev => { const g = prev.slice(); g[idx] = Number(val); return g; });
   };
@@ -116,23 +113,34 @@ export default function RadioTuner() {
     document.addEventListener('touchend', stopDrag);
   };
 
+  // When station index changes while playing this tuner, update the context
   useEffect(() => {
-    if (!audioRef.current) return;
-    audioRef.current.src = current.url;
-    if (isPlaying) audioRef.current.play().catch(() => {});
+    if (radio.playing && radio.streamUrl && STATIONS.some(s => s.url === radio.streamUrl)) {
+      // If the user changes station via tuner while playing, switch stream
+      const prevIdx = STATIONS.findIndex(s => s.url === radio.streamUrl);
+      if (prevIdx !== stationIndex && prevIdx >= 0) {
+        radio.play(current.url, current.name);
+      }
+    }
   }, [stationIndex]);
 
+  // Sync tuner index when context changes from outside (e.g. RadioPage)
+  useEffect(() => {
+    if (radio.streamUrl) {
+      const idx = STATIONS.findIndex(s => s.url === radio.streamUrl);
+      if (idx >= 0 && idx !== stationIndex) {
+        setStationIndex(idx);
+        setKnobDeg((idx / Math.max(STATIONS.length - 1, 1)) * 360);
+      }
+    }
+  }, [radio.streamUrl]);
+
   const togglePlay = async () => {
-    buildGraph();
-    if (audioCtxRef.current?.state === 'suspended') {
-      await audioCtxRef.current.resume();
-    }
     if (isPlaying) {
-      audioRef.current.pause();
+      radio.togglePlay();
     } else {
-      await audioRef.current.play();
+      radio.play(current.url, current.name);
     }
-    setIsPlaying(p => !p);
   };
 
   const freq = (88 + (stationIndex / Math.max(total - 1, 1)) * 20).toFixed(1);
@@ -140,7 +148,6 @@ export default function RadioTuner() {
 
   return (
     <div className="rt-body">
-      <audio ref={audioRef} />
 
       {/* Header */}
       <div className="rt-header">
@@ -202,7 +209,12 @@ export default function RadioTuner() {
       <div className="rt-eq">
         <div className="rt-eq-header">
           <span className="rt-eq-title">Equalizer</span>
-          <span className="rt-eq-preset-name">{activePreset || 'Custom'}</span>
+          {!radio.eqEnabled && (
+            <button className="rt-eq-enable" onClick={handleEnableEQ} title="Activar ecualizador (requiere recarga del stream)">
+              Activar EQ
+            </button>
+          )}
+          <span className="rt-eq-preset-name">{radio.eqEnabled ? (activePreset || 'Custom') : 'OFF'}</span>
         </div>
 
         {/* Band sliders */}

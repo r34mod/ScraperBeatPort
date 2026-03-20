@@ -504,6 +504,32 @@ a { color: inherit; text-decoration: none; }
 }
 .radio-footer-close:hover { color: #ff5252; background: rgba(255,82,82,0.1); }
 
+/* ── SoundCloud footer variant ───────────────────────────────────── */
+.radio-footer--sc {
+  border-top-color: rgba(255,85,0,0.45);
+}
+.radio-footer-thumb--sc {
+  background: rgba(255,85,0,0.15);
+  border-color: rgba(255,85,0,0.3);
+  overflow: hidden;
+}
+.radio-footer-sc-art {
+  width: 100%; height: 100%;
+  object-fit: cover; border-radius: 9px;
+}
+.radio-footer-sc-dot {
+  background: #ff5500;
+  box-shadow: 0 0 5px #ff5500;
+}
+.radio-footer-skip {
+  background: none; border: none;
+  color: rgba(255,255,255,0.55);
+  cursor: pointer; padding: 6px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: color 0.2s, transform 0.15s;
+}
+.radio-footer-skip:hover { color: #ff5500; transform: scale(1.15); }
+
 /* ── Common page styles ──────────────────────────────────────────── */
 .page-content {
   padding-top: 90px; min-height: 100vh; position: relative; z-index: 3;
