@@ -102,9 +102,9 @@ export default function Layout() {
   const userName = prefs.displayName || email?.split('@')[0] || 'Usuario';
 
   const links = [
+    { to: '/discover',        label: 'Playlists',       icon: <IconHeart size={22} stroke={1.7} /> },
     { to: '/beatport',        label: 'Beatport',       icon: <IconMusic size={22} stroke={1.7} /> },
     { to: '/traxsource',      label: 'Traxsource',     icon: <IconPlaylist size={22} stroke={1.7} /> },
-    { to: '/1001tracklists',  label: '1001Tracklists', icon: <IconListCheck size={22} stroke={1.7} /> },
     { to: '/visualice',       label: 'Previsualizar Canciones', icon: <IconChartBar size={22} stroke={1.7} /> },
     { to: '/radio',           label: 'Radio',          icon: <IconRadio size={22} stroke={1.7} /> },
     { to: '/tidal',           label: 'Descarga Musica', icon: <IconDownload size={22} stroke={1.7} /> },
