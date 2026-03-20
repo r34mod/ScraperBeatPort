@@ -641,6 +641,74 @@
   font-size: 0.78rem;
 }
 
+/* ── Now Playing bar ────────────────────────────────────────── */
+.hp-now-playing {
+  margin: 0 auto 18px;
+  max-width: 600px;
+  width: 100%;
+}
+.hp-now-playing-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.18);
+  border-radius: 12px;
+  padding: 12px 20px;
+  backdrop-filter: blur(12px);
+}
+.hp-now-playing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+.hp-now-playing-dot.active {
+  background: #00d4ff;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+  animation: hp-np-pulse 1.5s ease-in-out infinite;
+}
+@keyframes hp-np-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.hp-now-playing-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #00d4ff;
+  text-transform: uppercase;
+}
+.hp-now-playing-name {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hp-now-playing-btn {
+  background: rgba(0, 212, 255, 0.15);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #00d4ff;
+  font-size: 14px;
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+.hp-now-playing-btn:hover {
+  background: rgba(0, 212, 255, 0.25);
+  transform: scale(1.1);
+}
+
 @media (max-width: 768px) {
   .hp-footer-body { padding: 32px 20px 24px; gap: 32px; flex-direction: column; }
   .hp-footer-brand { flex: unset; }
@@ -679,9 +747,45 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 48px 48px 52px;
+  gap: 14px;
+}
+.hp-live-gradient {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to right, rgba(0,0,0,0.78) 35%, rgba(0,0,0,0.15) 100%),
+    linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 55%);
+  z-index: 0;
+}
+.hp-live-badges {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 60px 32px 48px;
+  gap: 8px;
+}
+.hp-badge-featured {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #e91e63;
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.hp-badge-quality {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: rgba(255,255,255,0.9);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  backdrop-filter: blur(6px);
 }
 .hp-live-onair {
   color: #fff;
@@ -692,12 +796,23 @@
   opacity: 0.85;
 }
 .hp-live-title {
-  font-size: 2.8rem;
+  font-size: clamp(1.8rem, 4.5vw, 3rem);
   font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
   color: #fff;
-  margin-bottom: 18px;
-  text-align: center;
-  text-shadow: 0 2px 24px rgba(0,0,0,0.18);
+  margin: 0;
+  text-align: left;
+  line-height: 1.05;
+  text-shadow: 0 4px 32px rgba(0,0,0,0.5);
+  letter-spacing: 0.02em;
+}
+.hp-live-subtitle {
+  font-size: 0.92rem;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 440px;
 }
 .hp-live-artists {
   color: #fff;
@@ -772,18 +887,30 @@
     inset 0 3px 6px 0 rgba(0,0,0,0.1);
 }
 .hp-live-btn-main {
-  background: rgba(0,212,255,0.25);
-  border-color: #00d4ff;
-  border-top: 1px solid #ffffff;
-  box-shadow:
-    0 0 24px 0 rgba(0,212,255,0.5),
-    inset 0 2px 4px 0 rgba(255,255,255,0.6);
+  background: #e91e63;
+  border: 1px solid #e91e63;
+  border-top: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 4px 20px rgba(233,30,99,0.4);
   color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hp-live-btn-main:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: #d81b60;
+  box-shadow: 0 8px 28px rgba(233,30,99,0.55);
 }
 .hp-live-btn-secondary {
-  background: linear-gradient(135deg, rgba(255,255,255,0.13) 0%, rgba(0,212,255,0.07) 100%);
-  border-color: rgba(255,255,255,0.15);
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.35);
   color: #fff;
+  backdrop-filter: blur(8px);
+}
+.hp-live-btn-secondary:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.6);
+  transform: translateY(-2px);
 }
 @media (max-width: 900px) {
   .hp-live-card { min-height: 260px; border-radius: 24px; }

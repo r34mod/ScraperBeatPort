@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { STATIONS } from '../data/stations';
+import { UPCOMING_SHOWS } from '../data/upcomingShows';
+import { useRadio } from '../context/RadioContext';
 import RadioTuner from '../components/RadioTuner';
 import './HomePage.css';
 
@@ -196,122 +198,15 @@ function TrackChart({ points }) {
 const PLATFORMS = ['BEATPORT', 'TRAXSOURCE', '1001TRACKLISTS'];
 const PLATFORM_LINKS = { 'BEATPORT': '/beatport', 'TRAXSOURCE': '/traxsource', '1001TRACKLISTS': '/1001tracklists' };
 
-// ── Upcoming shows data ───────────────────────────────────────────
-const UPCOMING_SHOWS = [
-  {
-    id: 1,
-    dj: 'Main Room',
-    show: 'New Techno Now',
-    venue: 'SoundCloud',
-    time: 'NOW PLAYING',
-    genre: 'Techno',
-    live: true,
-    color: '#1a0a2a',
-    accent: '#6c346c',
-    img: null,
-    url: 'https://soundcloud.com/soundcloud-mainroom/sets/techno-new-techno-now',
-    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A801471273&color=%236c346c&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
-    embedLabel: 'New Techno Now: Techno · Main Room: Dance',
-  },
-  {
-    id: 2,
-    dj: 'Electro Posé',
-    show: 'Afro House - 2026 Mix',
-    venue: 'SoundCloud',
-    time: 'NOW PLAYING',
-    genre: 'Afro House',
-    live: false,
-    color: '#150505',
-    accent: '#150505',
-    img: null,
-    url: 'https://soundcloud.com/electropose/sets/afro-house-2024-mix',
-    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1901558159&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
-    embedLabel: 'Afro House - 2026 Mix · Electro Posé',
-  },
-  {
-    id: 3,
-    dj: 'The Peak',
-    show: 'EDM Next: Level Up',
-    venue: 'SoundCloud',
-    time: 'NOW PLAYING',
-    genre: 'EDM',
-    live: false,
-    color: '#1a0a2a',
-    accent: '#6c346c',
-    img: null,
-    url: 'https://soundcloud.com/soundcloud-the-peak/sets/level-up-edm-next',
-    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A728636178&color=%236c346c&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
-    embedLabel: 'EDM Next: Level Up · The Peak: EDM',
-  },
-  {
-    id: 4,
-    dj: 'Tale Giorgione',
-    show: 'REGGETON 2026 MIX',
-    venue: 'SoundCloud',
-    time: 'NOW PLAYING',
-    genre: 'Reggaeton',
-    live: false,
-    color: '#1a0a0a',
-    accent: '#ff3d3d',
-    img: null,
-    url: 'https://soundcloud.com/tale-giorgione/sets/reggeton-2026-mix-reggaeton',
-    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A2178319835&color=%236c346c&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
-    embedLabel: 'REGGETON 2026 🔥🔥🔥 MIX REGGAETON 2025 · Tale Giorgione',
-  },
-  {
-    id: 5,
-    dj: 'M3TAMORS!K',
-    show: 'HARDWAVE MEGA MIX',
-    venue: 'SoundCloud',
-    time: 'NOW PLAYING',
-    genre: 'Hardwave',
-    live: false,
-    color: '#150505',
-    accent: '#150505',
-    img: null,
-    url: 'https://soundcloud.com/isaac-sherwood/sets/hardwave-mega-mix',
-    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A2084131233&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
-    embedLabel: 'HARDWAVE MEGA MIX · M3TAMORS!K',
-  },
-  {
-    id: 6,
-    dj: 'HKSRвиски',
-    show: 'Another Rally house mix',
-    venue: 'SoundCloud',
-    time: 'NOW PLAYING',
-    genre: 'House',
-    live: false,
-    color: '#150505',
-    accent: '#150505',
-    img: null,
-    url: 'https://soundcloud.com/martin-gecler-28718172/sets/rally-house-thicker-mix',
-    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1838734482&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
-    embedLabel: 'Another Rally house mix · HKSRвиски',
-  },
-  {
-    id: 8,
-    dj: 'Kevin Patrick',
-    show: 'IBIZA Summer Mix 2025',
-    venue: 'SoundCloud',
-    time: 'NOW PLAYING',
-    genre: 'Deep House / Tech House / Afrohouse',
-    live: false,
-    color: '#150505',
-    accent: '#150505',
-    img: null,
-    url: 'https://soundcloud.com/user-972968419/sets/ibiza-summer-mix-2025-deep',
-    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1976326144&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
-    embedLabel: 'IBIZA Summer Mix 2025 · Kevin Patrick',
-  },
-];
+// UPCOMING_SHOWS is imported from src/data/upcomingShows.js
 
 function UpcomingShows() {
+  const radio = useRadio();
   const trackRef = useRef(null);
   const dragRef = useRef({ active: false, startX: 0, scrollLeft: 0, moved: false });
   const [current, setCurrent] = useState(0);
   const [showDrag, setShowDrag] = useState(false);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
-  const [activeEmbed, setActiveEmbed] = useState(null); // { embed, embedLabel, accent }
   const total = UPCOMING_SHOWS.length;
 
   const updateCurrent = () => {
@@ -371,16 +266,19 @@ function UpcomingShows() {
               if (dragRef.current.moved) { e.preventDefault(); return; }
               if (s.embed) {
                 e.preventDefault();
-                setActiveEmbed({ embed: s.embed, embedLabel: s.embedLabel, accent: s.accent });
+                radio.playSC(s.embed, s.embedLabel, s.img);
               }
             }}
             draggable={false}
           >
             <div
               className="hp-show-artwork"
-              style={{ background: `linear-gradient(160deg, ${s.color} 0%, color-mix(in srgb, ${s.accent} 40%, ${s.color}) 100%)` }}
+              style={s.img
+                ? { backgroundImage: `url(${s.img})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                : { background: `linear-gradient(160deg, ${s.color} 0%, color-mix(in srgb, ${s.accent} 40%, ${s.color}) 100%)` }
+              }
             >
-              <span className="hp-show-initials-lg">{s.dj.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>
+              {!s.img && <span className="hp-show-initials-lg">{s.dj.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>}
               <span className="hp-show-link-icon">{s.embed ? '▶' : '↗'}</span>
               {s.live && <span className="hp-show-live-badge">● LIVE</span>}
               {s.embed && <span className="hp-show-sc-badge">SC</span>}
@@ -396,27 +294,6 @@ function UpcomingShows() {
       {/* Drag cursor bubble */}
       {showDrag && (
         <div className="hp-shows-drag" style={{ left: dragPos.x, top: dragPos.y }}>DRAG</div>
-      )}
-
-      {/* SoundCloud embed modal */}
-      {activeEmbed && (
-        <div className="hp-sc-modal" onClick={() => setActiveEmbed(null)}>
-          <div className="hp-sc-modal-box" onClick={e => e.stopPropagation()}>
-            <div className="hp-sc-modal-header" style={{ '--sc-accent': activeEmbed.accent }}>
-              <span className="hp-sc-modal-label">{activeEmbed.embedLabel}</span>
-              <button className="hp-sc-modal-close" onClick={() => setActiveEmbed(null)} aria-label="Cerrar">×</button>
-            </div>
-            <iframe
-              width="100%"
-              height="300"
-              scrolling="no"
-              frameBorder="no"
-              allow="autoplay"
-              src={activeEmbed.embed}
-              title={activeEmbed.embedLabel}
-            />
-          </div>
-        </div>
       )}
 
       {/* Footer: counter + arrows */}
@@ -439,6 +316,7 @@ function UpcomingShows() {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const radio = useRadio();
   const [platformIdx, setPlatformIdx] = useState(0);
   const [trackCount, setTrackCount] = useState(22);
   const [trackCountR, setTrackCountR] = useState(151);
@@ -486,25 +364,24 @@ export default function HomePage() {
 
       {/* Main content */}
       <main className="hp-main">
-        {/* Hero */}
-        <section className="hp-hero">
-          
-          <h1 className="hp-title">MUSIC SCRAPER</h1>
-          <p className="hp-subtitle">WORLDWIDE</p>
-        </section>
-
-        {/* Live Radio Card — Ibiza Style */}
+        {/* Featured Hero Banner */}
         <section className="hp-live-card">
           <div className="hp-live-bg">
             <img src="https://www.dropbox.com/scl/fi/bozhyqy2kss1fgqn2bqmk/IbizaVibesRadio.png?rlkey=cifib7q9pzd6ythh9s63qaa54&st=z55tcjbg&dl=1" alt="Ibiza Palms" aria-hidden="true" />
+            <div className="hp-live-gradient" />
           </div>
           <div className="hp-live-content">
-            <div className="hp-live-onair">ON AIR NOW</div>
-            <div className="hp-live-title">BEST OF ELECTRONIC LIVE MUSIC</div>
-            <div className="hp-live-artists">Various Artists</div>
+            <div className="hp-live-badges">
+              <span className="hp-badge-featured">FEATURED</span>
+              <span className="hp-badge-quality">HI-REC AUDIO</span>
+            </div>
+            <h2 className="hp-live-title">BEST OF ELECTRONIC<br />LIVE MUSIC</h2>
+            <p className="hp-live-subtitle">The definitive collection of underground electronic music,<br />streamed live from the world's top stages.</p>
             <div className="hp-live-btns">
-              <a href="https://www.youtube.com/watch?v=zK5mjww6CFQ" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-main">Listen</a>
-              <a href="#" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-secondary">Radio Shows</a>
+              <a href="https://www.youtube.com/watch?v=zK5mjww6CFQ" target="_blank" rel="noopener" className="hp-live-btn hp-live-btn-main">
+                <span>▶</span> PLAY NOW
+              </a>
+              <a href="#" className="hp-live-btn hp-live-btn-secondary">ADD TO LIBRARY</a>
             </div>
           </div>
         </section>
@@ -520,6 +397,9 @@ export default function HomePage() {
             src="https://velvetcake.soundcloud.com/banner/Madrid/This%20week"
           />
         </section>
+
+        {/* Now Playing indicator */}
+
 
         {/* Radio Tuner */}
         <RadioTuner />

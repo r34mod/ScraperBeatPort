@@ -1,0 +1,265 @@
+/* ════════════════════════════════════════════════════════════════
+   DiscoverPage – Discover New Soundscapes
+   ════════════════════════════════════════════════════════════════ */
+
+.discover-page {
+  padding: 100px 40px 140px;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 3;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.discover-header {
+  margin-bottom: 28px;
+}
+.discover-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+/* ── Genre filter pills ──────────────────────────────────────── */
+.discover-filters {
+  margin-bottom: 32px;
+  overflow: hidden;
+}
+.discover-filters-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.discover-filters-scroll::-webkit-scrollbar {
+  display: none;
+}
+.discover-pill {
+  flex-shrink: 0;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+.discover-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.discover-pill.active {
+  background: #ff1744;
+  color: #fff;
+  border-color: #ff1744;
+  box-shadow: 0 0 20px rgba(255, 23, 68, 0.35);
+}
+
+/* ── Card grid ───────────────────────────────────────────────── */
+.discover-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* ── Card ────────────────────────────────────────────────────── */
+.discover-card {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  text-align: left;
+  background: #1a1a1a;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.discover-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.discover-card:focus-visible {
+  outline: 2px solid #ff1744;
+  outline-offset: 3px;
+}
+
+/* Background image */
+.discover-card-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.5s ease;
+}
+.discover-card:hover .discover-card-img {
+  transform: scale(1.08);
+}
+
+/* Gradient overlay */
+.discover-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.1) 0%,
+    rgba(0, 0, 0, 0.25) 40%,
+    rgba(0, 0, 0, 0.82) 100%
+  );
+  transition: opacity 0.3s ease;
+}
+.discover-card:hover .discover-card-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.05) 0%,
+    rgba(0, 0, 0, 0.2) 40%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+}
+
+/* Badges */
+.discover-card-badges {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+.discover-badge {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.discover-badge.live {
+  background: #ff1744;
+  color: #fff;
+}
+.discover-badge.sc {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Card info at bottom */
+.discover-card-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.discover-card-genre {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+}
+.discover-card-dj {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Playing state ───────────────────────────────────────────── */
+.discover-card.playing {
+  box-shadow: 0 0 0 2px var(--card-accent, #ff1744), 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+.discover-card.playing .discover-card-overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.3) 40%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+}
+
+/* EQ bars indicator */
+.discover-card-playing {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+  z-index: 5;
+}
+.eq-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--card-accent, #ff1744);
+  animation: eqPulse 0.8s ease-in-out infinite alternate;
+}
+.eq-bar:nth-child(1) { height: 60%; animation-delay: 0s; }
+.eq-bar:nth-child(2) { height: 100%; animation-delay: 0.15s; }
+.eq-bar:nth-child(3) { height: 40%; animation-delay: 0.3s; }
+.eq-bar:nth-child(4) { height: 80%; animation-delay: 0.45s; }
+
+@keyframes eqPulse {
+  0%   { transform: scaleY(0.4); }
+  100% { transform: scaleY(1); }
+}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.discover-empty {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1rem;
+  margin-top: 60px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .discover-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .discover-page {
+    padding: 90px 16px 140px;
+  }
+  .discover-title {
+    font-size: 1.6rem;
+  }
+  .discover-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .discover-card-genre {
+    font-size: 1rem;
+  }
+  .discover-card-dj {
+    font-size: 0.72rem;
+  }
+  .discover-card-info {
+    padding: 14px;
+  }
+}
+@media (max-width: 480px) {
+  .discover-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .discover-pill {
+    padding: 6px 14px;
+    font-size: 0.75rem;
+  }
+}

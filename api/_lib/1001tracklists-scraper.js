@@ -1,9 +1,9 @@
 const express = require('express');
 const puppeteer = require('puppeteer');
-const { createObjectCsvStringifier } = require('csv-writer');
 const fs = require('fs');
 const path = require('path');
-const { getRandomUserAgent, handleCookieConsent, delay, getDownloadsDir, uploadCsvToStorage } = require('./scraper-utils');
+const { getRandomUserAgent, handleCookieConsent, delay, getDownloadsDir } = require('./scraper-utils');
+const { generateAndStoreCsv } = require('./services/csv-service');
 const { validate, schemas } = require('./validation');
 
 const router = express.Router();
@@ -307,14 +307,14 @@ async function scrape1001Tracklists(searchType, query, event) {
     }
 }
 
-// Función para generar CSV — sube a Supabase Storage (o disco local como fallback)
+// Función para generar CSV — delega a csv-service (Supabase Storage o disco local como fallback)
 async function generateTracklistsCSV(tracklists, searchType, query) {
     const timestamp = new Date().toISOString().split('T')[0];
     const searchTerm = query ? query.replace(/[^a-zA-Z0-9]/g, '_') : searchType;
     const fileName = `1001tracklists_${searchType}_${searchTerm}_${timestamp}.csv`;
-
-    const stringifier = createObjectCsvStringifier({
-        header: [
+    return generateAndStoreCsv({
+        records: tracklists,
+        headers: [
             { id: 'position', title: 'Posicion' },
             { id: 'title', title: 'Titulo' },
             { id: 'artist', title: 'Artista' },
@@ -325,33 +325,11 @@ async function generateTracklistsCSV(tracklists, searchType, query) {
             { id: 'url', title: 'URL' },
             { id: 'platform', title: 'Plataforma' },
         ],
+        storagePath: `1001tracklists/${searchType}/${fileName}`,
+        localDir: path.join(getDownloadsDir(), '1001tracklists'),
+        fileName,
+        fallbackUrl: `/api/1001tracklists/download/${fileName}`,
     });
-    const csvContent = stringifier.getHeaderString() + stringifier.stringifyRecords(tracklists);
-
-    // Intentar subir a Supabase Storage
-    let downloadUrl = null;
-    try {
-        const storagePath = `1001tracklists/${searchType}/${fileName}`;
-        downloadUrl = await uploadCsvToStorage(csvContent, storagePath);
-        if (downloadUrl) console.log(`☁️  CSV subido a Supabase Storage: ${storagePath}`);
-    } catch (e) {
-        console.warn('⚠️  No se pudo subir CSV a Supabase Storage:', e.message);
-    }
-
-    // Fallback: escribir en disco (desarrollo local / sin Supabase)
-    if (!downloadUrl) {
-        const downloadsDir = getDownloadsDir();
-        const tracklistsDir = path.join(downloadsDir, '1001tracklists');
-        if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir, { recursive: true });
-        if (!fs.existsSync(tracklistsDir)) fs.mkdirSync(tracklistsDir, { recursive: true });
-        const filePath = path.join(tracklistsDir, fileName);
-        fs.writeFileSync(filePath, csvContent, 'utf-8');
-        downloadUrl = `/api/1001tracklists/download/${fileName}`;
-        console.log(`💾 CSV guardado localmente: ${filePath}`);
-    }
-
-    console.log(`✅ CSV listo: ${fileName} — ${tracklists.length} tracklists`);
-    return { fileName, downloadUrl };
 }
 
 // Rutas API

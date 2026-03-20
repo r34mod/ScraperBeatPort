@@ -3,24 +3,9 @@ const puppeteer = require('puppeteer');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs');
 const path = require('path');
+const { BEATPORT_GENRES } = require('./constants/beatport-genres');
 
 const router = express.Router();
-
-// Géneros disponibles en Beatport con sus URLs
-const BEATPORT_GENRES = {
-    'house': 'https://www.beatport.com/genre/house/5/top-100',
-    'techno': 'https://www.beatport.com/genre/techno/6/top-100',
-    'tech-house': 'https://www.beatport.com/genre/tech-house/11/top-100',
-    'deep-house': 'https://www.beatport.com/genre/deep-house/12/top-100',
-    'progressive-house': 'https://www.beatport.com/genre/progressive-house/15/top-100',
-    'electro-house': 'https://www.beatport.com/genre/electro-house/17/top-100',
-    'minimal': 'https://www.beatport.com/genre/minimal-deep-tech/14/top-100',
-    'trance': 'https://www.beatport.com/genre/trance/7/top-100',
-    'progressive-trance': 'https://www.beatport.com/genre/psy-trance/13/top-100',
-    'drum-and-bass': 'https://www.beatport.com/genre/drum-bass/1/top-100',
-    'dubstep': 'https://www.beatport.com/genre/dubstep/18/top-100',
-    'trap': 'https://www.beatport.com/genre/trap-future-bass/87/top-100'
-};
 
 // Función para hacer scraping real de una página de género específico
 async function scrapeBeatportGenre(genreUrl, genreName) {

@@ -68,6 +68,28 @@ export default function CommunityPage() {
   const [playerTrack, setPlayerTrack] = useState(null);
   const [videoId, setVideoId] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [listView, setListView] = useState('grid');
+
+  const ART_GRADIENTS = {
+    'Afro House':             'linear-gradient(135deg,#1a0800 0%,#3d1500 100%)',
+    'Deep House':             'linear-gradient(135deg,#001318 0%,#002535 100%)',
+    'House':                  'linear-gradient(135deg,#12001e 0%,#28004a 100%)',
+    'Tech House':             'linear-gradient(135deg,#001208 0%,#003018 100%)',
+    'Techno':                 'linear-gradient(135deg,#050510 0%,#0f0f24 100%)',
+    'Trance':                 'linear-gradient(135deg,#00011a 0%,#000338 100%)',
+    'Melodic House & Techno': 'linear-gradient(135deg,#080018 0%,#14002e 100%)',
+    'Drum & Bass':            'linear-gradient(135deg,#1a0000 0%,#380500 100%)',
+    'Dance Pop':              'linear-gradient(135deg,#1a0015 0%,#350028 100%)',
+    'Electro':                'linear-gradient(135deg,#001015 0%,#002030 100%)',
+    'Electro House':          'linear-gradient(135deg,#001018 0%,#002038 100%)',
+    'Latin House':            'linear-gradient(135deg,#1a0a00 0%,#3a1800 100%)',
+    'Minimal':                'linear-gradient(135deg,#080808 0%,#181818 100%)',
+    'Nu Disco':               'linear-gradient(135deg,#1a0018 0%,#350035 100%)',
+    'Organic House':          'linear-gradient(135deg,#050e00 0%,#0e2400 100%)',
+    'Progressive House':      'linear-gradient(135deg,#000818 0%,#001030 100%)',
+    'Tribal House':           'linear-gradient(135deg,#120200 0%,#280800 100%)',
+  };
+  const getArtGradient = (genre) => ART_GRADIENTS[genre] || 'linear-gradient(135deg,#0d0d14 0%,#1a1a28 100%)';
 
   // ── Fetch listing ────────────────────────────────────────────────────────
   const fetchFiles = useCallback(async () => {
@@ -276,44 +298,94 @@ export default function CommunityPage() {
     });
   }, [modalTracks, modalSearch]);
 
+  const SIDEBAR_NAV = [
+    {
+      id: 'feed', label: 'Feed', tab: 'all',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>,
+    },
+    {
+      id: 'trending', label: 'Trending', tab: 'all',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+    },
+    {
+      id: 'uploads', label: 'Uploads', tab: 'mine',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>,
+    },
+    {
+      id: 'vault', label: 'My Vault', tab: 'mine',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M12 9v0m0 6v0m-3-3h0m6 0h0"/></svg>,
+    },
+  ];
+  const [sidebarActive, setSidebarActive] = useState('trending');
+
   return (
+    <div className="comm-layout">
+
+      {/* ── Sidebar ── */}
+      <aside className="comm-sidebar">
+        <div className="comm-sidebar-brand">
+          <span className="comm-sidebar-logo">SETTINGS</span>
+          <span className="comm-sidebar-tagline">Djs Community</span>
+        </div>
+
+        <nav className="comm-sidebar-nav">
+          {SIDEBAR_NAV.map(item => (
+            <button
+              key={item.id}
+              className={`comm-sidebar-item${sidebarActive === item.id ? ' active' : ''}`}
+              onClick={() => {
+                setSidebarActive(item.id);
+                setActiveTab(item.tab);
+              }}
+            >
+              <span className="comm-sidebar-item-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="comm-sidebar-footer">
+          <button
+            className="comm-sidebar-new-btn"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Playlist
+          </button>
+        </div>
+      </aside>
+
     <div className="comm-page">
+
+      {/* ── Header ── */}
       <div className="comm-header">
-        <h1 className="comm-title">Comunidad</h1>
-        <p className="comm-subtitle">Comparte tu playlist con la comunidad y descubre los de otros</p>
+        <h1 className="comm-title">Sync Your Library</h1>
+        <p className="comm-subtitle">Contribute to the vault by importing your metadata. Drag and drop your curated CSV exports here.</p>
       </div>
 
-      {/* ── Upload Card ─────────────────────────────────────────────── */}
+      {/* ── Upload Card ── */}
       <section className="comm-upload-card">
-        <h2 className="comm-section-title">Subir tu lista</h2>
-
         <div
-          className={`comm-dropzone ${dragOver ? 'dragover' : ''} ${uploadFile ? 'has-file' : ''}`}
+          className={`comm-dropzone${dragOver ? ' dragover' : ''}`}
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => !uploadFile && fileInputRef.current?.click()}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            style={{ display: 'none' }}
-            onChange={handleFileInput}
-          />
-          {uploadFile ? (
-            <div className="comm-dropzone-info">
-              <span className="comm-dz-icon">✓</span>
-              <span className="comm-dz-name">{uploadFile.name}</span>
-              <span className="comm-dz-count">{uploadFile.rowCount} tracks detectados</span>
-            </div>
-          ) : (
-            <div className="comm-dropzone-placeholder">
-              <span className="comm-dz-icon">📁</span>
-              <span>Arrastra tu CSV aquí o haz clic para seleccionar</span>
-              <span className="comm-dz-hint">Solo archivos .csv · Máx 5 MB</span>
-            </div>
-          )}
+          <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleFileInput} />
+          <div className="comm-dz-icon-wrap">
+            {uploadFile ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <path d="M12 18v-6"/><path d="M9 15l3-3 3 3"/>
+              </svg>
+            )}
+          </div>
+          <span className="comm-dz-label">{uploadFile ? uploadFile.name : 'Drop playlist CSV here'}</span>
+          <span className="comm-dz-hint">{uploadFile ? `${uploadFile.rowCount} tracks detectados` : 'Supports Rekordbox, Serato, and iTunes exported lists'}</span>
         </div>
 
         {uploadMsg.text && (
@@ -324,14 +396,7 @@ export default function CommunityPage() {
           <div className="comm-upload-form">
             <div className="comm-form-group">
               <label className="comm-label">Nombre de la lista *</label>
-              <input
-                className="comm-input"
-                type="text"
-                placeholder="Ej: House Top 100 Marzo 2026"
-                value={listName}
-                onChange={e => setListName(e.target.value)}
-                maxLength={100}
-              />
+              <input className="comm-input" type="text" placeholder="Ej: House Top 100 Marzo 2026" value={listName} onChange={e => setListName(e.target.value)} maxLength={100} />
             </div>
             <div className="comm-form-row--2">
               <div className="comm-form-group">
@@ -351,100 +416,97 @@ export default function CommunityPage() {
             </div>
             <div className="comm-form-group">
               <label className="comm-label">Descripción (opcional)</label>
-              <textarea
-                className="comm-textarea"
-                placeholder="Fecha de extracción, notas..."
-                value={listDescription}
-                onChange={e => setListDescription(e.target.value)}
-                maxLength={300}
-                rows={2}
-              />
+              <textarea className="comm-textarea" placeholder="Fecha de extracción, notas..." value={listDescription} onChange={e => setListDescription(e.target.value)} maxLength={300} rows={2} />
             </div>
-            <button
-              className={`comm-upload-btn ${uploading ? 'loading' : ''}`}
-              onClick={handleUpload}
-              disabled={uploading}
-            >
-              {uploading ? 'Subiendo...' : '↑ Publicar lista'}
-            </button>
           </div>
         )}
+
+        <button
+          className="comm-upload-btn"
+          onClick={uploadFile ? handleUpload : () => fileInputRef.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? 'Subiendo...' : 'UPLOAD'}
+        </button>
       </section>
 
-      {/* ── Tabs + Filters ─────────────────────────────────────────── */}
-      <div className="comm-controls">
-        <div className="comm-tabs">
-          <button
-            className={`comm-tab ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all')}
-          >
-            Comunidad{files.length > 0 && <span className="comm-tab-count">{files.length}</span>}
-          </button>
-          <button
-            className={`comm-tab ${activeTab === 'mine' ? 'active' : ''}`}
-            onClick={() => setActiveTab('mine')}
-          >
-            Mis listas{files.filter(f => f.user_id === userId).length > 0 && (
-              <span className="comm-tab-count">{files.filter(f => f.user_id === userId).length}</span>
-            )}
-          </button>
+      {/* ── Section Header ── */}
+      <div className="comm-section-header">
+        <div className="comm-section-header-left">
+          <h2 className="comm-section-label">Community Playlists</h2>
+          <span className="comm-live-badge">LIVE SYNC</span>
         </div>
-
-        <div className="comm-filters">
-          <input
-            className="comm-filter-input"
-            type="text"
-            placeholder="Buscar listas..."
-            value={filterSearch}
-            onChange={e => setFilterSearch(e.target.value)}
-          />
-          <select className="comm-filter-select" value={filterGenre} onChange={e => setFilterGenre(e.target.value)}>
-            <option value="">Todos los géneros</option>
-            {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
-          </select>
-          <select className="comm-filter-select" value={filterPlatform} onChange={e => setFilterPlatform(e.target.value)}>
-            <option value="">Todas las plataformas</option>
-            {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
+        <div className="comm-section-header-right">
+          <div className="comm-view-toggle">
+            <button className={`comm-view-btn${listView === 'grid' ? ' active' : ''}`} onClick={() => setListView('grid')} title="Grid view">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </button>
+            <button className={`comm-view-btn${listView === 'list' ? ' active' : ''}`} onClick={() => setListView('list')} title="List view">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+          </div>
+          <div className="comm-tabs">
+            <button className={`comm-tab${activeTab === 'all' ? ' active' : ''}`} onClick={() => setActiveTab('all')}>
+              Comunidad{files.length > 0 && <span className="comm-tab-count"> {files.length}</span>}
+            </button>
+            <button className={`comm-tab${activeTab === 'mine' ? ' active' : ''}`} onClick={() => setActiveTab('mine')}>
+              Mis listas
+            </button>
+          </div>
+          <div className="comm-filters">
+            <input className="comm-search-input" type="text" placeholder="Buscar..." value={filterSearch} onChange={e => setFilterSearch(e.target.value)} />
+            <select className="comm-filter-select" value={filterGenre} onChange={e => setFilterGenre(e.target.value)}>
+              <option value="">Todos los géneros</option>
+              {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+            <select className="comm-filter-select" value={filterPlatform} onChange={e => setFilterPlatform(e.target.value)}>
+              <option value="">Todas las plataformas</option>
+              {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* ── Cards Grid ─────────────────────────────────────────────── */}
+      {/* ── Cards ── */}
       {listLoading ? (
         <div className="comm-feedback">Cargando listas...</div>
       ) : listError ? (
         <div className="comm-feedback comm-feedback--error">{listError}</div>
       ) : filtered.length === 0 ? (
         <div className="comm-empty">
-          <div className="comm-empty-icon">🎵</div>
-          <h3>{activeTab === 'mine' ? 'Aún no has subido ninguna lista' : 'No se encontraron listas'}</h3>
-          <p>{activeTab === 'mine' ? 'Usa el formulario de arriba para compartir tu top 100' : 'Sé el primero en compartir tu selección'}</p>
+          <p>{activeTab === 'mine' ? 'Aún no has subido ninguna lista.' : 'No se encontraron listas.'}</p>
         </div>
       ) : (
-        <div className="comm-grid">
+        <div className={listView === 'list' ? 'comm-list' : 'comm-grid'}>
           {filtered.map(file => (
             <div key={file.id} className="comm-card">
-              <div className="comm-card-head">
-                <h3 className="comm-card-name">{file.name}</h3>
+              <div className="comm-card-art" style={{ background: getArtGradient(file.genre) }}>
+                <div className="comm-card-art-grain" />
                 <div className="comm-card-badges">
                   {file.platform && <span className="comm-badge comm-badge--platform">{file.platform}</span>}
                   {file.genre && <span className="comm-badge comm-badge--genre">{file.genre}</span>}
                 </div>
               </div>
-              {file.description && <p className="comm-card-desc">{file.description}</p>}
-              <div className="comm-card-meta">
-                <span className="comm-meta-uploader">👤 {file.uploader_name || 'Anónimo'}</span>
-                <span className="comm-meta-date">{formatDate(file.created_at)}</span>
+              <div className="comm-card-body">
+                <h3 className="comm-card-name">{file.name}</h3>
+                <p className="comm-card-uploader">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  By {file.uploader_name || 'Anónimo'}
+                </p>
               </div>
-              <div className="comm-card-stats">🎵 {file.tracks_count} tracks</div>
               <div className="comm-card-actions">
-                <button className="comm-btn comm-btn--primary" onClick={() => openModal(file.id, file.name)}>
-                  Ver tracks
+                <button className="comm-btn--preview" onClick={() => openModal(file.id, file.name)}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  PREVIEW
                 </button>
-                <button className="comm-btn" onClick={() => downloadCsv(file.id, file.name)}>↓ CSV</button>
-                {activeTab === 'mine' && file.user_id === userId && (
-                  <button className="comm-btn comm-btn--danger" onClick={() => handleDelete(file.id)}>
-                    Eliminar
+                <button className="comm-btn--csv" onClick={() => downloadCsv(file.id, file.name)}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  GET CSV
+                </button>
+                <span className="comm-card-count">{file.tracks_count || 0} TRACKS</span>
+                {file.user_id === userId && (
+                  <button className="comm-btn--icon" title="Eliminar" onClick={() => handleDelete(file.id)}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 )}
               </div>
@@ -453,28 +515,20 @@ export default function CommunityPage() {
         </div>
       )}
 
-      {/* ── Track Modal ─────────────────────────────────────────────── */}
+      {/* ── Track Modal ── */}
       {modal && (
         <div className="comm-modal-overlay" onClick={e => { if (e.target === e.currentTarget) setModal(null); }}>
           <div className="comm-modal">
             <div className="comm-modal-header">
               <h2 className="comm-modal-title">{modal.name}</h2>
-              <button className="comm-modal-close" onClick={() => setModal(null)}>✕</button>
-            </div>
-
-            <div className="comm-modal-toolbar">
-              <input
-                className="comm-filter-input"
-                type="text"
-                placeholder="Buscar tracks..."
-                value={modalSearch}
-                onChange={e => setModalSearch(e.target.value)}
-              />
-              <button className="comm-btn" onClick={() => downloadCsv(modal.id, modal.name)}>
-                ↓ Descargar CSV
+              <button className="comm-modal-close" onClick={() => setModal(null)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
-
+            <div className="comm-modal-toolbar">
+              <input className="comm-search-input" type="text" placeholder="Buscar tracks..." value={modalSearch} onChange={e => setModalSearch(e.target.value)} />
+              <button className="comm-modal-dl-btn" onClick={() => downloadCsv(modal.id, modal.name)}>↓ CSV</button>
+            </div>
             {modalLoading ? (
               <div className="comm-feedback">Cargando tracks...</div>
             ) : modalTracks.length === 0 ? (
@@ -482,7 +536,7 @@ export default function CommunityPage() {
             ) : (
               <>
                 <div className="comm-modal-count">{modalFiltered.length} de {modalTracks.length} tracks</div>
-                <div className="comm-track-list">
+                <div className="comm-modal-tracks">
                   {modalFiltered.map((track, idx) => {
                     const title = getField(track, 'Título', 'Titulo', 'Title', 'title', 'Track Title');
                     const artist = getField(track, 'Artista', 'Artist', 'artist');
@@ -490,17 +544,13 @@ export default function CommunityPage() {
                     const pos = getField(track, 'Posición', 'Posicion', 'Position', 'position', '#');
                     const isPlaying = playerTrack?.title === title && playerTrack?.artist === artist;
                     return (
-                      <div key={track._id || idx} className={`comm-track-row ${isPlaying ? 'playing' : ''}`}>
+                      <div key={track._id || idx} className={`comm-track-row${isPlaying ? ' playing' : ''}`}>
                         <div className="comm-track-pos">{pos || idx + 1}</div>
                         <div className="comm-track-info">
                           <div className="comm-track-title">{title}</div>
                           <div className="comm-track-artist">{artist}{label ? ` · ${label}` : ''}</div>
                         </div>
-                        <button
-                          className={`comm-track-play ${isPlaying ? 'active' : ''}`}
-                          title="Buscar en YouTube"
-                          onClick={() => playTrack(title, artist)}
-                        >
+                        <button className={`comm-track-play${isPlaying ? ' active' : ''}`} title="Buscar en YouTube" onClick={() => playTrack(title, artist)}>
                           {isPlaying ? '▶' : '▷'}
                         </button>
                       </div>
@@ -509,28 +559,29 @@ export default function CommunityPage() {
                 </div>
               </>
             )}
-
             {playerTrack && (
-              <div className="comm-player">
-                <div className="comm-player-info">♪ {playerTrack.artist} — {playerTrack.title}</div>
-                {videoLoading && <div className="comm-player-loading">Buscando en YouTube...</div>}
+              <div className="comm-yt-player-wrap">
+                {videoLoading && <div className="comm-feedback">Buscando en YouTube...</div>}
                 {!videoLoading && videoId && (
                   <iframe
-                    className="comm-player-frame"
                     src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
                     title="YouTube player"
                     allow="autoplay; encrypted-media"
                     allowFullScreen
+                    style={{ height: 200 }}
                   />
                 )}
-                {!videoLoading && !videoId && (
-                  <div className="comm-player-loading">No se encontró el video.</div>
-                )}
+                {!videoLoading && !videoId && <div className="comm-feedback">No se encontró el video.</div>}
+                <div className="comm-player-info">
+                  <span className="comm-player-info-title">♪ {playerTrack.artist} — {playerTrack.title}</span>
+                  <button className="comm-player-stop-btn" onClick={() => { setPlayerTrack(null); setVideoId(null); }}>✕ Detener</button>
+                </div>
               </div>
             )}
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

@@ -9,17 +9,19 @@ const path = require('path');
 const pino = require('pino');
 
 // Importar rutas de los scrapers
-const beatportScraper = require('./beatport-scraper-fixed');
-const beatportScraperLegacy = require('./beatport-scraper');
-const traxsourceScraper = require('./traxsource-scraper');
-const tracklistsScraper = require('./1001tracklists-scraper');
-const youtubeSearch = require('./youtube-search');
-const tracksApi = require('./tracks-api');
-const authApi = require('./auth-api');
-const tidalDownloader = require('./tidal-downloader');
-const youtubeDownloader = require('./youtube-downloader');
-const spotifyApi = require('./spotify-api');
-const communityApi = require('./community-api');
+const beatportScraper = require('./_lib/beatport-scraper-fixed');
+const beatportScraperLegacy = require('./_lib/beatport-scraper');
+const traxsourceScraper = require('./_lib/traxsource-scraper');
+const tracklistsScraper = require('./_lib/1001tracklists-scraper');
+const youtubeSearch = require('./_lib/youtube-search');
+const tracksApi = require('./_lib/tracks-api');
+const authApi = require('./_lib/auth-api');
+const tidalDownloader = require('./_lib/tidal-downloader');
+const youtubeDownloader = require('./_lib/youtube-downloader');
+const spotifyApi = require('./_lib/spotify-api');
+const communityApi = require('./_lib/community-api');
+const scrapeJobs = require('./_lib/scrape-jobs');
+const subscriptionApi = require('./_lib/subscription-api');
 
 // --- CONFIGURACIÓN ---
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -36,6 +38,8 @@ const app = express();
 
 // --- MIDDLEWARE ---
 app.use(cors());
+// Stripe webhook necesita el body sin parsear (debe ir ANTES de express.json)
+app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '50mb' })); // Aumentado para permitir subida de CSVs grandes
 
 // Middleware de logging para cada petición
@@ -58,6 +62,8 @@ app.use('/api/tidal', tidalDownloader);
 app.use('/api/youtube-dl', youtubeDownloader);
 app.use('/api/spotify', spotifyApi);
 app.use('/api/community', communityApi);
+app.use('/api/jobs', scrapeJobs);
+app.use('/api/subscription', subscriptionApi);
 app.use('/api', beatportScraper);
 
 // Ruta de health check

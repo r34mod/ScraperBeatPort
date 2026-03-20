@@ -85,7 +85,7 @@ define(['./workbox-21a80088'], (function (workbox) { 'use strict';
     "revision": "0e002b069b73db686cbdfa1346b2df6f"
   }, {
     "url": "tidal-download.html",
-    "revision": "d97dccc8adf2780809a2509c4e35b4d8"
+    "revision": "6eca97f1078489e4a64246c3ef440a1e"
   }, {
     "url": "radio.html",
     "revision": "c5f19bcefb7c2d6987841ea68cf6fa89"
@@ -97,7 +97,7 @@ define(['./workbox-21a80088'], (function (workbox) { 'use strict';
     "revision": "49daa2c6a87dae15a8f278e1a7e22a62"
   }, {
     "url": "index.html",
-    "revision": "e14f2e4ad80e4cbeeeb2782dc112e1f5"
+    "revision": "ade0541c637652ed2e624eaa04a2130d"
   }, {
     "url": "beatport.html",
     "revision": "9c9b58cb4a32928d63a6dc064c3516f9"
@@ -126,10 +126,10 @@ define(['./workbox-21a80088'], (function (workbox) { 'use strict';
     "url": "assets/workbox-window.prod.es5-BIl4cyR9.js",
     "revision": null
   }, {
-    "url": "assets/index-DF4kou43.css",
+    "url": "assets/index-DIFslgJn.js",
     "revision": null
   }, {
-    "url": "assets/index-BKA7axLh.js",
+    "url": "assets/index-BhGL7lej.css",
     "revision": null
   }, {
     "url": "icons/icon-192x192.png",
