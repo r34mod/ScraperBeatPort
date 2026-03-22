@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import FullscreenPlayer from './FullscreenPlayer';
 import {
   IconMusic,
   IconPlaylist,
@@ -30,6 +31,7 @@ export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [playerOpen, setPlayerOpen] = useState(false);
 
   // User preferences
   const [prefs, setPrefs] = useState(loadPrefs);
@@ -63,14 +65,19 @@ export default function Layout() {
       const w = window.SC.Widget(iframe);
       radio.scWidgetRef.current = w;
       w.bind(window.SC.Widget.Events.READY, () => {
+        w.play(); // Force play on mobile where auto_play URL param is blocked
         w.getCurrentSound((s) => {
           if (s) radio.setScTrackTitle(s.title || '');
         });
       });
       w.bind(window.SC.Widget.Events.PLAY, () => {
+        radio.setScPlaying(true);
         w.getCurrentSound((s) => {
           if (s) radio.setScTrackTitle(s.title || '');
         });
+      });
+      w.bind(window.SC.Widget.Events.PAUSE, () => {
+        radio.setScPlaying(false);
       });
     }, 600);
     return () => clearTimeout(t);
@@ -235,9 +242,18 @@ export default function Layout() {
         <Outlet />
       </div>
 
+      {/* Fullscreen Player overlay */}
+      {playerOpen && radio.visible && (
+        <FullscreenPlayer onClose={() => setPlayerOpen(false)} />
+      )}
+
       {/* Radio / SoundCloud Footer Player */}
       {radio.visible && radio.scEmbed ? (
-        <div className="radio-footer radio-footer--sc">
+        <div
+          className="radio-footer radio-footer--sc"
+          onClick={e => { if (!e.target.closest('button, input')) setPlayerOpen(true); }}
+          style={{ cursor: 'pointer' }}
+        >
           {/* Hidden SC iframe */}
           <iframe
             ref={radio.scIframeRef}
@@ -292,7 +308,11 @@ export default function Layout() {
           </div>
         </div>
       ) : radio.visible && (
-        <div className="radio-footer">
+        <div
+          className="radio-footer"
+          onClick={e => { if (!e.target.closest('button, input')) setPlayerOpen(true); }}
+          style={{ cursor: 'pointer' }}
+        >
           {/* Left: station identity */}
           <div className="radio-footer-info">
             <div className="radio-footer-thumb">

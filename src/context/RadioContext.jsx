@@ -14,6 +14,23 @@ const EQ_BANDS = [
 
 const STUDIO_MONITOR = [2, 1, 0, -1, 2, 3, 2];
 
+// Generates a Blob URL for a short silent WAV.
+// Playing it in a loop keeps the mobile browser's audio pipeline alive so the
+// SoundCloud iframe is not suspended when the screen turns off.
+function buildSilenceURL() {
+  const SR = 8000, secs = 3, n = SR * secs * 2; // 16-bit mono, 3 s
+  const buf = new ArrayBuffer(44 + n);
+  const v = new DataView(buf);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n, true);
+  w(8, 'WAVE'); w(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, SR, true); v.setUint32(28, SR * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, 'data'); v.setUint32(40, n, true);
+  return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+}
+
 export function RadioProvider({ children }) {
   const audioRef = useRef(null);
   const audioCtxRef = useRef(null);
@@ -36,6 +53,9 @@ export function RadioProvider({ children }) {
   const [scTrackTitle, setScTrackTitle] = useState('');
   const scIframeRef = useRef(null);
   const scWidgetRef = useRef(null);
+  const silenceAudioRef = useRef(null);  // silent looping <audio> – keepalive on mobile
+  const silenceUrlRef = useRef(null);    // blob URL for the silent WAV
+  const scPlayingRef = useRef(false);    // stable mirror of scPlaying for no-dep effects
 
   // Restore from localStorage on mount
   useEffect(() => {
@@ -203,6 +223,28 @@ export function RadioProvider({ children }) {
     setScPlaying(true);
     setScTrackTitle('');
     setVisible(true);
+
+    // Start keepalive silence audio – prevents mobile browser from suspending the tab
+    if (!silenceUrlRef.current) silenceUrlRef.current = buildSilenceURL();
+    if (!silenceAudioRef.current) {
+      const sa = new Audio(silenceUrlRef.current);
+      sa.loop = true;
+      sa.volume = 0.001; // nearly inaudible but non-zero so iOS won't optimise it away
+      silenceAudioRef.current = sa;
+    }
+    silenceAudioRef.current.play().catch(() => {});
+
+    // Register Media Session → OS shows lock-screen controls and won't kill audio
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: label || 'SoundCloud',
+          artist: 'SoundCloud',
+          artwork: img ? [{ src: img, sizes: '512x512', type: 'image/jpeg' }] : [],
+        });
+        navigator.mediaSession.playbackState = 'playing';
+      } catch {}
+    }
   }, []);
 
   const stopSC = useCallback(() => {
@@ -215,6 +257,13 @@ export function RadioProvider({ children }) {
     setScPlaying(false);
     setScTrackTitle('');
     setVisible(false);
+    // Stop keepalive silence audio
+    if (silenceAudioRef.current) silenceAudioRef.current.pause();
+    // Clear Media Session
+    if ('mediaSession' in navigator) {
+      try { navigator.mediaSession.metadata = null; } catch {}
+      try { navigator.mediaSession.playbackState = 'none'; } catch {}
+    }
   }, []);
 
   const toggleSC = useCallback(() => {
@@ -223,9 +272,17 @@ export function RadioProvider({ children }) {
     if (scPlaying) {
       w.pause();
       setScPlaying(false);
+      silenceAudioRef.current?.pause();
+      if ('mediaSession' in navigator) {
+        try { navigator.mediaSession.playbackState = 'paused'; } catch {}
+      }
     } else {
       w.play();
       setScPlaying(true);
+      silenceAudioRef.current?.play().catch(() => {});
+      if ('mediaSession' in navigator) {
+        try { navigator.mediaSession.playbackState = 'playing'; } catch {}
+      }
     }
   }, [scPlaying]);
 
@@ -237,11 +294,76 @@ export function RadioProvider({ children }) {
     scWidgetRef.current?.prev();
   }, []);
 
+  // Keep scPlayingRef in sync for use inside stable (no-dep) effects
+  useEffect(() => { scPlayingRef.current = scPlaying; }, [scPlaying]);
+
+  // Update Media Session metadata when track title or artwork changes
+  useEffect(() => {
+    if (!scEmbed || !('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: scTrackTitle || scLabel || 'SoundCloud',
+        artist: 'SoundCloud',
+        artwork: scImg ? [{ src: scImg, sizes: '512x512', type: 'image/jpeg' }] : [],
+      });
+    } catch {}
+  }, [scEmbed, scTrackTitle, scLabel, scImg]);
+
+  // Wire up lock-screen / notification-area media controls (registered once)
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    const actions = {
+      play: () => {
+        if (scWidgetRef.current) {
+          scWidgetRef.current.play();
+          setScPlaying(true);
+          silenceAudioRef.current?.play().catch(() => {});
+        }
+      },
+      pause: () => {
+        if (scWidgetRef.current) {
+          scWidgetRef.current.pause();
+          setScPlaying(false);
+          silenceAudioRef.current?.pause();
+        }
+      },
+      nexttrack: () => { scWidgetRef.current?.next(); },
+      previoustrack: () => { scWidgetRef.current?.prev(); },
+    };
+    Object.entries(actions).forEach(([action, handler]) => {
+      try { navigator.mediaSession.setActionHandler(action, handler); } catch {}
+    });
+    return () => {
+      ['play', 'pause', 'nexttrack', 'previoustrack'].forEach(a => {
+        try { navigator.mediaSession.setActionHandler(a, null); } catch {}
+      });
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When the screen turns back on, resume the keepalive if SC was still playing
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && scPlayingRef.current) {
+        silenceAudioRef.current?.play().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []); // stable: only references refs
+
+  // Cleanup on unmount – stop silence audio and revoke its blob URL
+  useEffect(() => {
+    return () => {
+      if (silenceAudioRef.current) silenceAudioRef.current.pause();
+      if (silenceUrlRef.current) URL.revokeObjectURL(silenceUrlRef.current);
+    };
+  }, []);
+
   return (
     <RadioContext.Provider value={{
       playing, stationName, streamUrl, visible, play, togglePlay, stop,
       volume, setVolume, audioRef, eqGains, setEqGains, eqEnabled, enableEQ,
-      scEmbed, scLabel, scImg, scPlaying, scTrackTitle, setScTrackTitle,
+      scEmbed, scLabel, scImg, scPlaying, setScPlaying, scTrackTitle, setScTrackTitle,
       playSC, stopSC, toggleSC, scNext, scPrev,
       scIframeRef, scWidgetRef
     }}>
