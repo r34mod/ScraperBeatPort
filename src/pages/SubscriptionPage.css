@@ -1,0 +1,459 @@
+/* ─────────────────────────────────────────────────────────────────────
+   SubscriptionPage.css
+   Subscription-specific styles; shared sidebar uses ProfilePage.css
+───────────────────────────────────────────────────────────────────── */
+
+/* override pf-main for sub page */
+.sub-main {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 40px 48px 60px;
+  max-width: 860px;
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.sub-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sub-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.sub-title-accent {
+  color: #ff1744;
+}
+
+.sub-subtitle {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0;
+  max-width: 480px;
+  line-height: 1.5;
+}
+
+/* ── Plan cards ──────────────────────────────────────────────── */
+.sub-plans {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.sub-plan {
+  position: relative;
+  border-radius: 14px;
+  padding: 26px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.2s;
+}
+
+.sub-plan-pro {
+  background: rgba(20, 20, 20, 0.8);
+  border-color: rgba(255, 23, 68, 0.35);
+}
+
+.sub-plan-pro:hover {
+  border-color: rgba(255, 23, 68, 0.6);
+}
+
+.sub-plan--current.sub-plan-basic {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.sub-plan--current.sub-plan-pro {
+  border-color: rgba(255, 23, 68, 0.7);
+  box-shadow: 0 0 24px rgba(255, 23, 68, 0.12);
+}
+
+/* badge */
+.sub-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.sub-plan-badge--std {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sub-plan-badge--premium {
+  background: rgba(255, 23, 68, 0.15);
+  color: #ff1744;
+  border: 1px solid rgba(255, 23, 68, 0.3);
+}
+
+/* price row */
+.sub-plan-price-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sub-plan-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+}
+
+.sub-plan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.sub-price-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.sub-plan-pro .sub-price-amount {
+  color: #ff1744;
+}
+
+.sub-price-unit {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* feature list (Basic) */
+.sub-features-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sub-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.sub-feature-item--off {
+  color: rgba(255, 255, 255, 0.3);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 255, 255, 0.2);
+}
+
+.sub-feature-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sub-feature-icon.ok {
+  background: rgba(29, 185, 84, 0.15);
+  color: #1db954;
+}
+
+.sub-feature-icon.off {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.25);
+}
+
+/* feature icon grid (Pro) */
+.sub-feat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sub-feat-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sub-feat-icon {
+  flex-shrink: 0;
+  color: #ff1744;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sub-feat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.2;
+}
+
+.sub-feat-sub {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 2px;
+  line-height: 1.2;
+}
+
+/* Buttons */
+.sub-stay-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+  padding: 10px 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  width: 100%;
+  margin-top: auto;
+}
+
+.sub-stay-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.sub-stay-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.sub-upgrade-btn {
+  background: linear-gradient(135deg, #ff1744 0%, #e91e8c 100%);
+  border: none;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 12px 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: not-allowed;
+  opacity: 0.6;
+  width: 100%;
+  margin-top: auto;
+  transition: opacity 0.2s;
+}
+
+.sub-upgrade-btn:not(:disabled) {
+  cursor: pointer;
+  opacity: 1;
+}
+
+.sub-upgrade-btn:not(:disabled):hover {
+  opacity: 0.88;
+}
+
+.sub-current-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: rgba(255, 23, 68, 0.12);
+  border: 1px solid rgba(255, 23, 68, 0.3);
+  color: #ff1744;
+  border-radius: 8px;
+  padding: 11px 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  width: 100%;
+  margin-top: auto;
+}
+
+/* ── Technical Breakdown ─────────────────────────────────────── */
+.sub-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sub-compare-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ff1744;
+  margin: 0;
+}
+
+.sub-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.sub-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+}
+
+.sub-th {
+  padding: 12px 18px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.sub-th-feat {
+  color: rgba(255, 255, 255, 0.45);
+  width: 38%;
+}
+
+.sub-th-basic {
+  color: rgba(255, 255, 255, 0.45);
+  width: 31%;
+  text-align: center;
+}
+
+.sub-th-pro {
+  color: #ff1744;
+  width: 31%;
+  text-align: center;
+  background: rgba(255, 23, 68, 0.04);
+  border-left: 1px solid rgba(255, 23, 68, 0.15);
+  border-right: 1px solid rgba(255, 23, 68, 0.15);
+}
+
+.sub-table-row:last-child .sub-td {
+  border-bottom: none;
+}
+
+.sub-table-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.sub-td {
+  padding: 11px 18px;
+  font-size: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sub-td-feat {
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
+}
+
+.sub-td-basic {
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+}
+
+.sub-td-pro {
+  color: rgba(255, 255, 255, 0.85);
+  text-align: center;
+  font-weight: 500;
+  background: rgba(255, 23, 68, 0.03);
+  border-left: 1px solid rgba(255, 23, 68, 0.1);
+  border-right: 1px solid rgba(255, 23, 68, 0.1);
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.sub-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sub-footer-note {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.25);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.sub-footer-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.sub-footer-links a {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.35);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.sub-footer-links a:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .sub-main {
+    padding: 28px 24px 48px;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Hide sidebar footer on mobile — plan info is shown in main content */
+  .pf-root .pf-sidebar-footer {
+    display: none;
+  }
+
+  /* Only show the inactive nav button (the destination) — hide the active one */
+  .pf-root .pf-sidebar-top .pf-nav-item.active {
+    display: none;
+  }
+
+  /* Style the single remaining button as a compact back/switch pill */
+  .pf-root .pf-sidebar-top .pf-nav-item {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.75);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+  }
+
+  .sub-plans {
+    grid-template-columns: 1fr;
+  }
+
+  .sub-main {
+    padding: 24px 16px 48px;
+  }
+
+  .sub-feat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sub-table-wrap {
+    border-radius: 8px;
+  }
+}

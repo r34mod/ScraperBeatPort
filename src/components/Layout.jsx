@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRadio } from '../context/RadioContext';
 import { STATIONS } from '../data/stations';
 import { useSubscription } from '../hooks/useSubscription';
+import { useLikes } from '../hooks/useLikes';
 
 const PREFS_KEY = 'msh_user_prefs';
 
@@ -28,6 +29,7 @@ export default function Layout() {
   const radio = useRadio();
   const navigate = useNavigate();
   const { subscribed, downloadsLeft, loading: subLoading, startCheckout } = useSubscription();
+  const { likes, loading: likesLoading, removeLike, fetchLikes } = useLikes();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -67,13 +69,19 @@ export default function Layout() {
       w.bind(window.SC.Widget.Events.READY, () => {
         w.play(); // Force play on mobile where auto_play URL param is blocked
         w.getCurrentSound((s) => {
-          if (s) radio.setScTrackTitle(s.title || '');
+          if (s) {
+            radio.setScTrackTitle(s.title || '');
+            radio.setScArtwork(s.artwork_url || '');
+          }
         });
       });
       w.bind(window.SC.Widget.Events.PLAY, () => {
         radio.setScPlaying(true);
         w.getCurrentSound((s) => {
-          if (s) radio.setScTrackTitle(s.title || '');
+          if (s) {
+            radio.setScTrackTitle(s.title || '');
+            radio.setScArtwork(s.artwork_url || '');
+          }
         });
       });
       w.bind(window.SC.Widget.Events.PAUSE, () => {
@@ -95,6 +103,7 @@ export default function Layout() {
     setDisplayName(p.displayName || '');
     setFavStation(p.favStation || '');
     setSaved(false);
+    fetchLikes(); // refresh liked songs list
     setPanelOpen(true);
   };
 
@@ -144,41 +153,49 @@ export default function Layout() {
           </ul>
 
           <div className="nav-actions">
-            {/* User icon with dropdown */}
-            <div className="nav-user-wrapper" ref={dropdownRef}>
-              <button
-                className="nav-login-btn"
-                title="Mi cuenta"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </button>
+            {isLoggedIn ? (
+              /* User icon with dropdown */
+              <div className="nav-user-wrapper" ref={dropdownRef}>
+                <button
+                  className="nav-login-btn"
+                  title="Mi cuenta"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </button>
 
-              {dropdownOpen && (
-                <div className="user-dropdown">
-                  <div className="user-dropdown-header">
-                    <div className="user-dropdown-avatar">{userName[0].toUpperCase()}</div>
-                    <div>
-                      <div className="user-dropdown-name">{userName}</div>
-                      <div className="user-dropdown-email">{email}</div>
+                {dropdownOpen && (
+                  <div className="user-dropdown">
+                    <div className="user-dropdown-header">
+                      <div className="user-dropdown-avatar">{userName[0].toUpperCase()}</div>
+                      <div>
+                        <div className="user-dropdown-name">{userName}</div>
+                        <div className="user-dropdown-email">{email}</div>
+                      </div>
                     </div>
+                    <div className="user-dropdown-divider" />
+                    <button className="user-dropdown-item" onClick={() => { setDropdownOpen(false); navigate('/profile'); }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      Ver perfil
+                    </button>
+                    <button className="user-dropdown-item" onClick={openProfile}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                      Ajustes de perfil
+                    </button>
+                    <div className="user-dropdown-divider" />
+                    <button className="user-dropdown-item danger" onClick={handleLogout}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                      Cerrar sesión
+                    </button>
                   </div>
-                  <div className="user-dropdown-divider" />
-                  <button className="user-dropdown-item" onClick={openProfile}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                    Ajustes de perfil
-                  </button>
-                  <div className="user-dropdown-divider" />
-                  <button className="user-dropdown-item danger" onClick={handleLogout}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    Cerrar sesión
-                  </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            ) : (
+              <NavLink to="/login" className="nav-login-btn nav-login-text">Iniciar sesión</NavLink>
+            )}
 
             <NavLink to="/radio" className="nav-listen-btn">♪</NavLink>
           </div>
@@ -203,13 +220,19 @@ export default function Layout() {
       {/* Mobile Menu - Side Drawer */}
       <div className={`nav-mobile-menu${mobileOpen ? ' open' : ''}`}>
         <div className="mobile-menu-header">
-          <div className="mobile-menu-user">
-            <div className="mobile-user-avatar">{userName[0].toUpperCase()}</div>
-            <div>
-              <div className="mobile-user-name">{userName}</div>
-              <div className="mobile-user-email">{email}</div>
+          {isLoggedIn ? (
+            <div className="mobile-menu-user">
+              <div className="mobile-user-avatar">{userName[0].toUpperCase()}</div>
+              <div>
+                <div className="mobile-user-name">{userName}</div>
+                <div className="mobile-user-email">{email}</div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="mobile-menu-user">
+              <div className="mobile-user-name">Invitado</div>
+            </div>
+          )}
           <button className="mobile-menu-close" onClick={closeMobile}>✕</button>
         </div>
 
@@ -226,14 +249,33 @@ export default function Layout() {
         </nav>
 
         <div className="mobile-menu-footer">
-          <button className="mobile-logout-btn" onClick={() => { closeMobile(); handleLogout(); }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            Cerrar sesión
-          </button>
+          {isLoggedIn ? (
+            <>
+              <NavLink to="/profile" className="mobile-logout-btn" onClick={closeMobile}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                Mi perfil
+              </NavLink>
+              <button className="mobile-logout-btn" onClick={() => { closeMobile(); handleLogout(); }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Cerrar sesión
+              </button>
+            </>
+          ) : (
+            <NavLink to="/login" className="mobile-logout-btn" onClick={closeMobile}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/>
+                <line x1="15" y1="12" x2="3" y2="12"/>
+              </svg>
+              Iniciar sesión
+            </NavLink>
+          )}
         </div>
       </div>
 
@@ -469,6 +511,52 @@ export default function Layout() {
               <button className="profile-save" onClick={saveProfile}>
                 {saved ? '✓ Guardado' : 'Guardar cambios'}
               </button>
+
+              {/* ── Liked songs ── */}
+              <div className="profile-likes-section">
+                <h3 className="profile-likes-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: 6, verticalAlign: 'middle', color: '#e05567' }}>
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                  Canciones guardadas
+                </h3>
+                {likesLoading ? (
+                  <p className="profile-likes-empty">Cargando…</p>
+                ) : likes.length === 0 ? (
+                  <p className="profile-likes-empty">Aún no has guardado ninguna canción. Pulsa el ❤️ en el reproductor mientras escuchas una playlist.</p>
+                ) : (
+                  <ul className="profile-likes-list">
+                    {likes.map(like => (
+                      <li key={like.id} className="profile-like-item">
+                        {like.artwork_url ? (
+                          <img src={like.artwork_url} alt="" className="profile-like-art" />
+                        ) : (
+                          <div className="profile-like-art profile-like-art--empty">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" opacity="0.4">
+                              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                            </svg>
+                          </div>
+                        )}
+                        <div className="profile-like-meta">
+                          <span className="profile-like-title">{like.title}</span>
+                          {like.artist && <span className="profile-like-artist">{like.artist}</span>}
+                        </div>
+                        <button
+                          className="profile-like-remove"
+                          aria-label="Quitar de guardadas"
+                          title="Quitar de guardadas"
+                          onClick={() => removeLike(like.id)}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         </div>

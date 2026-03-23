@@ -14,11 +14,12 @@ const EQ_BANDS = [
 
 const STUDIO_MONITOR = [2, 1, 0, -1, 2, 3, 2];
 
-// Generates a Blob URL for a short silent WAV.
-// Playing it in a loop keeps the mobile browser's audio pipeline alive so the
-// SoundCloud iframe is not suspended when the screen turns off.
+// Generates a Blob URL for a silent WAV with tiny non-zero samples.
+// The audio is 30 s long (fewer looping gaps) and each sample has amplitude +1
+// (−90 dBFS), which is inaudible through any speaker but keeps iOS/Android from
+// classifying the stream as truly silent and suspending the audio session.
 function buildSilenceURL() {
-  const SR = 8000, secs = 3, n = SR * secs * 2; // 16-bit mono, 3 s
+  const SR = 8000, secs = 30, n = SR * secs * 2; // 16-bit mono PCM, 30 s
   const buf = new ArrayBuffer(44 + n);
   const v = new DataView(buf);
   const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
@@ -28,6 +29,9 @@ function buildSilenceURL() {
   v.setUint32(24, SR, true); v.setUint32(28, SR * 2, true);
   v.setUint16(32, 2, true); v.setUint16(34, 16, true);
   w(36, 'data'); v.setUint32(40, n, true);
+  // Fill every sample with +1 (signed 16-bit). iOS will not suspend a stream
+  // whose PCM data is non-zero, even though the output level is −90 dBFS.
+  for (let i = 44; i < 44 + n; i += 2) v.setInt16(i, 1, true);
   return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
 }
 
@@ -51,11 +55,13 @@ export function RadioProvider({ children }) {
   const [scImg, setScImg] = useState('');
   const [scPlaying, setScPlaying] = useState(false);
   const [scTrackTitle, setScTrackTitle] = useState('');
+  const [scArtwork, setScArtwork] = useState('');   // artwork_url from getCurrentSound
   const scIframeRef = useRef(null);
   const scWidgetRef = useRef(null);
   const silenceAudioRef = useRef(null);  // silent looping <audio> – keepalive on mobile
   const silenceUrlRef = useRef(null);    // blob URL for the silent WAV
   const scPlayingRef = useRef(false);    // stable mirror of scPlaying for no-dep effects
+  const acKeepaliveRef = useRef(null);   // AudioContext oscillator backup keepalive (Android Chrome)
 
   // Restore from localStorage on mount
   useEffect(() => {
@@ -193,6 +199,8 @@ export function RadioProvider({ children }) {
   const setVolume = useCallback((v) => {
     setVolumeSt(v);
     if (audioRef.current) audioRef.current.volume = v;
+    // Also update SoundCloud widget volume (widget API uses 0–100 scale)
+    try { scWidgetRef.current?.setVolume(Math.round(v * 100)); } catch {}
   }, []);
 
   const stop = useCallback(() => {
@@ -224,15 +232,40 @@ export function RadioProvider({ children }) {
     setScTrackTitle('');
     setVisible(true);
 
-    // Start keepalive silence audio – prevents mobile browser from suspending the tab
+    // ── Keepalive 1: silent looping <audio> ───────────────────────────────
+    // A non-zero WAV played in a loop at low volume. iOS Safari requires an
+    // active <audio> element (started via user gesture) to allow background
+    // audio. Volume 0.01 × amplitude −90 dBFS ≈ −130 dBFS — inaudible.
     if (!silenceUrlRef.current) silenceUrlRef.current = buildSilenceURL();
     if (!silenceAudioRef.current) {
       const sa = new Audio(silenceUrlRef.current);
       sa.loop = true;
-      sa.volume = 0.001; // nearly inaudible but non-zero so iOS won't optimise it away
+      sa.volume = 0.01;
+      sa.setAttribute('playsinline', ''); // prevents iOS from requiring fullscreen
       silenceAudioRef.current = sa;
     }
     silenceAudioRef.current.play().catch(() => {});
+
+    // ── Keepalive 2: Web Audio oscillator (Android Chrome) ────────────────
+    // An AudioContext with an oscillator at gain 0.00001 (−100 dBFS) keeps
+    // the browser's audio thread scheduled, redundant but very reliable on
+    // Android. Created here (in a user-gesture callback) to satisfy policy.
+    try {
+      if (!acKeepaliveRef.current) {
+        const ac = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 });
+        acKeepaliveRef.current = ac;
+        const g = ac.createGain();
+        g.gain.value = 0.00001; // −100 dBFS, completely inaudible
+        g.connect(ac.destination);
+        const osc = ac.createOscillator();
+        osc.frequency.value = 440;
+        osc.connect(g);
+        osc.start();
+        if (ac.state === 'suspended') ac.resume();
+      } else if (acKeepaliveRef.current.state === 'suspended') {
+        acKeepaliveRef.current.resume();
+      }
+    } catch {}
 
     // Register Media Session → OS shows lock-screen controls and won't kill audio
     if ('mediaSession' in navigator) {
@@ -256,9 +289,13 @@ export function RadioProvider({ children }) {
     setScImg('');
     setScPlaying(false);
     setScTrackTitle('');
+    setScArtwork('');
     setVisible(false);
     // Stop keepalive silence audio
     if (silenceAudioRef.current) silenceAudioRef.current.pause();
+    // Stop Web Audio keepalive
+    try { acKeepaliveRef.current?.close(); } catch {}
+    acKeepaliveRef.current = null;
     // Clear Media Session
     if ('mediaSession' in navigator) {
       try { navigator.mediaSession.metadata = null; } catch {}
@@ -280,6 +317,10 @@ export function RadioProvider({ children }) {
       w.play();
       setScPlaying(true);
       silenceAudioRef.current?.play().catch(() => {});
+      // Resume Web Audio keepalive if the browser suspended the AudioContext
+      try {
+        if (acKeepaliveRef.current?.state === 'suspended') acKeepaliveRef.current.resume();
+      } catch {}
       if ('mediaSession' in navigator) {
         try { navigator.mediaSession.playbackState = 'playing'; } catch {}
       }
@@ -340,22 +381,48 @@ export function RadioProvider({ children }) {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When the screen turns back on, resume the keepalive if SC was still playing
+  // When the tab becomes visible again (screen unlocked / app foregrounded):
+  // resume the keepalives and try to restart the SC widget if it was paused.
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === 'visible' && scPlayingRef.current) {
+        // Resume silence audio loop
         silenceAudioRef.current?.play().catch(() => {});
+        // Resume Web Audio oscillator if the browser suspended the AudioContext
+        try {
+          if (acKeepaliveRef.current?.state === 'suspended') acKeepaliveRef.current.resume();
+        } catch {}
+        // SC widget may have been paused by the browser — tell it to play again
+        try { scWidgetRef.current?.play(); } catch {}
+        // Notify OS media controls
+        try { navigator.mediaSession.playbackState = 'playing'; } catch {}
       }
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []); // stable: only references refs
 
-  // Cleanup on unmount – stop silence audio and revoke its blob URL
+  // Page Lifecycle API: 'resume' fires when a frozen page comes back (Chrome 68+).
+  // Best-effort recovery to restart playback on Android after longer screen-off periods.
+  useEffect(() => {
+    const onResume = () => {
+      if (!scPlayingRef.current) return;
+      silenceAudioRef.current?.play().catch(() => {});
+      try {
+        if (acKeepaliveRef.current?.state === 'suspended') acKeepaliveRef.current.resume();
+      } catch {}
+      try { scWidgetRef.current?.play(); } catch {}
+    };
+    document.addEventListener('resume', onResume);
+    return () => document.removeEventListener('resume', onResume);
+  }, []); // stable: only references refs
+
+  // Cleanup on unmount – stop silence audio, Web Audio keepalive, and revoke blob URL
   useEffect(() => {
     return () => {
       if (silenceAudioRef.current) silenceAudioRef.current.pause();
       if (silenceUrlRef.current) URL.revokeObjectURL(silenceUrlRef.current);
+      try { acKeepaliveRef.current?.close(); } catch {}
     };
   }, []);
 
@@ -364,6 +431,7 @@ export function RadioProvider({ children }) {
       playing, stationName, streamUrl, visible, play, togglePlay, stop,
       volume, setVolume, audioRef, eqGains, setEqGains, eqEnabled, enableEQ,
       scEmbed, scLabel, scImg, scPlaying, setScPlaying, scTrackTitle, setScTrackTitle,
+      scArtwork, setScArtwork,
       playSC, stopSC, toggleSC, scNext, scPrev,
       scIframeRef, scWidgetRef
     }}>

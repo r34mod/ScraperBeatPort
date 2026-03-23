@@ -16,8 +16,23 @@ function formatDate(iso) {
 }
 
 export default function MisListasPage() {
-  const { token, clear } = useAuth();
+  const { token, clear, isLoggedIn } = useAuth();
   const navigate = useNavigate();
+
+  if (!isLoggedIn) {
+    return (
+      <div style={{ textAlign: 'center', padding: '5rem 2rem', color: 'var(--text-secondary, #aaa)' }}>
+        <h2 style={{ color: 'var(--text-primary, #fff)', marginBottom: '1rem' }}>Mis Listas</h2>
+        <p style={{ marginBottom: '1.5rem' }}>Necesitas iniciar sesión para ver y gestionar tus listas guardadas.</p>
+        <button
+          onClick={() => navigate('/login')}
+          style={{ padding: '0.6rem 1.5rem', background: 'var(--accent, #e03)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.95rem' }}
+        >
+          Iniciar sesión
+        </button>
+      </div>
+    );
+  }
   const [platformsData, setPlatformsData] = useState({});
   const [platform, setPlatform] = useState(null);
   const [genre, setGenre] = useState(null);

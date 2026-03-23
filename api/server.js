@@ -22,6 +22,7 @@ const spotifyApi = require('./_lib/spotify-api');
 const communityApi = require('./_lib/community-api');
 const scrapeJobs = require('./_lib/scrape-jobs');
 const subscriptionApi = require('./_lib/subscription-api');
+const likesApi = require('./_lib/likes-api');
 
 // --- CONFIGURACIÓN ---
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -64,6 +65,7 @@ app.use('/api/spotify', spotifyApi);
 app.use('/api/community', communityApi);
 app.use('/api/jobs', scrapeJobs);
 app.use('/api/subscription', subscriptionApi);
+app.use('/api/likes', likesApi);
 app.use('/api', beatportScraper);
 
 // Ruta de health check
