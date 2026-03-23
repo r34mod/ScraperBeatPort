@@ -1,0 +1,672 @@
+/* ══════════════════════════════════════════════════════════════
+   ProfilePage.css  —  Full-page user profile
+   Design: dark sidebar + main content, matches app dark theme
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Root layout ─────────────────────────────────────────────── */
+.pf-root {
+  display: flex;
+  min-height: calc(100vh - 90px);
+  align-items: stretch;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SIDEBAR
+   ══════════════════════════════════════════════════════════════ */
+.pf-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.35);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: sticky;
+  top: 90px;               /* stays below fixed nav */
+  height: calc(100vh - 90px);
+  overflow-y: auto;
+  padding: 28px 16px 24px;
+}
+
+.pf-sidebar-top {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pf-nav-label {
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  padding: 0 8px;
+  margin-bottom: 8px;
+}
+
+.pf-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+  width: 100%;
+}
+.pf-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+}
+.pf-nav-item.active {
+  background: rgba(255, 23, 68, 0.12);
+  color: #ff5577;
+  border: 1px solid rgba(255, 23, 68, 0.2);
+}
+
+/* Sidebar footer — plan info */
+.pf-sidebar-footer {
+  padding: 16px 4px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.pf-plan-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+.pf-plan-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ff1744;
+  margin-bottom: 12px;
+}
+.pf-upgrade-btn {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 23, 68, 0.3);
+  background: rgba(255, 23, 68, 0.08);
+  color: #ff5577;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pf-upgrade-btn:not(:disabled):hover {
+  background: rgba(255, 23, 68, 0.18);
+}
+.pf-upgrade-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MAIN CONTENT
+   ══════════════════════════════════════════════════════════════ */
+.pf-main {
+  flex: 1;
+  min-width: 0;
+  padding: 36px 40px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.pf-hero {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pf-hero-avatar {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff1744 0%, #c0003c 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 8px 30px rgba(255, 23, 68, 0.35);
+  user-select: none;
+}
+
+.pf-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pf-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pf-hero-name {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.pf-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+.pf-edit-btn:hover {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pf-saved-flash {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4cff91;
+  animation: pf-fadein 0.2s ease;
+}
+@keyframes pf-fadein {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0);  }
+}
+
+/* Inline name editing */
+.pf-name-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pf-name-input {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 23, 68, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  min-width: 180px;
+  outline: none;
+}
+.pf-name-input:focus { border-color: #ff1744; }
+.pf-name-save {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #ff1744;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pf-name-save:hover { background: #e01040; }
+.pf-name-cancel {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: none;
+  color: rgba(255,255,255,0.55);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pf-name-cancel:hover { background: rgba(255,255,255,0.07); color: #fff; }
+
+.pf-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.45);
+  flex-wrap: wrap;
+}
+.pf-sep { opacity: 0.4; }
+.pf-tier-pill {
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.04em;
+}
+.pf-tier-pill.pro {
+  background: rgba(255, 204, 0, 0.1);
+  color: #ffc107;
+  border-color: rgba(255, 204, 0, 0.3);
+}
+
+/* ── Cards grid ──────────────────────────────────────────────── */
+.pf-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.pf-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 18px;
+  padding: 22px 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pf-card-hd {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Preferences card */
+.pf-field-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.pf-select {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.88rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+.pf-select:focus { border-color: rgba(255, 23, 68, 0.4); }
+.pf-select option { background: #1a1a1a; }
+
+.pf-tiles-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.pf-tile {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.pf-tile-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+}
+.pf-tile-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+}
+.pf-tile-accent { color: #00d4e8; }
+
+/* Stats card */
+.pf-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.pf-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.pf-stat:last-child { border-bottom: none; }
+.pf-stat-label {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+.pf-stat-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.85);
+}
+.pf-stat-val.accent { color: #ff1744; }
+.pf-view-liked-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  margin-top: auto;
+}
+.pf-view-liked-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* ── Favorite Tracks section ─────────────────────────────────── */
+.pf-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pf-tracks-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.pf-tracks-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.pf-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.pf-export-btn:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.pf-export-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Empty / loading state */
+.pf-tracks-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 20px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.35);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  font-size: 0.88rem;
+}
+.pf-tracks-hint {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.25);
+  max-width: 340px;
+}
+
+.pf-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid rgba(255,255,255,0.1);
+  border-top-color: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  animation: pf-spin 0.7s linear infinite;
+}
+@keyframes pf-spin { to { transform: rotate(360deg); } }
+
+/* Track list table-style */
+.pf-track-list {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.pf-track-row {
+  display: grid;
+  grid-template-columns: 32px 46px 1fr minmax(0,180px) 70px 36px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.12s;
+}
+.pf-track-row:last-child { border-bottom: none; }
+.pf-track-row:not(.pf-track-row--hd):hover { background: rgba(255, 255, 255, 0.03); }
+
+.pf-track-row--hd {
+  padding: 8px 18px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.pf-track-row--hd span {
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.pf-col-num {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.3);
+  text-align: right;
+  font-weight: 500;
+}
+.pf-col-art {
+  display: flex;
+  align-items: center;
+}
+.pf-art-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 7px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.pf-art-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pf-col-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.pf-t-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pf-t-artist {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.42);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pf-col-playlist {
+  min-width: 0;
+}
+.pf-label-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.pf-col-date {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pf-col-action {
+  display: flex;
+  justify-content: flex-end;
+}
+.pf-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.2);
+  padding: 5px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.pf-remove-btn:hover {
+  color: #ff5555;
+  background: rgba(255, 85, 85, 0.1);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE — Mobile  (< 768px)
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .pf-root { flex-direction: column; }
+
+  /* Sidebar becomes horizontal tab strip at top */
+  .pf-sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .pf-sidebar-top {
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .pf-nav-label { display: none; }
+
+  .pf-nav-item {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+  }
+
+  .pf-sidebar-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-top: none;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .pf-plan-label { display: none; }
+  .pf-plan-name  { font-size: 0.78rem; margin-bottom: 0; }
+  .pf-upgrade-btn { width: auto; padding: 7px 12px; font-size: 0.75rem; }
+
+  /* Main padding */
+  .pf-main { padding: 20px 16px 48px; gap: 20px; }
+
+  /* Hero */
+  .pf-hero { gap: 14px; }
+  .pf-hero-avatar { width: 60px; height: 60px; font-size: 1.5rem; }
+  .pf-hero-name   { font-size: 1.35rem; }
+
+  /* Cards stack */
+  .pf-cards-grid { grid-template-columns: 1fr; gap: 14px; }
+
+  /* Track list columns: hide playlist label on very small */
+  .pf-track-row {
+    grid-template-columns: 26px 40px 1fr 60px 28px;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  /* Hide playlist badge column */
+  .pf-col-playlist { display: none; }
+  .pf-track-row--hd .pf-col-playlist { display: none; }
+
+  .pf-art-img { width: 36px; height: 36px; }
+  .pf-t-name  { font-size: 0.82rem; }
+  .pf-col-date { font-size: 0.7rem; }
+}
+
+/* ── Very wide screens ── */
+@media (min-width: 1400px) {
+  .pf-sidebar { width: 240px; }
+  .pf-main    { padding: 40px 56px 64px; }
+}

@@ -12,6 +12,8 @@ import RadioPage from './pages/RadioPage';
 import TidalDownloadPage from './pages/TidalDownloadPage';
 import CommunityPage from './pages/CommunityPage';
 import DiscoverPage from './pages/DiscoverPage';
+import ProfilePage from './pages/ProfilePage';
+import SubscriptionPage from './pages/SubscriptionPage';
 
 export default function App() {
   const { isLoggedIn } = useAuth();
@@ -19,9 +21,11 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={isLoggedIn ? <Navigate to="/" replace /> : <LoginPage />} />
-      <Route element={isLoggedIn ? <Layout /> : <Navigate to="/login" replace />}>
+      <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="discover" element={<DiscoverPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="subscription" element={<SubscriptionPage />} />
         <Route path="beatport" element={<BeatportPage />} />
         <Route path="traxsource" element={<TraxsourcePage />} />
         <Route path="1001tracklists" element={<TracklistsPage />} />

@@ -29,7 +29,7 @@ function formatDate(iso) {
 }
 
 export default function CommunityPage() {
-  const { token, userId, email, getValidToken } = useAuth();
+  const { token, userId, email, getValidToken, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const API = window.location.origin;
 
@@ -146,6 +146,10 @@ export default function CommunityPage() {
 
   // ── Upload submit ────────────────────────────────────────────────────────
   const handleUpload = async () => {
+    if (!isLoggedIn) {
+      setUploadMsg({ text: 'Debes iniciar sesión para subir listas a la comunidad.', type: 'error' });
+      return;
+    }
     if (!uploadFile) return setUploadMsg({ text: 'Primero selecciona un CSV.', type: 'error' });
     if (!listName.trim()) return setUploadMsg({ text: 'El nombre de la lista es requerido.', type: 'error' });
 
