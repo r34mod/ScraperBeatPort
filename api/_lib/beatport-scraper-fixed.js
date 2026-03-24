@@ -14,10 +14,28 @@ const router = express.Router();
 // Extrae tracks usando una página ya abierta (sin gestionar el browser)
 async function _doScrapeBeatportPage(page, genreUrl, genreName) {
         await page.setUserAgent(getRandomUserAgent());
-        await page.setViewport({ width: 1200, height: 900 });
+        await page.setViewport({ width: 1280, height: 900 });
 
-        // Navegar a la URL
-        await page.goto(genreUrl, { waitUntil: 'networkidle2', timeout: 45000 });
+        // Navegar a la URL. Usamos 'domcontentloaded' en lugar de 'networkidle2':
+        // Beatport es un SPA (React) con conexiones persistentes que hacen que
+        // 'networkidle2' tarde mucho o nunca se resuelva (especialmente en Vercel).
+        await page.goto(genreUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+
+        // Esperar a que React monte el contenido dinámico
+        await delay(3000);
+
+        // Detectar páginas de protección anti-bot (Cloudflare, 403, login wall...)
+        const pageTitle = await page.title();
+        const pageUrl = page.url();
+        const isChallenge = /just a moment|cloudflare|403 forbidden|access denied|captcha|bot/i.test(pageTitle);
+        const isLoginWall = /sign in|log in|login|iniciar sesión/i.test(pageTitle) && !pageTitle.toLowerCase().includes('top');
+        if (isChallenge || pageUrl.includes('challenges.cloudflare.com')) {
+            throw new Error(`Página protegida por Cloudflare/bot-detection: "${pageTitle}". Beatport está bloqueando el acceso desde este servidor.`);
+        }
+        if (isLoginWall) {
+            throw new Error(`Beatport requiere autenticación para acceder al Top 100 del género "${genreName}".`);
+        }
+        console.log(`📄 Página cargada: "${pageTitle}" (${pageUrl})`);
 
         // Intentar cerrar posibles banners de cookies
         await handleCookieConsent(page);
@@ -95,107 +113,104 @@ async function _doScrapeBeatportPage(page, genreUrl, genreName) {
                 seenTitles.add(title);
                 
                 // Buscar el contenedor padre que contiene toda la información del track
-                let container = trackLink.closest('div');
+                // Subimos hasta 12 niveles para cubrir estructuras de componentes más profundas.
+                // IMPORTANTE: buscamos el contenedor MÁS PEQUEÑO que tenga al menos un artista
+                // pero no más de ~5 tracks (para no coger toda la lista de golpe).
+                let container = trackLink.parentElement;
                 let attempts = 0;
-                while (container && attempts < 8) {
+                let foundContainer = null;
+                while (container && attempts < 12) {
                     const artistLinks = container.querySelectorAll('a[href*="/artist/"]');
-                    const labelLink = container.querySelector('a[href*="/label/"]');
-                    
-                    if (artistLinks.length > 0) {
-                        // Extraer artistas
-                        const artists = Array.from(artistLinks)
-                            .map(a => a.textContent.trim())
-                            .filter(a => a.length > 0)
-                            .join(', ');
-                        
-                        // Extraer sello
-                        const label = labelLink ? labelLink.textContent.trim() : '';
-                        
-                        // Extraer remixer - buscar texto entre paréntesis en título o en links de artista remix
-                        let remixer = '';
-                        const remixMatch = title.match(/\(([^)]+(?:remix|mix|edit|dub|rework|bootleg)[^)]*)\)/i);
-                        if (remixMatch) {
-                            remixer = remixMatch[1].trim();
-                        }
-                        
-                        // Extraer BPM - buscar elementos con texto numérico de 2-3 dígitos (rango 60-200)
-                        let bpm = '';
-                        const allSpans = container.querySelectorAll('span, div.bpm, span.bpm, [class*="bpm"], [data-track-bpm]');
-                        for (const el of allSpans) {
-                            const txt = el.textContent.trim();
-                            if (/^\d{2,3}$/.test(txt)) {
-                                const num = parseInt(txt, 10);
-                                if (num >= 60 && num <= 200) {
-                                    bpm = txt;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // Extraer Key - buscar elementos que contengan clave musical
-                        let key = '';
-                        const keyPattern = /^[A-G][#b♯♭]?\s*(maj|min|major|minor)?$/i;
-                        const keyElements = container.querySelectorAll('span, div.key, span.key, [class*="key"], [data-track-key]');
-                        for (const el of keyElements) {
-                            const txt = el.textContent.trim();
-                            if (keyPattern.test(txt)) {
-                                key = txt;
-                                break;
-                            }
-                        }
-                        // Beatport also uses Camelot notation (1A-12B)
-                        if (!key) {
-                            const camelotPattern = /^(1[0-2]|[1-9])[AB]$/;
-                            for (const el of keyElements) {
-                                const txt = el.textContent.trim();
-                                if (camelotPattern.test(txt)) {
-                                    key = txt;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // Extraer Duration - buscar elementos con formato M:SS o MM:SS
-                        let length = '';
-                        const durationPattern = /^\d{1,2}:\d{2}$/;
-                        const durationElements = container.querySelectorAll('span, div.length, span.length, [class*="duration"], [class*="length"], [data-track-length]');
-                        for (const el of durationElements) {
-                            const txt = el.textContent.trim();
-                            if (durationPattern.test(txt)) {
-                                length = txt;
-                                break;
-                            }
-                        }
-                        
-                        // Extraer Release Date - buscar elementos con formato fecha
-                        let releaseDate = '';
-                        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-                        const dateElements = container.querySelectorAll('span, [class*="release"], [class*="date"], [data-track-released]');
-                        for (const el of dateElements) {
-                            const txt = el.textContent.trim();
-                            if (datePattern.test(txt)) {
-                                releaseDate = txt;
-                                break;
-                            }
-                        }
-                        
-                        out.push({
-                            position: position++,
-                            title: title,
-                            artist: artists || 'Unknown Artist',
-                            remixer: remixer,
-                            label: label || '',
-                            releaseDate: releaseDate,
-                            genre: window.location.pathname.split('/')[2] || '',
-                            bpm: bpm,
-                            key: key,
-                            length: length
-                        });
+                    const childTrackLinks = container.querySelectorAll('a[href*="/track/"]');
+                    if (artistLinks.length > 0 && childTrackLinks.length <= 4) {
+                        foundContainer = container;
                         break;
                     }
-                    
                     container = container.parentElement;
                     attempts++;
+                }
+
+                if (foundContainer) {
+                    const artistLinks = foundContainer.querySelectorAll('a[href*="/artist/"]');
+                    const labelLink = foundContainer.querySelector('a[href*="/label/"]');
+
+                    const artists = Array.from(artistLinks)
+                        .map(a => a.textContent.trim())
+                        .filter(a => a.length > 0)
+                        .join(', ');
+
+                    const label = labelLink ? labelLink.textContent.trim() : '';
+
+                    let remixer = '';
+                    const remixMatch = title.match(/\(([^)]+(?:remix|mix|edit|dub|rework|bootleg)[^)]*)\)/i);
+                    if (remixMatch) remixer = remixMatch[1].trim();
+
+                    // BPM
+                    let bpm = '';
+                    const allSpans = foundContainer.querySelectorAll('span, div.bpm, span.bpm, [class*="bpm"], [data-track-bpm]');
+                    for (const el of allSpans) {
+                        const txt = el.textContent.trim();
+                        if (/^\d{2,3}$/.test(txt)) {
+                            const num = parseInt(txt, 10);
+                            if (num >= 60 && num <= 200) { bpm = txt; break; }
+                        }
+                    }
+
+                    // Key (traditional + Camelot)
+                    let key = '';
+                    const keyPattern = /^[A-G][#b♯♭]?\s*(maj|min|major|minor)?$/i;
+                    const camelotPattern = /^(1[0-2]|[1-9])[AB]$/;
+                    const keyElements = foundContainer.querySelectorAll('span, div.key, span.key, [class*="key"], [data-track-key]');
+                    for (const el of keyElements) {
+                        const txt = el.textContent.trim();
+                        if (keyPattern.test(txt) || camelotPattern.test(txt)) { key = txt; break; }
+                    }
+
+                    // Duration
+                    let length = '';
+                    const durationPattern = /^\d{1,2}:\d{2}$/;
+                    const durationElements = foundContainer.querySelectorAll('span, div.length, span.length, [class*="duration"], [class*="length"], [data-track-length]');
+                    for (const el of durationElements) {
+                        const txt = el.textContent.trim();
+                        if (durationPattern.test(txt)) { length = txt; break; }
+                    }
+
+                    // Release Date
+                    let releaseDate = '';
+                    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+                    const dateElements = foundContainer.querySelectorAll('span, [class*="release"], [class*="date"], [data-track-released]');
+                    for (const el of dateElements) {
+                        const txt = el.textContent.trim();
+                        if (datePattern.test(txt)) { releaseDate = txt; break; }
+                    }
+
+                    out.push({
+                        position: position++,
+                        title,
+                        artist: artists || 'Unknown Artist',
+                        remixer,
+                        label,
+                        releaseDate,
+                        genre: window.location.pathname.split('/')[2] || '',
+                        bpm,
+                        key,
+                        length,
+                    });
+                } else {
+                    // Fallback: incluir el track con solo el título para no perder posiciones.
+                    // Ocurre cuando la estructura del DOM no sigue el patrón esperado.
+                    out.push({
+                        position: position++,
+                        title,
+                        artist: '',
+                        remixer: '',
+                        label: '',
+                        releaseDate: '',
+                        genre: window.location.pathname.split('/')[2] || '',
+                        bpm: '',
+                        key: '',
+                        length: '',
+                    });
                 }
             });
             
@@ -308,9 +323,10 @@ router.get('/scrape', optionalAuth, async (req, res) => {
         
         if (tracks.length === 0) {
             console.log(`⚠️ No se obtuvieron tracks para ${genre}`);
-            return res.status(404).json({ 
-                error: 'No se pudieron extraer tracks',
-                genre 
+            return res.status(503).json({ 
+                error: 'No se pudieron extraer tracks. Posible bloqueo anti-bot (Cloudflare) o la página requiere autenticación.',
+                hint: 'Beatport puede estar bloqueando el acceso desde servidores cloud. Prueba de nuevo más tarde o usa la versión local.',
+                genre,
             });
         }
 

@@ -22,11 +22,12 @@ const CONFIG = {
         ]
     },
 
-    // User agents para rotación
+    // User agents para rotación (Chrome 131 — 2024)
     USER_AGENTS: [
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
     ],
 
     // Delays para evitar detección
@@ -174,14 +175,32 @@ async function smoothScroll(page) {
 
 // Función para manejar cookies de consentimiento
 async function handleCookieConsent(page) {
+    // Lista de selectores comunes en el orden de preferencia
+    const selectors = [
+        // UserCentrics (usado por Beatport)
+        'button[data-testid="uc-accept-all-button"]',
+        '#usercentrics-root button[data-testid="uc-accept-all-button"]',
+        // OneTrust
+        '#onetrust-accept-btn-handler',
+        '.onetrust-accept-btn-handler',
+        // Genéricos
+        '.cookie-accept',
+        '#accept-cookies',
+        'button[aria-label*="accept" i]',
+        'button[aria-label*="agree" i]',
+    ];
     try {
-        const cookieButton = await page.$('button[data-testid="uc-accept-all-button"], .cookie-accept, #accept-cookies');
-        if (cookieButton) {
-            await cookieButton.click();
-            await delay(1000);
+        for (const sel of selectors) {
+            const btn = await page.$(sel);
+            if (btn) {
+                await btn.click();
+                await delay(800);
+                console.log(`🍪 Cookie consent aceptado con: ${sel}`);
+                return;
+            }
         }
     } catch (error) {
-        console.log('No se encontró banner de cookies o ya fue aceptado');
+        // No fatal: continuar si no hay banner o ya fue aceptado
     }
 }
 
@@ -213,17 +232,33 @@ async function launchBrowser() {
     if (IS_VERCEL) {
         const chromium = require('@sparticuz/chromium');
         const puppeteerCore = require('puppeteer-core');
+
+        const execPath = await chromium.executablePath();
+        if (!execPath) {
+            throw new Error('No se encontró el ejecutable de Chromium. Verifica que @sparticuz/chromium esté correctamente instalado.');
+        }
+
+        const extraArgs = [
+            '--disable-blink-features=AutomationControlled',
+            '--lang=en-US,en',
+            '--window-size=1280,900',
+        ];
+
         return puppeteerCore.launch({
-            args: chromium.args,
+            args: [...chromium.args, ...extraArgs],
             defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath(),
+            executablePath: execPath,
             headless: chromium.headless,
         });
     } else {
         const puppeteer = require('puppeteer');
         return puppeteer.launch({
             headless: true,
-            args: CONFIG.PUPPETEER.args,
+            args: [
+                ...CONFIG.PUPPETEER.args,
+                '--disable-blink-features=AutomationControlled',
+                '--lang=en-US,en',
+            ],
         });
     }
 }

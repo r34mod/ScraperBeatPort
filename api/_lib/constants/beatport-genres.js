@@ -12,7 +12,7 @@ const BEATPORT_GENRES = {
     'afro-house': 'https://www.beatport.com/genre/afro-house/89/top-100',
     'bass-house': 'https://www.beatport.com/genre/bass-house/91/top-100',
     'funky-house': 'https://www.beatport.com/genre/funky-house/81/top-100',
-    'jackin-house': 'https://www.beatport.com/genre/jackin-house/83/top-100',
+    // 'jackin-house': 'https://www.beatport.com/genre/jackin-house/81/top-100',
     'melodic-house-techno': 'https://www.beatport.com/genre/melodic-house-techno/90/top-100',
     'organic-house': 'https://www.beatport.com/genre/organic-house/93/top-100',
 

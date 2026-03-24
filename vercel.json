@@ -11,7 +11,7 @@
   "functions": {
     "api/server.js": {
       "maxDuration": 60,
-      "includeFiles": "api/**"
+      "includeFiles": "node_modules/@sparticuz/chromium/**"
     }
   },
   "rewrites": [
