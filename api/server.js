@@ -42,8 +42,10 @@ const app = express();
 // Puedes ampliarla con la variable de entorno ALLOWED_ORIGINS (valores separados por coma).
 const STATIC_ALLOWED_ORIGINS = [
     'https://scraper-beat-port.vercel.app',
-    // Previews de Vercel: cualquier rama del mismo proyecto
+    // Previews de Vercel: commits individuales  scraper-beat-port-{hash}-r34mod.vercel.app
     /^https:\/\/scraper-beat-port-[a-z0-9-]+-r34mod\.vercel\.app$/,
+    // Previews de Vercel: ramas  scraper-beat-port-git-{branch}-r34mod.vercel.app
+    /^https:\/\/scraper-beat-port-git-[a-z0-9-]+-r34mod\.vercel\.app$/,
 ];
 
 function buildAllowedOrigins() {
@@ -71,7 +73,9 @@ const corsOptions = {
         if (isAllowed) return callback(null, true);
 
         logger.warn({ origin }, 'CORS: origen no autorizado bloqueado');
-        callback(new Error(`CORS: el origen "${origin}" no está autorizado.`));
+        const corsError = new Error(`CORS: el origen "${origin}" no está autorizado.`);
+        corsError.statusCode = 403;
+        callback(corsError);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
