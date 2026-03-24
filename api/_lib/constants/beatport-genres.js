@@ -12,7 +12,7 @@ const BEATPORT_GENRES = {
     'afro-house': 'https://www.beatport.com/genre/afro-house/89/top-100',
     'bass-house': 'https://www.beatport.com/genre/bass-house/91/top-100',
     'funky-house': 'https://www.beatport.com/genre/funky-house/81/top-100',
-    'jackin-house': 'https://www.beatport.com/genre/jackin-house/83/top-100',
+    // 'jackin-house': 'https://www.beatport.com/genre/jackin-house/81/top-100',
     'melodic-house-techno': 'https://www.beatport.com/genre/melodic-house-techno/90/top-100',
     'organic-house': 'https://www.beatport.com/genre/organic-house/93/top-100',
 
@@ -52,8 +52,8 @@ const BEATPORT_GENRES = {
     'nu-disco-disco': 'https://www.beatport.com/genre/nu-disco-disco/50/top-100',
 
     // Electronic - Electro y Mainstage
-    'electro': 'https://www.beatport.com/genre/electro/52/top-100',
-    'mainstage': 'https://www.beatport.com/genre/mainstage/79/top-100',
+    'electro': 'https://www.beatport.com/es/genre/electro-classic-detroit-modern/94/top-100',
+    'mainstage': 'https://www.beatport.com/es/genre/mainstage/96/top-100',
 
     // Electronic - Dance y Pop
     'dance-pop': 'https://www.beatport.com/genre/dance-pop/39/top-100',
@@ -62,16 +62,16 @@ const BEATPORT_GENRES = {
     'dj-tools': 'https://www.beatport.com/genre/dj-tools/16/top-100',
 
     // Electronic - Géneros emergentes
-    'amapiano': 'https://www.beatport.com/genre/amapiano/152/top-100',
-    'brazilian-funk': 'https://www.beatport.com/genre/brazilian-funk/127/top-100',
+    'amapiano': 'https://www.beatport.com/genre/amapiano/98/top-100',
+    'brazilian-funk': 'https://www.beatport.com/genre/brazilian-funk/101/top-100',
 
     // Open Format - Géneros diversos
-    'african': 'https://www.beatport.com/genre/african/65/top-100',
-    'caribbean': 'https://www.beatport.com/genre/caribbean/66/top-100',
-    'hip-hop': 'https://www.beatport.com/genre/hip-hop/38/top-100',
+    'african': 'https://www.beatport.com/genre/african/102/top-100',
+    'caribbean': 'https://www.beatport.com/genre/caribbean/103/top-100',
+    'hip-hop': 'https://www.beatport.com/genre/hip-hop/105/top-100',
     'latin': 'https://www.beatport.com/genre/latin/61/top-100',
-    'pop': 'https://www.beatport.com/genre/pop/35/top-100',
-    'rnb': 'https://www.beatport.com/genre/rnb/36/top-100',
+    'pop': 'https://www.beatport.com/genre/pop/106/top-100',
+    'rnb': 'https://www.beatport.com/genre/rnb/108/top-100',
 };
 
 module.exports = { BEATPORT_GENRES };

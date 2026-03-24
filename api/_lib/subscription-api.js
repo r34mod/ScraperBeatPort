@@ -131,6 +131,26 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    // ── Idempotencia: rechazar eventos ya procesados (replay / duplicados) ────
+    // Intentamos insertar el event.id. Si ya existe (PRIMARY KEY conflict),
+    // Supabase devuelve un error y devolvemos 200 para que Stripe no reintente.
+    if (isSupabaseEnabled()) {
+        const { error: idempotencyError } = await supabaseAdmin
+            .from('stripe_events')
+            .insert({ event_id: event.id, event_type: event.type });
+
+        if (idempotencyError) {
+            // code 23505 = unique_violation (PostgreSQL)
+            if (idempotencyError.code === '23505') {
+                console.warn(`⚠️ Evento Stripe duplicado ignorado: ${event.id}`);
+                return res.json({ received: true, duplicate: true });
+            }
+            // Cualquier otro error de BD es inesperado; lo logueamos pero continuamos
+            // para no bloquear el webhook y forzar reintentos de Stripe.
+            console.error('Error registrando evento Stripe:', idempotencyError);
+        }
+    }
+
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         const userId = session.client_reference_id || session.metadata?.userId;
@@ -148,7 +168,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
             if (error) {
                 console.error('Error guardando suscripción:', error);
             } else {
-                console.log(`✅ Usuario suscrito: ${userId}`);
+                console.log(`✅ Usuario suscrito: ${userId} (evento: ${event.id})`);
             }
         }
     }

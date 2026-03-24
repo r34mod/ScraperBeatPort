@@ -37,8 +37,54 @@ const logger = pino({
 
 const app = express();
 
-// --- MIDDLEWARE ---
-app.use(cors());
+// --- CORS ---
+// Allowlist de orígenes autorizados. En producción, añade aquí tus dominios de Vercel.
+// Puedes ampliarla con la variable de entorno ALLOWED_ORIGINS (valores separados por coma).
+const STATIC_ALLOWED_ORIGINS = [
+    'https://scraper-beat-port.vercel.app',
+    // Previews de Vercel: cualquier deployment del proyecto (commit hash o rama)
+    // Cubre tanto r34mod como r34mods-projects (team slug de Vercel)
+    /^https:\/\/scraper-beat-port(-git-[a-z0-9-]+)?-r34mods?(-projects)?\.vercel\.app$/,
+];
+
+function buildAllowedOrigins() {
+    const origins = [...STATIC_ALLOWED_ORIGINS];
+    if (process.env.ALLOWED_ORIGINS) {
+        process.env.ALLOWED_ORIGINS.split(',')
+            .map(o => o.trim())
+            .filter(Boolean)
+            .forEach(o => origins.push(o));
+    }
+    return origins;
+}
+
+const corsOptions = {
+    origin(origin, callback) {
+        // Permitir peticiones sin Origin (curl, Postman, SSR, llamadas server-to-server)
+        // y el propio localhost en desarrollo.
+        if (!origin || !IS_PRODUCTION) return callback(null, true);
+
+        const allowed = buildAllowedOrigins();
+        const isAllowed = allowed.some(entry =>
+            typeof entry === 'string' ? entry === origin : entry.test(origin)
+        );
+
+        if (isAllowed) return callback(null, true);
+
+        logger.warn({ origin }, 'CORS: origen no autorizado bloqueado');
+        const corsError = new Error(`CORS: el origen "${origin}" no está autorizado.`);
+        corsError.statusCode = 403;
+        callback(corsError);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+// Pre-flight explícito para todas las rutas
+app.options('*', cors(corsOptions));
 // Stripe webhook necesita el body sin parsear (debe ir ANTES de express.json)
 app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '50mb' })); // Aumentado para permitir subida de CSVs grandes

@@ -8,16 +8,40 @@ const { saveSessionToSupabase } = require('./services/supabase-tracks-service');
 const scrapeCache = require('./scrape-cache');
 const { validate, schemas } = require('./validation');
 const { BEATPORT_GENRES } = require('./constants/beatport-genres');
+const { updateDiscoveryFromPage, resolveGenreUrl, discoveryStats } = require('./services/genre-discovery');
 
 const router = express.Router();
 
 // Extrae tracks usando una página ya abierta (sin gestionar el browser)
 async function _doScrapeBeatportPage(page, genreUrl, genreName) {
         await page.setUserAgent(getRandomUserAgent());
-        await page.setViewport({ width: 1200, height: 900 });
+        await page.setViewport({ width: 1280, height: 900 });
 
-        // Navegar a la URL
-        await page.goto(genreUrl, { waitUntil: 'networkidle2', timeout: 45000 });
+        // Navegar a la URL. Usamos 'domcontentloaded' en lugar de 'networkidle2':
+        // Beatport es un SPA (React) con conexiones persistentes que hacen que
+        // 'networkidle2' tarde mucho o nunca se resuelva (especialmente en Vercel).
+        await page.goto(genreUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+
+        // Esperar a que React monte el contenido dinámico
+        await delay(3000);
+
+        // Detectar páginas de protección anti-bot (Cloudflare, 403, login wall...)
+        const pageTitle = await page.title();
+        const pageUrl = page.url();
+        const isChallenge = /just a moment|cloudflare|403 forbidden|access denied|captcha|bot/i.test(pageTitle);
+        const isLoginWall = /sign in|log in|login|iniciar sesión/i.test(pageTitle) && !pageTitle.toLowerCase().includes('top');
+        if (isChallenge || pageUrl.includes('challenges.cloudflare.com')) {
+            throw new Error(`Página protegida por Cloudflare/bot-detection: "${pageTitle}". Beatport está bloqueando el acceso desde este servidor.`);
+        }
+        if (isLoginWall) {
+            throw new Error(`Beatport requiere autenticación para acceder al Top 100 del género "${genreName}".`);
+        }
+        console.log(`📄 Página cargada: "${pageTitle}" (${pageUrl})`);
+
+        // Actualizar caché de descubrimiento de URLs con los enlaces del menú de géneros.
+        // Beatport renderiza el dropdown de géneros en cada página, así que esto es gratis.
+        // Fire-and-forget: nunca bloquea ni lanza errores.
+        updateDiscoveryFromPage(page).catch(() => {});
 
         // Intentar cerrar posibles banners de cookies
         await handleCookieConsent(page);
@@ -95,107 +119,104 @@ async function _doScrapeBeatportPage(page, genreUrl, genreName) {
                 seenTitles.add(title);
                 
                 // Buscar el contenedor padre que contiene toda la información del track
-                let container = trackLink.closest('div');
+                // Subimos hasta 12 niveles para cubrir estructuras de componentes más profundas.
+                // IMPORTANTE: buscamos el contenedor MÁS PEQUEÑO que tenga al menos un artista
+                // pero no más de ~5 tracks (para no coger toda la lista de golpe).
+                let container = trackLink.parentElement;
                 let attempts = 0;
-                while (container && attempts < 8) {
+                let foundContainer = null;
+                while (container && attempts < 12) {
                     const artistLinks = container.querySelectorAll('a[href*="/artist/"]');
-                    const labelLink = container.querySelector('a[href*="/label/"]');
-                    
-                    if (artistLinks.length > 0) {
-                        // Extraer artistas
-                        const artists = Array.from(artistLinks)
-                            .map(a => a.textContent.trim())
-                            .filter(a => a.length > 0)
-                            .join(', ');
-                        
-                        // Extraer sello
-                        const label = labelLink ? labelLink.textContent.trim() : '';
-                        
-                        // Extraer remixer - buscar texto entre paréntesis en título o en links de artista remix
-                        let remixer = '';
-                        const remixMatch = title.match(/\(([^)]+(?:remix|mix|edit|dub|rework|bootleg)[^)]*)\)/i);
-                        if (remixMatch) {
-                            remixer = remixMatch[1].trim();
-                        }
-                        
-                        // Extraer BPM - buscar elementos con texto numérico de 2-3 dígitos (rango 60-200)
-                        let bpm = '';
-                        const allSpans = container.querySelectorAll('span, div.bpm, span.bpm, [class*="bpm"], [data-track-bpm]');
-                        for (const el of allSpans) {
-                            const txt = el.textContent.trim();
-                            if (/^\d{2,3}$/.test(txt)) {
-                                const num = parseInt(txt, 10);
-                                if (num >= 60 && num <= 200) {
-                                    bpm = txt;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // Extraer Key - buscar elementos que contengan clave musical
-                        let key = '';
-                        const keyPattern = /^[A-G][#b♯♭]?\s*(maj|min|major|minor)?$/i;
-                        const keyElements = container.querySelectorAll('span, div.key, span.key, [class*="key"], [data-track-key]');
-                        for (const el of keyElements) {
-                            const txt = el.textContent.trim();
-                            if (keyPattern.test(txt)) {
-                                key = txt;
-                                break;
-                            }
-                        }
-                        // Beatport also uses Camelot notation (1A-12B)
-                        if (!key) {
-                            const camelotPattern = /^(1[0-2]|[1-9])[AB]$/;
-                            for (const el of keyElements) {
-                                const txt = el.textContent.trim();
-                                if (camelotPattern.test(txt)) {
-                                    key = txt;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        // Extraer Duration - buscar elementos con formato M:SS o MM:SS
-                        let length = '';
-                        const durationPattern = /^\d{1,2}:\d{2}$/;
-                        const durationElements = container.querySelectorAll('span, div.length, span.length, [class*="duration"], [class*="length"], [data-track-length]');
-                        for (const el of durationElements) {
-                            const txt = el.textContent.trim();
-                            if (durationPattern.test(txt)) {
-                                length = txt;
-                                break;
-                            }
-                        }
-                        
-                        // Extraer Release Date - buscar elementos con formato fecha
-                        let releaseDate = '';
-                        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-                        const dateElements = container.querySelectorAll('span, [class*="release"], [class*="date"], [data-track-released]');
-                        for (const el of dateElements) {
-                            const txt = el.textContent.trim();
-                            if (datePattern.test(txt)) {
-                                releaseDate = txt;
-                                break;
-                            }
-                        }
-                        
-                        out.push({
-                            position: position++,
-                            title: title,
-                            artist: artists || 'Unknown Artist',
-                            remixer: remixer,
-                            label: label || '',
-                            releaseDate: releaseDate,
-                            genre: window.location.pathname.split('/')[2] || '',
-                            bpm: bpm,
-                            key: key,
-                            length: length
-                        });
+                    const childTrackLinks = container.querySelectorAll('a[href*="/track/"]');
+                    if (artistLinks.length > 0 && childTrackLinks.length <= 4) {
+                        foundContainer = container;
                         break;
                     }
-                    
                     container = container.parentElement;
                     attempts++;
+                }
+
+                if (foundContainer) {
+                    const artistLinks = foundContainer.querySelectorAll('a[href*="/artist/"]');
+                    const labelLink = foundContainer.querySelector('a[href*="/label/"]');
+
+                    const artists = Array.from(artistLinks)
+                        .map(a => a.textContent.trim())
+                        .filter(a => a.length > 0)
+                        .join(', ');
+
+                    const label = labelLink ? labelLink.textContent.trim() : '';
+
+                    let remixer = '';
+                    const remixMatch = title.match(/\(([^)]+(?:remix|mix|edit|dub|rework|bootleg)[^)]*)\)/i);
+                    if (remixMatch) remixer = remixMatch[1].trim();
+
+                    // BPM
+                    let bpm = '';
+                    const allSpans = foundContainer.querySelectorAll('span, div.bpm, span.bpm, [class*="bpm"], [data-track-bpm]');
+                    for (const el of allSpans) {
+                        const txt = el.textContent.trim();
+                        if (/^\d{2,3}$/.test(txt)) {
+                            const num = parseInt(txt, 10);
+                            if (num >= 60 && num <= 200) { bpm = txt; break; }
+                        }
+                    }
+
+                    // Key (traditional + Camelot)
+                    let key = '';
+                    const keyPattern = /^[A-G][#b♯♭]?\s*(maj|min|major|minor)?$/i;
+                    const camelotPattern = /^(1[0-2]|[1-9])[AB]$/;
+                    const keyElements = foundContainer.querySelectorAll('span, div.key, span.key, [class*="key"], [data-track-key]');
+                    for (const el of keyElements) {
+                        const txt = el.textContent.trim();
+                        if (keyPattern.test(txt) || camelotPattern.test(txt)) { key = txt; break; }
+                    }
+
+                    // Duration
+                    let length = '';
+                    const durationPattern = /^\d{1,2}:\d{2}$/;
+                    const durationElements = foundContainer.querySelectorAll('span, div.length, span.length, [class*="duration"], [class*="length"], [data-track-length]');
+                    for (const el of durationElements) {
+                        const txt = el.textContent.trim();
+                        if (durationPattern.test(txt)) { length = txt; break; }
+                    }
+
+                    // Release Date
+                    let releaseDate = '';
+                    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+                    const dateElements = foundContainer.querySelectorAll('span, [class*="release"], [class*="date"], [data-track-released]');
+                    for (const el of dateElements) {
+                        const txt = el.textContent.trim();
+                        if (datePattern.test(txt)) { releaseDate = txt; break; }
+                    }
+
+                    out.push({
+                        position: position++,
+                        title,
+                        artist: artists || 'Unknown Artist',
+                        remixer,
+                        label,
+                        releaseDate,
+                        genre: window.location.pathname.split('/')[2] || '',
+                        bpm,
+                        key,
+                        length,
+                    });
+                } else {
+                    // Fallback: incluir el track con solo el título para no perder posiciones.
+                    // Ocurre cuando la estructura del DOM no sigue el patrón esperado.
+                    out.push({
+                        position: position++,
+                        title,
+                        artist: '',
+                        remixer: '',
+                        label: '',
+                        releaseDate: '',
+                        genre: window.location.pathname.split('/')[2] || '',
+                        bpm: '',
+                        key: '',
+                        length: '',
+                    });
                 }
             });
             
@@ -250,12 +271,13 @@ async function generateCSV(tracks, genreName) {
 // Rutas API
 
 // Obtener lista de géneros disponibles
+// Devuelve la URL resuelta para cada género (discovered > hardcoded fallback).
 router.get('/genres', (req, res) => {
     try {
         const genres = Object.keys(BEATPORT_GENRES).map(key => ({
             id: key,
-            name: key.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            url: BEATPORT_GENRES[key]
+            name: key.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            url: resolveGenreUrl(key),
         }));
         
         console.log(`📋 Enviando ${genres.length} géneros disponibles`);
@@ -266,13 +288,44 @@ router.get('/genres', (req, res) => {
     }
 });
 
+// Estado del caché de descubrimiento de URLs de géneros.
+// Útil para depuración: muestra qué URLs se han autodescubierto vs. hardcoded.
+router.get('/genres/discovery', (req, res) => {
+    res.json(discoveryStats());
+});
+
+// Actualiza manualmente el caché de descubrimiento visitando la homepage de Beatport.
+// No es necesario en uso normal (se actualiza automáticamente con cada scrape),
+// pero útil si Beatport cambia IDs y quieres refrescar sin hacer un scrape completo.
+router.post('/genres/refresh', async (req, res) => {
+    let browser = null;
+    try {
+        const { launchBrowser, createPage, delay } = require('./scraper-utils');
+        browser = await launchBrowser();
+        const page = await createPage(browser);
+        await page.setUserAgent(require('./scraper-utils').getRandomUserAgent());
+        await page.goto('https://www.beatport.com', { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await delay(2500);
+        await updateDiscoveryFromPage(page);
+        const stats = discoveryStats();
+        console.log(`🔄 Refresh manual completado: ${stats.totalDiscovered} géneros descubiertos`);
+        res.json({ success: true, ...stats });
+    } catch (err) {
+        console.error('Error en refresh de géneros:', err.message);
+        res.status(500).json({ error: 'No se pudo actualizar el caché de géneros.', details: err.message });
+    } finally {
+        if (browser) { try { await browser.close(); } catch (e) {} }
+    }
+});
+
 // Obtener Top100 de un género específico y generar CSV (usando query params)
 router.get('/scrape', optionalAuth, async (req, res) => {
     const { genre } = req.query;
     
     console.log(`🚀 Iniciando scraping para género: ${genre}`);
     
-    if (!BEATPORT_GENRES[genre]) {
+    const genreUrl = resolveGenreUrl(genre);
+    if (!genreUrl) {
         console.log(`❌ Género no válido: ${genre}`);
         return res.status(400).json({ 
             error: 'Género no válido',
@@ -299,7 +352,7 @@ router.get('/scrape', optionalAuth, async (req, res) => {
 
         // Hacer scraping con reintentos automáticos
         const rawTracks = await retryWithBackoff(
-            () => scrapeBeatportGenre(BEATPORT_GENRES[genre], genre),
+            () => scrapeBeatportGenre(genreUrl, genre),
             2, 3000
         );
         
@@ -308,9 +361,10 @@ router.get('/scrape', optionalAuth, async (req, res) => {
         
         if (tracks.length === 0) {
             console.log(`⚠️ No se obtuvieron tracks para ${genre}`);
-            return res.status(404).json({ 
-                error: 'No se pudieron extraer tracks',
-                genre 
+            return res.status(503).json({ 
+                error: 'No se pudieron extraer tracks. Posible bloqueo anti-bot (Cloudflare) o la página requiere autenticación.',
+                hint: 'Beatport puede estar bloqueando el acceso desde servidores cloud. Prueba de nuevo más tarde o usa la versión local.',
+                genre,
             });
         }
 
@@ -418,7 +472,8 @@ router.post('/scrape-multiple', validate(schemas.beatportScrapeMultiple), async 
 
         for (const genre of genres) {
             console.log(`⏳ Procesando género: ${genre}`);
-            if (!BEATPORT_GENRES[genre]) {
+            const genreUrl = resolveGenreUrl(genre);
+            if (!genreUrl) {
                 results.push({ genre, error: 'Género no válido' });
                 continue;
             }
@@ -447,7 +502,7 @@ router.post('/scrape-multiple', validate(schemas.beatportScrapeMultiple), async 
             let page = null;
             try {
                 page = await createPage(browser);
-                const rawTracks = await _doScrapeBeatportPage(page, BEATPORT_GENRES[genre], genre);
+                const rawTracks = await _doScrapeBeatportPage(page, genreUrl, genre);
                 const tracks = rawTracks.map(t => validateTrackData(t));
                 scrapeCache.set('beatport', genre, tracks);
                 const { fileName, downloadUrl } = await generateCSV(tracks, genre);
