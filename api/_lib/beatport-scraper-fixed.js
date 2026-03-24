@@ -8,6 +8,7 @@ const { saveSessionToSupabase } = require('./services/supabase-tracks-service');
 const scrapeCache = require('./scrape-cache');
 const { validate, schemas } = require('./validation');
 const { BEATPORT_GENRES } = require('./constants/beatport-genres');
+const { updateDiscoveryFromPage, resolveGenreUrl, discoveryStats } = require('./services/genre-discovery');
 
 const router = express.Router();
 
@@ -36,6 +37,11 @@ async function _doScrapeBeatportPage(page, genreUrl, genreName) {
             throw new Error(`Beatport requiere autenticación para acceder al Top 100 del género "${genreName}".`);
         }
         console.log(`📄 Página cargada: "${pageTitle}" (${pageUrl})`);
+
+        // Actualizar caché de descubrimiento de URLs con los enlaces del menú de géneros.
+        // Beatport renderiza el dropdown de géneros en cada página, así que esto es gratis.
+        // Fire-and-forget: nunca bloquea ni lanza errores.
+        updateDiscoveryFromPage(page).catch(() => {});
 
         // Intentar cerrar posibles banners de cookies
         await handleCookieConsent(page);
@@ -265,12 +271,13 @@ async function generateCSV(tracks, genreName) {
 // Rutas API
 
 // Obtener lista de géneros disponibles
+// Devuelve la URL resuelta para cada género (discovered > hardcoded fallback).
 router.get('/genres', (req, res) => {
     try {
         const genres = Object.keys(BEATPORT_GENRES).map(key => ({
             id: key,
-            name: key.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            url: BEATPORT_GENRES[key]
+            name: key.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            url: resolveGenreUrl(key),
         }));
         
         console.log(`📋 Enviando ${genres.length} géneros disponibles`);
@@ -281,13 +288,44 @@ router.get('/genres', (req, res) => {
     }
 });
 
+// Estado del caché de descubrimiento de URLs de géneros.
+// Útil para depuración: muestra qué URLs se han autodescubierto vs. hardcoded.
+router.get('/genres/discovery', (req, res) => {
+    res.json(discoveryStats());
+});
+
+// Actualiza manualmente el caché de descubrimiento visitando la homepage de Beatport.
+// No es necesario en uso normal (se actualiza automáticamente con cada scrape),
+// pero útil si Beatport cambia IDs y quieres refrescar sin hacer un scrape completo.
+router.post('/genres/refresh', async (req, res) => {
+    let browser = null;
+    try {
+        const { launchBrowser, createPage, delay } = require('./scraper-utils');
+        browser = await launchBrowser();
+        const page = await createPage(browser);
+        await page.setUserAgent(require('./scraper-utils').getRandomUserAgent());
+        await page.goto('https://www.beatport.com', { waitUntil: 'domcontentloaded', timeout: 30000 });
+        await delay(2500);
+        await updateDiscoveryFromPage(page);
+        const stats = discoveryStats();
+        console.log(`🔄 Refresh manual completado: ${stats.totalDiscovered} géneros descubiertos`);
+        res.json({ success: true, ...stats });
+    } catch (err) {
+        console.error('Error en refresh de géneros:', err.message);
+        res.status(500).json({ error: 'No se pudo actualizar el caché de géneros.', details: err.message });
+    } finally {
+        if (browser) { try { await browser.close(); } catch (e) {} }
+    }
+});
+
 // Obtener Top100 de un género específico y generar CSV (usando query params)
 router.get('/scrape', optionalAuth, async (req, res) => {
     const { genre } = req.query;
     
     console.log(`🚀 Iniciando scraping para género: ${genre}`);
     
-    if (!BEATPORT_GENRES[genre]) {
+    const genreUrl = resolveGenreUrl(genre);
+    if (!genreUrl) {
         console.log(`❌ Género no válido: ${genre}`);
         return res.status(400).json({ 
             error: 'Género no válido',
@@ -314,7 +352,7 @@ router.get('/scrape', optionalAuth, async (req, res) => {
 
         // Hacer scraping con reintentos automáticos
         const rawTracks = await retryWithBackoff(
-            () => scrapeBeatportGenre(BEATPORT_GENRES[genre], genre),
+            () => scrapeBeatportGenre(genreUrl, genre),
             2, 3000
         );
         
@@ -434,7 +472,8 @@ router.post('/scrape-multiple', validate(schemas.beatportScrapeMultiple), async 
 
         for (const genre of genres) {
             console.log(`⏳ Procesando género: ${genre}`);
-            if (!BEATPORT_GENRES[genre]) {
+            const genreUrl = resolveGenreUrl(genre);
+            if (!genreUrl) {
                 results.push({ genre, error: 'Género no válido' });
                 continue;
             }
@@ -463,7 +502,7 @@ router.post('/scrape-multiple', validate(schemas.beatportScrapeMultiple), async 
             let page = null;
             try {
                 page = await createPage(browser);
-                const rawTracks = await _doScrapeBeatportPage(page, BEATPORT_GENRES[genre], genre);
+                const rawTracks = await _doScrapeBeatportPage(page, genreUrl, genre);
                 const tracks = rawTracks.map(t => validateTrackData(t));
                 scrapeCache.set('beatport', genre, tracks);
                 const { fileName, downloadUrl } = await generateCSV(tracks, genre);
