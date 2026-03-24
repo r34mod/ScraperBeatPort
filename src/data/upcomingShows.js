@@ -285,5 +285,158 @@ export const UPCOMING_SHOWS = [
       url: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1998729096&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
       embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1998729096&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
       embedLabel: 'EDM Mix (Electronic Dance Music) · Robert Kovarik',
-  }
+  },
+  {
+    id: 21,
+    dj: 'Cubix Rubio',
+    show: 'Melbourne Bounce and Big Room',
+    genre: 'Melbourne Bounce',
+    live: false,
+    color: '#150505',
+    accent: '#cccccc',
+    img: 'https://i.scdn.co/image/ab67616d0000b273e9afed34a698f270600fec51', // Puedes poner una imagen relevante si tienes una
+    url: 'https://soundcloud.com/jodaru/sets/melbourne-bounce',
+    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A58270145&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
+    embedLabel: 'Melbourne Bounce and Big Room · Cubix Rubio',
+  },
+    // ── Oldskool Melbourne Bounce ────────────────────────────────
+  {
+    id: 22,
+    dj: 'Dom',
+    show: 'Oldskool Melbourne Bounce',
+    genre: 'Melbourne Bounce',
+    live: false,
+    color: '#150505',
+    accent: '#cccccc',
+    img: 'https://i.scdn.co/image/ab67616d0000b27391bdfb6a9d3331944c5bd4f6', // Puedes poner una imagen relevante si tienes una
+    url: 'https://soundcloud.com/user-454421396/sets/oldskool-melbourne-bounce',
+    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1768083609&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
+    embedLabel: 'Oldskool Melbourne Bounce · Dom',
+  },
+    // ── FULL GROOVE TECH HOUSE 2026 ─────────────────────────────
+  {
+    id: 23,
+    dj: 'LAURO',
+    show: 'FULL GROOVE TECH HOUSE PLAYLIST 2026 | Tech & Latin Club Energy Mix',
+    genre: 'Tech House / Latin',
+    live: false,
+    color: '#150505',
+    accent: '#cccccc',
+    img: 'https://i.scdn.co/image/ab67616d0000b2739eaf57846ebcc1437ce7ae48', // Puedes poner una imagen relevante si tienes una
+    url: 'https://soundcloud.com/laurosanchezzz/sets/full-groove',
+    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A2055109167&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
+    embedLabel: 'FULL GROOVE TECH HOUSE PLAYLIST 2026 · LAURO',
+  },
+  // ── CANTADITAS RADICAL (REMEMBER CANTADO) ──────────────────
+  {
+    id: 24,
+    dj: 'David Reina Music',
+    show: 'CANTADITAS RADICAL (REMEMBER CANTADO) By @yeyibarrajon',
+    genre: 'Remember',
+    live: false,
+    color: '#150505',
+    accent: '#cccccc',
+    img: 'https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84fcf49e3ff091888cc09e3ee7', // Puedes poner una imagen relevante si tienes una
+    url: 'https://soundcloud.com/reinamusic/sets/cantaditas-radical-remember',
+    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1042268047&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
+    embedLabel: 'CANTADITAS RADICAL (REMEMBER CANTADO) · David Reina Music',
+  },
+    // ── Chill House 2025 ─────────────────────────────────────────
+  {
+    id: 25,
+    dj: 'ChillYourMind',
+    show: 'Chill House 2025 🌴 Summer Deep House - Soft House - Lounge Chill Vibes',
+    genre: 'Chill House / Deep House',
+    live: false,
+    color: '#150505',
+    accent: '#cccccc',
+    img: 'https://i.scdn.co/image/ab67616d0000b273b039b6370a6e765021b8e094', // Puedes poner una imagen relevante si tienes una
+    url: 'https://soundcloud.com/chillyourmind/sets/chill-house-2020-deep-house',
+    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1052236507&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
+    embedLabel: 'Chill House 2025 · ChillYourMind',
+  },
+      // ── Deep House 2026 ──────────────────────────────────────────
+  {
+    id: 26,
+    dj: 'Storm Music Group',
+    show: 'Deep House 2026 ☀️ Ibiza Chill, Summer Vibes & Tropical House',
+    genre: 'Deep House / Tropical',
+    live: false,
+    color: '#150505',
+    accent: '#cccccc',
+    img: 'https://i.scdn.co/image/ab67616d0000b27324fe86a5e55731c2fbc4a916', // Puedes poner una imagen relevante si tienes una
+    url: 'https://soundcloud.com/stormmusicgroup/sets/deep-house-music-deep-house',
+    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1713659091&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
+    embedLabel: 'Deep House 2026 · Storm Music Group',
+  },
+        // ── Tomorrowland - Festival Music 2025 ───────────────────────
+  {
+    id: 27,
+    dj: 'Playlist Beast',
+    show: 'Tomorrowland - Festival Music 2025 💙 Electro House BigRoom House Mix EDM Mix Tommorowland ClubDrops',
+    genre: 'Electro House / Big Room / EDM',
+    live: false,
+    color: '#150505',
+    accent: '#cccccc',
+    img: 'https://i.scdn.co/image/ab67616d0000b2731f61241702e5fad0cec0d077', // Puedes poner una imagen relevante si tienes una
+    url: 'https://soundcloud.com/playlist-beast/sets/tomorrowland-festival-music',
+    embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1849396449&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
+    embedLabel: 'Tomorrowland - Festival Music 2025 · Playlist Beast',
+  },
+    // ── Skeler Night Drive 1,2,3 all songs ───────────────────────
+    {
+      id: 28,
+      dj: 'Skeler',
+      show: 'Skeler Night Drive 1,2,3 all songs',
+      genre: 'Wave / Night Drive',
+      live: false,
+      color: '#150505',
+      accent: '#cccccc',
+      img: 'https://i.scdn.co/image/ab67616d0000b27392b8d2dc5a45f885b3cfd3ae', // Puedes poner una imagen relevante si tienes una
+      url: 'https://soundcloud.com/zergodom-lp-244266620/sets/skeler-night-drive-1-2-3-all',
+      embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1750578381&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
+      embedLabel: 'Skeler Night Drive 1,2,3 all songs · Skeler',
+    },
+    // ── Phonk / Wave 🌊 Mix ─────────────────────────────────────
+    {
+      id: 29,
+      dj: 'Altare',
+      show: 'Phonk / Wave 🌊 Mix',
+      genre: 'Phonk / Wave',
+      live: false,
+      color: '#150505',
+      accent: '#cccccc',
+      img: 'https://i.scdn.co/image/ab67616d0000b27301e99e4837daaf11a3f41084', // Puedes poner una imagen relevante si tienes una
+      url: 'https://soundcloud.com/smrutiprakash-sahoo/sets/phonk-wave-mix',
+      embed: 'https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A1972504097&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true',
+      embedLabel: 'Phonk / Wave 🌊 Mix · Altare',
+    },
+    {
+      id: 30,
+      dj: "Afro House & Tech House 🎧",
+      show: "BEST TECHNO EDITS 2025 - NOVEMBER (DJ TOOLS)",
+      genre: "Techno",
+      live: false,
+      color: "#150505",
+      accent: "#cccccc",
+      img: "https://i.scdn.co/image/ab67706f0000000274fa5700b2400c534df37a66",
+      url: "https://soundcloud.com/housemusic-district/sets/best-techno-edits-2025",
+      embed: "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A2114128832&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
+      embedLabel: "BEST TECHNO EDITS 2025 - NOVEMBER (DJ TOOLS)",
+    },
+    {
+      id: 31,
+      dj: "BEST HOUSE EDITS 2025 (TOP 100)",
+      show: "BEST HOUSE EDITS 2025 (TOP 100)",
+      genre: "House",
+      live: false,
+      color: "#150505",
+      accent: "#cccccc",
+      img: "https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84b79a05de3f2a2a8c51501c07", // Puedes poner una imagen relevante si tienes una
+      url: "https://soundcloud.com/jodaru/sets/best-house-edits-2025",
+      embed: "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A58270145&color=%23150505&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true",
+      embedLabel: "BEST HOUSE EDITS 2025 (TOP 100)",
+    },
 ];
+// ── Melbourne Bounce ───────────────────────────────────────────
+
