@@ -42,10 +42,9 @@ const app = express();
 // Puedes ampliarla con la variable de entorno ALLOWED_ORIGINS (valores separados por coma).
 const STATIC_ALLOWED_ORIGINS = [
     'https://scraper-beat-port.vercel.app',
-    // Previews de Vercel: commits individuales  scraper-beat-port-{hash}-r34mod.vercel.app
-    /^https:\/\/scraper-beat-port-[a-z0-9-]+-r34mod\.vercel\.app$/,
-    // Previews de Vercel: ramas  scraper-beat-port-git-{branch}-r34mod.vercel.app
-    /^https:\/\/scraper-beat-port-git-[a-z0-9-]+-r34mod\.vercel\.app$/,
+    // Previews de Vercel: cualquier deployment del proyecto (commit hash o rama)
+    // Cubre tanto r34mod como r34mods-projects (team slug de Vercel)
+    /^https:\/\/scraper-beat-port(-git-[a-z0-9-]+)?-r34mods?(-projects)?\.vercel\.app$/,
 ];
 
 function buildAllowedOrigins() {
