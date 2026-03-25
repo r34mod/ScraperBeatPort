@@ -233,23 +233,41 @@ async function launchBrowser() {
         const chromium = require('@sparticuz/chromium');
         const puppeteerCore = require('puppeteer-core');
 
-        const execPath = await chromium.executablePath();
+        let execPath;
+        try {
+            execPath = await chromium.executablePath();
+        } catch (e) {
+            throw new Error(`chromium.executablePath() falló: ${e.message}. Verifica que includeFiles esté configurado en vercel.json.`);
+        }
         if (!execPath) {
-            throw new Error('No se encontró el ejecutable de Chromium. Verifica que @sparticuz/chromium esté correctamente instalado.');
+            throw new Error('No se encontró el ejecutable de Chromium. Verifica que @sparticuz/chromium esté correctamente instalado y que includeFiles esté configurado en vercel.json.');
         }
 
         const extraArgs = [
+            // Required for AWS Lambda / Vercel serverless environments
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            // Anti-detection
             '--disable-blink-features=AutomationControlled',
             '--lang=en-US,en',
             '--window-size=1280,900',
         ];
 
-        return puppeteerCore.launch({
-            args: [...chromium.args, ...extraArgs],
-            defaultViewport: chromium.defaultViewport,
-            executablePath: execPath,
-            headless: chromium.headless,
-        });
+        // chromium.args already includes many Lambda-specific flags; merge without duplicates
+        const baseArgs = chromium.args || [];
+        const extraArgsFiltered = extraArgs.filter(a => !baseArgs.includes(a));
+
+        try {
+            return await puppeteerCore.launch({
+                args: [...baseArgs, ...extraArgsFiltered],
+                defaultViewport: chromium.defaultViewport,
+                executablePath: execPath,
+                headless: chromium.headless,
+            });
+        } catch (e) {
+            throw new Error(`puppeteer-core.launch() falló (executablePath="${execPath}"): ${e.message}`);
+        }
     } else {
         const puppeteer = require('puppeteer');
         return puppeteer.launch({

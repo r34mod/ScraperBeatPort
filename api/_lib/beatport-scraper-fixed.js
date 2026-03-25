@@ -20,23 +20,47 @@ async function _doScrapeBeatportPage(page, genreUrl, genreName) {
         // Navegar a la URL. Usamos 'domcontentloaded' en lugar de 'networkidle2':
         // Beatport es un SPA (React) con conexiones persistentes que hacen que
         // 'networkidle2' tarde mucho o nunca se resuelva (especialmente en Vercel).
-        await page.goto(genreUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+        await page.goto(genreUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
 
-        // Esperar a que React monte el contenido dinámico
-        await delay(3000);
-
-        // Detectar páginas de protección anti-bot (Cloudflare, 403, login wall...)
-        const pageTitle = await page.title();
-        const pageUrl = page.url();
-        const isChallenge = /just a moment|cloudflare|403 forbidden|access denied|captcha|bot/i.test(pageTitle);
-        const isLoginWall = /sign in|log in|login|iniciar sesión/i.test(pageTitle) && !pageTitle.toLowerCase().includes('top');
-        if (isChallenge || pageUrl.includes('challenges.cloudflare.com')) {
-            throw new Error(`Página protegida por Cloudflare/bot-detection: "${pageTitle}". Beatport está bloqueando el acceso desde este servidor.`);
+        // Beatport usa Cloudflare con un challenge de ~5 s ("Just a moment...").
+        // Con domcontentloaded la página devuelve inmediatamente el HTML del challenge;
+        // waitForFunction sondea cada 500 ms hasta que el título deje de pertenecer
+        // al challenge (máximo 12 s de margen).
+        console.log('⏳ Esperando que Cloudflare resuelva el challenge (si lo hay)...');
+        let challengeTimedOut = false;
+        try {
+            await page.waitForFunction(
+                () => !/(just a moment|cloudflare|access denied|403 forbidden|captcha)/i.test(document.title),
+                { timeout: 12000, polling: 500 }
+            );
+        } catch (_challengeErr) {
+            challengeTimedOut = true;
         }
+
+        const pageTitle = await page.title().catch(() => '');
+        const pageUrl = page.url();
+
+        if (
+            challengeTimedOut &&
+            (/just a moment|cloudflare/i.test(pageTitle) || pageUrl.includes('challenges.cloudflare.com'))
+        ) {
+            throw new Error(
+                `Cloudflare no resolvió el challenge tras 12 s: "${pageTitle}". ` +
+                'Beatport está bloqueando el acceso desde este servidor. Prueba de nuevo más tarde.'
+            );
+        }
+
+        // Comprobar login wall (Beatport requiere cuenta para algunos géneros)
+        const isLoginWall = /sign in|log in|login|iniciar sesión/i.test(pageTitle) && !pageTitle.toLowerCase().includes('top');
         if (isLoginWall) {
             throw new Error(`Beatport requiere autenticación para acceder al Top 100 del género "${genreName}".`);
         }
+
         console.log(`📄 Página cargada: "${pageTitle}" (${pageUrl})`);
+
+        // Pausa breve para que React termine de montar el contenido dinámico.
+        // Si el challenge tardó 5 s, React ya lleva tiempo corriendo; 1.5 s es suficiente.
+        await delay(1500);
 
         // Actualizar caché de descubrimiento de URLs con los enlaces del menú de géneros.
         // Beatport renderiza el dropdown de géneros en cada página, así que esto es gratis.
@@ -53,13 +77,13 @@ async function _doScrapeBeatportPage(page, genreUrl, genreName) {
         let trackElements = null;
         try {
             // Primero intentar esperar por cualquier elemento que contenga tracks
-            await page.waitForSelector('a[href*="/track/"]', { timeout: 30000 });
+            await page.waitForSelector('a[href*="/track/"]', { timeout: 15000 });
             console.log('✅ Encontrados enlaces a tracks');
             
             // Scroll dinámico: continuar hasta que no haya tracks nuevos o se alcancen 100
             let lastCount = 0;
             let stableRounds = 0;
-            const MAX_ITERS = 25;    // tope de seguridad (~20 s máximo)
+            const MAX_ITERS = 15;    // tope de seguridad (~6 s máximo a 400 ms/iter)
             const STABLE_NEEDED = 2; // rondas sin cambio para considerar carga completa
 
             for (let i = 0; i < MAX_ITERS; i++) {
@@ -90,7 +114,7 @@ async function _doScrapeBeatportPage(page, genreUrl, genreName) {
 
                 lastCount = currentCount;
                 await page.evaluate(() => window.scrollBy(0, 800));
-                await delay(600);
+                await delay(400);
             }
             
         } catch (error) {
@@ -270,6 +294,23 @@ async function generateCSV(tracks, genreName) {
 
 // Rutas API
 
+// Health check para verificar que el navegador se puede lanzar sin hacer scraping real.
+// Útil para diagnosticar problemas de Chromium en producción (Vercel/Lambda).
+// GET /api/health/puppeteer
+router.get('/health/puppeteer', async (req, res) => {
+    let browser = null;
+    const start = Date.now();
+    try {
+        browser = await launchBrowser();
+        const version = await browser.version();
+        res.json({ ok: true, browserVersion: version, launchMs: Date.now() - start });
+    } catch (err) {
+        res.status(500).json({ ok: false, error: err.message, launchMs: Date.now() - start });
+    } finally {
+        if (browser) { try { await browser.close(); } catch (e) {} }
+    }
+});
+
 // Obtener lista de géneros disponibles
 // Devuelve la URL resuelta para cada género (discovered > hardcoded fallback).
 router.get('/genres', (req, res) => {
@@ -350,10 +391,11 @@ router.get('/scrape', optionalAuth, async (req, res) => {
             });
         }
 
-        // Hacer scraping con reintentos automáticos
+        // Hacer scraping con un único reintento automático. Más reintentos
+        // consumirían el presupuesto de tiempo de la función en Vercel (60 s).
         const rawTracks = await retryWithBackoff(
             () => scrapeBeatportGenre(genreUrl, genre),
-            2, 3000
+            1, 2000
         );
         
         // Validar y limpiar datos de cada track
@@ -411,15 +453,28 @@ router.get('/scrape', optionalAuth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error(`❌ Error procesando género ${genre}:`, error.message);
-        const errorDetails = process.env.NODE_ENV === 'production'
-            ? 'Ocurrió un error durante el scraping.'
-            : error.message;
+        console.error(`❌ Error procesando género ${genre}:`, error.stack || error.message);
+
+        // Classify the error to give actionable feedback.
+        // We do NOT hide the message in production — it's necessary info to diagnose
+        // Puppeteer/Chromium failures (e.g. binary not found, launch error, site block).
+        let hint;
+        const msg = error.message || '';
+        if (/executablePath|chromium|browser process|ENOENT|spawn/i.test(msg)) {
+            hint = 'No se pudo lanzar el navegador. Verifica que @sparticuz/chromium esté correctamente instalado y que includeFiles esté configurado en vercel.json.';
+        } else if (/timeout|timed out/i.test(msg)) {
+            hint = 'La página tardó demasiado en responder. Beatport puede estar bajo carga o bloqueando el acceso desde servidores cloud.';
+        } else if (/cloudflare|challenge|captcha|bot/i.test(msg)) {
+            hint = 'Beatport está aplicando protección anti-bot. Prueba de nuevo más tarde.';
+        } else if (/autenticación|sign in|log in/i.test(msg)) {
+            hint = 'Beatport requiere autenticación para este género. Accede con una cuenta en producción.';
+        }
 
         res.status(500).json({ 
             error: 'Error interno del servidor al procesar la solicitud',
-            details: errorDetails,
-            genre
+            details: msg || 'Error desconocido',
+            ...(hint && { hint }),
+            genre,
         });
     }
 });
