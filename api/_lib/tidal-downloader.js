@@ -1,5 +1,15 @@
 const express = require('express');
 const axios = require('axios');
+const { Readable } = require('stream');
+
+let ffmpeg = null;
+try {
+    const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+    ffmpeg = require('fluent-ffmpeg');
+    ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+} catch {
+    console.warn('[Tidal] fluent-ffmpeg not available — MP3 transcoding disabled');
+}
 
 const IS_VERCEL = !!process.env.VERCEL;
 
@@ -223,6 +233,17 @@ async function pipeUrlToRes(url, writableRes) {
     });
 }
 
+// ─── Helper: download a remote URL fully into a Buffer ───────────────────────
+async function collectUrlToBuffer(url) {
+    const resp = await http.get(url, { responseType: 'stream', timeout: 60000 });
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        resp.data.on('data', chunk => chunks.push(chunk));
+        resp.data.on('end', () => resolve(Buffer.concat(chunks)));
+        resp.data.on('error', reject);
+    });
+}
+
 // ─── Helper: proxy a direct audio URL with proper download headers ────────────
 async function proxyDirectUrl(remoteUrl, res, safeFilename, ext, contentType) {
     const resp = await http.get(remoteUrl, { responseType: 'stream', timeout: 60000 });
@@ -291,13 +312,59 @@ router.get('/download', async (req, res) => {
     }
 
     try {
-        const info = await getDownloadInfoParallel(parseInt(tidalId, 10), quality);
+        const isMp3 = quality === 'MP3_320';
+        const tidalQuality = isMp3 ? 'HIGH' : quality;
+        const info = await getDownloadInfoParallel(parseInt(tidalId, 10), tidalQuality);
         const safeFilename = filename.replace(/[^a-zA-Z0-9 _()-]/g, '').trim() || 'track';
-        const ext = quality === 'HIGH' ? '.m4a' : '.m4a';
-        const contentType = 'audio/mp4';
 
         res.setHeader('Cache-Control', 'no-store');
         res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, Content-Length');
+
+        if (isMp3) {
+            if (!ffmpeg) {
+                return res.status(501).json({ error: 'MP3 transcoding no disponible en este servidor' });
+            }
+
+            // 1. Download the full M4A into memory first
+            let audioBuffer;
+            if (info.directUrl) {
+                audioBuffer = await collectUrlToBuffer(info.directUrl);
+            } else if (info.manifest) {
+                const parsed = parseManifest(info.manifest);
+                const buffers = [];
+                if (parsed.type === 'bts') {
+                    buffers.push(await collectUrlToBuffer(parsed.directUrl));
+                } else {
+                    buffers.push(await collectUrlToBuffer(parsed.initUrl));
+                    for (const segUrl of parsed.segmentUrls) {
+                        buffers.push(await collectUrlToBuffer(segUrl));
+                    }
+                }
+                audioBuffer = Buffer.concat(buffers);
+            } else {
+                return res.status(500).json({ error: 'No se pudo obtener la URL de descarga' });
+            }
+
+            // 2. Transcode M4A → MP3 320 kbps and stream to client
+            res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}.mp3"`);
+            res.setHeader('Content-Type', 'audio/mpeg');
+
+            ffmpeg(Readable.from(audioBuffer))
+                .noVideo()
+                .audioCodec('libmp3lame')
+                .audioBitrate(320)
+                .format('mp3')
+                .on('error', (err) => {
+                    console.error('[Tidal] ffmpeg error:', err.message);
+                    if (!res.headersSent) res.status(500).end();
+                })
+                .pipe(res, { end: true });
+
+            return;
+        }
+
+        const ext = '.m4a';
+        const contentType = 'audio/mp4';
 
         // ── Direct URL (V1 API) ─────────────────────────────────────────────
         if (info.directUrl) {

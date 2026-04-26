@@ -1,7 +1,8 @@
 export const QUALITY_OPTIONS = [
-  { value: 'HIGH',     label: 'M4A (Alta)',  info: 'AAC ~320 kbps · .m4a' },
-  { value: 'LOSSLESS', label: 'Lossless',    info: 'FLAC 16-bit / 44.1 kHz' },
-  { value: 'HI_RES',  label: 'HiRes',       info: 'FLAC 24-bit / hasta 192 kHz' },
+  { value: 'MP3_320', label: 'MP3 320',    info: 'MP3 · 320 kbps · .mp3' },
+  { value: 'HIGH',    label: 'M4A (Alta)', info: 'AAC ~320 kbps · .m4a' },
+  { value: 'LOSSLESS', label: 'Lossless',  info: 'FLAC 16-bit / 44.1 kHz' },
+  { value: 'HI_RES',  label: 'HiRes',     info: 'FLAC 24-bit / hasta 192 kHz' },
 ];
 
 export const YT_QUALITY_OPTIONS = [
