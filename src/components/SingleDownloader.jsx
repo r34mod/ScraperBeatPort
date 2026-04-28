@@ -45,17 +45,6 @@ export default function SingleDownloader({ provider, quality, selectedQualityInf
     if (isTidal && !track?.tidalId) return;
     if (!isTidal && !track?.videoId) return;
 
-    // Check download limit
-    if (trackDownload) {
-      const { allowed } = await trackDownload();
-      if (!allowed) {
-        setDlStatus('error');
-        setDlMsg('Has alcanzado el límite de descargas diarias.');
-        if (onNeedUpgrade) onNeedUpgrade();
-        return;
-      }
-    }
-
     setDlStatus('loading');
     setDlMsg(`Conectando con ${isTidal ? 'Tidal' : 'YouTube Music'}…`);
 

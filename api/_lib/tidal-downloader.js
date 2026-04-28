@@ -17,6 +17,10 @@ const router = express.Router();
 
 // ─── Tidal public proxy APIs (same priority list as Go backend) ────────────────
 const TIDAL_APIS = [
+    'https://eu-central.monochrome.tf',
+    'https://us-west.monochrome.tf',
+    'https://api.monochrome.tf',
+    'https://monochrome-api.samidy.com',
     'https://tidal-api.binimum.org',
     'https://tidal.kinoplus.online',
     'https://triton.squid.wtf',
@@ -53,6 +57,67 @@ function isTidalCdnUrl(urlStr) {
     } catch {
         return false;
     }
+}
+
+// ─── Tidal public metadata API (no proxy needed, same token as Go backend) ────
+const TIDAL_PUBLIC_API  = 'https://tidal.com/v1';
+const TIDAL_PUBLIC_TOKEN = 'txNoH4kkV41MfH25';
+const TIDAL_COUNTRY_CODE = 'US';
+
+const tidalMeta = axios.create({
+    timeout: 15000,
+    headers: {
+        'x-tidal-token': TIDAL_PUBLIC_TOKEN,
+        'Accept': 'application/json',
+    },
+});
+
+function buildTidalMetaUrl(path, extra = {}) {
+    const params = new URLSearchParams({
+        countryCode: TIDAL_COUNTRY_CODE,
+        locale: 'en_US',
+        deviceType: 'BROWSER',
+        ...extra,
+    });
+    return `${TIDAL_PUBLIC_API}/${path}?${params}`;
+}
+
+// Search Tidal directly (no Deezer, no SongLink needed)
+async function searchTidalDirect(title, artist, limit = 5) {
+    const query = `${artist} ${title}`;
+    const url = buildTidalMetaUrl('search/tracks', { query, limit, offset: 0 });
+    const resp = await tidalMeta.get(url);
+    const items = resp.data?.items;
+    if (!items?.length) throw new Error('No results from Tidal public API');
+
+    // Pick best match: prefer exact artist name match
+    const lc = s => s.toLowerCase().trim();
+    const artistLc = lc(artist);
+    const titleLc  = lc(title);
+
+    const scored = items.map(t => {
+        const tArtist = lc(t.artist?.name || t.artists?.[0]?.name || '');
+        const tTitle  = lc(t.title || '');
+        let score = 0;
+        if (tArtist.includes(artistLc) || artistLc.includes(tArtist)) score += 2;
+        if (tTitle.includes(titleLc)   || titleLc.includes(tTitle))   score += 2;
+        if (tTitle === titleLc)   score += 1;
+        if (tArtist === artistLc) score += 1;
+        return { t, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    const best = scored[0].t;
+
+    return {
+        tidalId: best.id,
+        title: best.title,
+        artist: best.artist?.name || best.artists?.[0]?.name || artist,
+        album: best.album?.title || '',
+        cover: best.album?.cover
+            ? `https://resources.tidal.com/images/${best.album.cover.replace(/-/g, '/'  )}/1280x1280.jpg`
+            : null,
+        duration: best.duration,
+    };
 }
 
 // ─── Step 1: Search Deezer public API (no auth required) ─────────────────────
@@ -131,8 +196,10 @@ async function fetchFromTidalAPI(apiUrl, trackId, quality) {
             // V2 response format: { data: { manifest, manifestMimeType, bitDepth, sampleRate, ... } }
             if (data?.data?.manifest) {
                 if (data.data.assetPresentation === 'PREVIEW') {
+                    console.warn(`[Tidal] ${apiUrl} → PREVIEW only (no full track)`);
                     return null;
                 }
+                console.log(`[Tidal] ✓ ${apiUrl} → manifest OK (${data.data.audioQuality || quality})`);
                 return {
                     manifest: data.data.manifest,
                     manifestMimeType: data.data.manifestMimeType || '',
@@ -146,6 +213,7 @@ async function fetchFromTidalAPI(apiUrl, trackId, quality) {
             if (Array.isArray(data)) {
                 for (const item of data) {
                     if (item.OriginalTrackUrl) {
+                        console.log(`[Tidal] ✓ ${apiUrl} → direct URL OK (V1)`);
                         return {
                             directUrl: item.OriginalTrackUrl,
                             bitDepth: 16,
@@ -156,10 +224,12 @@ async function fetchFromTidalAPI(apiUrl, trackId, quality) {
                 }
             }
 
+            console.warn(`[Tidal] ${apiUrl} → unrecognised response:`, JSON.stringify(data).slice(0, 200));
             return null;
         } catch (err) {
             const status = err.response?.status;
             const msg = err.message?.toLowerCase() || '';
+            console.warn(`[Tidal] ${apiUrl} → ${status ? `HTTP ${status}` : msg.slice(0, 80)}`);
             const isRetryable =
                 status >= 500 ||
                 status === 429 ||
@@ -177,6 +247,7 @@ async function fetchFromTidalAPI(apiUrl, trackId, quality) {
 
 // ─── Step 4: Query all Tidal APIs in parallel (first success wins) ────────────
 async function getDownloadInfoParallel(trackId, quality) {
+    console.log(`[Tidal] Querying ${TIDAL_APIS.length} proxy APIs for trackId=${trackId} quality=${quality}`);
     const settled = await Promise.allSettled(
         TIDAL_APIS.map(api => fetchFromTidalAPI(api, trackId, quality))
     );
@@ -187,6 +258,7 @@ async function getDownloadInfoParallel(trackId, quality) {
         }
     }
 
+    console.error('[Tidal] All proxy APIs failed for trackId=' + trackId);
     throw new Error('All Tidal APIs failed to return a download URL');
 }
 
@@ -266,7 +338,8 @@ async function proxyDirectUrl(remoteUrl, res, safeFilename, ext, contentType) {
 
 /**
  * GET /api/tidal/search?title=...&artist=...
- * Searches Deezer + SongLink, returns track info + tidalId if available.
+ * 1) Tries Tidal public search API directly (same as Go backend, no Deezer/SongLink).
+ * 2) Falls back to Deezer + SongLink if Tidal public API fails.
  */
 router.get('/search', async (req, res) => {
     const { title, artist } = req.query;
@@ -275,6 +348,29 @@ router.get('/search', async (req, res) => {
         return res.status(400).json({ error: 'Los parámetros title y artist son requeridos' });
     }
 
+    // ── Strategy 1: Tidal public search (no proxy, works everywhere) ─────────
+    try {
+        const tidalTrack = await searchTidalDirect(title.trim(), artist.trim());
+        return res.json({
+            success: true,
+            track: {
+                deezerId: null,
+                title: tidalTrack.title,
+                artist: tidalTrack.artist,
+                album: tidalTrack.album,
+                cover: tidalTrack.cover,
+                duration: tidalTrack.duration,
+                preview: null,
+                tidalId: tidalTrack.tidalId,
+                tidalUrl: `https://tidal.com/browse/track/${tidalTrack.tidalId}`,
+                tidalAvailable: true,
+            },
+        });
+    } catch (tidalErr) {
+        console.warn('[Tidal] Public search failed, falling back to Deezer+SongLink:', tidalErr.message);
+    }
+
+    // ── Strategy 2: Deezer → SongLink (legacy fallback) ──────────────────────
     try {
         const deezerTrack = await searchDeezer(title.trim(), artist.trim());
 
@@ -285,7 +381,7 @@ router.get('/search', async (req, res) => {
             // No Tidal match — still return Deezer info so the UI shows what was found
         }
 
-        res.json({
+        return res.json({
             success: true,
             track: {
                 ...deezerTrack,
@@ -295,7 +391,7 @@ router.get('/search', async (req, res) => {
             },
         });
     } catch (err) {
-        res.status(404).json({ error: err.message });
+        return res.status(404).json({ error: err.message });
     }
 });
 
@@ -398,9 +494,10 @@ router.get('/download', async (req, res) => {
     } catch (err) {
         console.error('[Tidal] Download error:', err.message);
         if (!res.headersSent) {
-            // On Vercel the Tidal proxy IPs are often IP-blocked. Tell the frontend
-            // to resolve directly from the browser instead.
-            if (IS_VERCEL && err.message.includes('All Tidal APIs failed')) {
+            // The Tidal proxy APIs are often IP-blocked on cloud/server IPs.
+            // Tell the frontend to resolve directly from the browser instead
+            // (residential/browser IPs are not blocked).
+            if (err.message.includes('All Tidal APIs failed') || err.message.includes('Tidal APIs failed')) {
                 return res.status(503).json({
                     error: err.message,
                     needsClientResolve: true,

@@ -89,17 +89,6 @@ export default function BatchDownloader({ provider, quality, trackDownload, onNe
 
       if (cancelRef.current) { updateRow(row.id, { status: 'pending', msg: 'Cancelado' }); continue; }
 
-      // Check download limit before downloading
-      if (trackDownload) {
-        const { allowed } = await trackDownload();
-        if (!allowed) {
-          updateRow(row.id, { status: 'error', msg: 'Límite diario alcanzado' });
-          cancelRef.current = true;
-          if (onNeedUpgrade) onNeedUpgrade();
-          continue;
-        }
-      }
-
       updateRow(row.id, { status: 'downloading', progress: 0, msg: 'Descargando…' });
       const safeFilename = `${foundTrack.artist} - ${foundTrack.title}`.replace(/[^\w\s()-]/g, '').trim();
       

@@ -53,15 +53,8 @@ export function parseCSV(text) {
   }).filter(t => t.title && t.artist);
 }
 
-// ── Shared download helper (fetch → blob → save) ──────────────────────────────
-export async function downloadTrackBlob(tidalId, quality, safeFilename, onProgress, overrideUrl = null) {
-  const url = overrideUrl ?? `/api/tidal/download?tidalId=${tidalId}&quality=${quality}&filename=${encodeURIComponent(safeFilename)}`;
-  const response = await fetch(url);
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
-    throw new Error(err.error || `HTTP ${response.status}`);
-  }
-
+// ── Internal: stream a blob from a Response and trigger download ──────────────
+async function _consumeAudioResponse(response, safeFilename, onProgress) {
   const contentLength = Number(response.headers.get('content-length') || 0);
   const reader = response.body.getReader();
   const chunks = [];
@@ -79,10 +72,98 @@ export async function downloadTrackBlob(tidalId, quality, safeFilename, onProgre
   const extMatch    = disposition.match(/filename=".+?(\.[^"]+)"/);
   const ext         = extMatch ? extMatch[1] : '.m4a';
   const blob        = new Blob(chunks, { type: response.headers.get('content-type') || 'audio/mp4' });
-  const blobUrl     = URL.createObjectURL(blob);
+  _triggerBlobDownload(blob, `${safeFilename}${ext}`);
+}
 
+function _triggerBlobDownload(blob, filename) {
+  const blobUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = blobUrl; a.download = `${safeFilename}${ext}`;
+  a.href = blobUrl; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+}
+
+// ── Client-side Tidal proxy resolution (browser IPs are not blocked) ──────────
+async function _resolveClientSide(apis, trackId, quality, safeFilename, onProgress) {
+  for (const api of apis) {
+    try {
+      onProgress?.(null, 0);
+
+      const resp = await fetch(`${api}/track/?id=${trackId}&quality=${quality}`, {
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!resp.ok) continue;
+
+      const data = await resp.json();
+
+      // V1 format: [{ OriginalTrackUrl }]
+      if (Array.isArray(data)) {
+        const item = data.find(d => d.OriginalTrackUrl);
+        if (item?.OriginalTrackUrl) {
+          onProgress?.(null, 0);
+          const streamResp = await fetch(
+            `/api/tidal/stream-direct?url=${encodeURIComponent(item.OriginalTrackUrl)}&filename=${encodeURIComponent(safeFilename)}`
+          );
+          if (!streamResp.ok) {
+            const e = await streamResp.json().catch(() => ({}));
+            throw new Error(e.error || `HTTP ${streamResp.status}`);
+          }
+          await _consumeAudioResponse(streamResp, safeFilename, onProgress);
+          return;
+        }
+      }
+
+      // V2 format: { data: { manifest, assetPresentation } }
+      if (data?.data?.manifest) {
+        if (data.data.assetPresentation === 'PREVIEW') continue;
+        onProgress?.(null, 0);
+        const streamResp = await fetch('/api/tidal/stream-from-manifest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ manifest: data.data.manifest, filename: safeFilename }),
+        });
+        if (!streamResp.ok) {
+          const e = await streamResp.json().catch(() => ({}));
+          throw new Error(e.error || `HTTP ${streamResp.status}`);
+        }
+        await _consumeAudioResponse(streamResp, safeFilename, onProgress);
+        return;
+      }
+    } catch (err) {
+      // CORS or network error → try next API silently
+      console.warn(`[Tidal] client-side ${api} failed:`, err.message);
+    }
+  }
+
+  throw new Error('No se pudo obtener el archivo desde ninguna fuente (todas las APIs fallaron).');
+}
+
+// ── Shared download helper (fetch → blob → save) ──────────────────────────────
+export async function downloadTrackBlob(tidalId, quality, safeFilename, onProgress, overrideUrl = null) {
+  const url = overrideUrl ?? `/api/tidal/download?tidalId=${tidalId}&quality=${quality}&filename=${encodeURIComponent(safeFilename)}`;
+  const response = await fetch(url);
+
+  // Non-JSON audio stream → success
+  const contentType = response.headers.get('content-type') || '';
+  if (response.ok && !contentType.includes('application/json')) {
+    await _consumeAudioResponse(response, safeFilename, onProgress);
+    return;
+  }
+
+  // Parse error JSON
+  const data = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+
+  // Server-side proxy IPs blocked → resolve from the browser directly
+  if (data.needsClientResolve) {
+    await _resolveClientSide(
+      data.tidalApis || [],
+      data.trackId   ?? tidalId,
+      quality,
+      safeFilename,
+      onProgress,
+    );
+    return;
+  }
+
+  throw new Error(data.error || `HTTP ${response.status}`);
 }

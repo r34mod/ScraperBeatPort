@@ -37,40 +37,8 @@ export function useSubscription() {
    * Mutar estado local inmediatamente para UX rápida.
    */
   const trackDownload = useCallback(async () => {
-    // Subscribed users → always allowed
-    if (status.subscribed) return { allowed: true };
-
-    // Optimistic local check
-    if (status.downloadsLeft !== null && status.downloadsLeft <= 0) {
-      return { allowed: false };
-    }
-
-    try {
-      const token = await getValidToken();
-      if (!token) return { allowed: false };
-      const res = await fetch('/api/subscription/track-download', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok || !data.allowed) {
-        setStatus(prev => ({ ...prev, downloadsLeft: 0 }));
-        return { allowed: false };
-      }
-      // Update local counts
-      if (!data.subscribed) {
-        setStatus(prev => ({
-          ...prev,
-          downloadsToday: prev.downloadsToday + 1,
-          downloadsLeft: data.downloadsLeft ?? Math.max(0, (prev.downloadsLeft ?? 5) - 1),
-        }));
-      }
-      return { allowed: true };
-    } catch {
-      // On network error, allow the download (fail open)
-      return { allowed: true };
-    }
-  }, [status.subscribed, status.downloadsLeft, getValidToken]);
+    return { allowed: true };
+  }, []);
 
   /**
    * Stripe Checkout — temporalmente deshabilitado.
